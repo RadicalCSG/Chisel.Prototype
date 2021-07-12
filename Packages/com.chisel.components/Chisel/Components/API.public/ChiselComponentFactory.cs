@@ -73,9 +73,9 @@ namespace Chisel.Components
             UnityEditor.Undo.RecordObject(transform, "Move child node to given position");
 #endif
             if (parent)
-                transform.Set(parent.worldToLocalMatrix * trsMatrix);
+                transform.SetLocal(parent.worldToLocalMatrix * trsMatrix);
             else
-                transform.Set(trsMatrix);
+                transform.SetLocal(trsMatrix);
         }
 
 
@@ -110,9 +110,9 @@ namespace Chisel.Components
                     brushTransform.SetParent(parent, false);
 #endif
                 if (parent)
-                    brushTransform.Set(parent.worldToLocalMatrix * trsMatrix);
+                    brushTransform.SetLocal(parent.worldToLocalMatrix * trsMatrix);
                 else
-                    brushTransform.Set(trsMatrix);
+                    brushTransform.SetLocal(trsMatrix);
 
 #if UNITY_EDITOR
                 return UnityEditor.Undo.AddComponent<T>(newGameObject);
@@ -158,9 +158,9 @@ namespace Chisel.Components
                     brushTransform.SetParent(parent, false);
 #endif
                 if (parent)
-                    brushTransform.Set(parent.worldToLocalMatrix * trsMatrix);
+                    brushTransform.SetLocal(parent.worldToLocalMatrix * trsMatrix);
                 else
-                    brushTransform.Set(trsMatrix);
+                    brushTransform.SetLocal(trsMatrix);
 
 #if UNITY_EDITOR
                 return UnityEditor.Undo.AddComponent(newGameObject, type);

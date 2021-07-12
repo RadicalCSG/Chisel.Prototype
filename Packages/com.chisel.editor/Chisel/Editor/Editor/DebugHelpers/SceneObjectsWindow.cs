@@ -45,6 +45,10 @@ public class SceneObjectsWindow : EditorWindow
         for (int i = 0; i < sceneList.Length; i++)
         {
             var obj = sceneList[i];
+            if ((obj.hideFlags & HideFlags.DontSaveInEditor) != HideFlags.None)
+                continue;
+            if (obj is Component || obj is GameObject)
+                continue;
             var type = obj.GetType();
             if (!sceneTypeList.TryGetValue(type, out var list))
             {
@@ -60,8 +64,9 @@ public class SceneObjectsWindow : EditorWindow
     {
         foreach (Object obj in list)
         {
-            if (obj != null)
-                EditorGUILayout.ObjectField(obj, obj.GetType(), allowSceneObjects: true, GUILayout.ExpandWidth(true));
+            if (obj == null)
+                continue;
+            EditorGUILayout.ObjectField(obj, obj.GetType(), allowSceneObjects: true, GUILayout.ExpandWidth(true));
         }
     }
 }

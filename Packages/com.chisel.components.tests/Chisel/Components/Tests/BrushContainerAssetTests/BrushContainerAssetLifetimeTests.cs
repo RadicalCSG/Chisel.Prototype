@@ -11,7 +11,7 @@ using Chisel.Components;
 using System.Collections.Generic;
 
 namespace BrushContainerAssetTests
-{
+{/*
     public sealed class BrushContainerAssetLifetimeTests
     {
         [SetUp] public void Setup() {  }
@@ -62,7 +62,7 @@ namespace BrushContainerAssetTests
         {
             var newBrushContainerAsset = ScriptableObject.CreateInstance<ChiselBrushContainerAsset>();
             yield return null;
-            ChiselBrushMaterialManager.Update();
+            ChiselBrushContainerAssetManager.Update();
 
             UnityEngine.Object.DestroyImmediate(newBrushContainerAsset);
             yield return null;
@@ -261,9 +261,9 @@ namespace BrushContainerAssetTests
             using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 var newBrushContainerAsset	= CreateBox(Vector3.one, newBrushMaterial);
-                var brushGameObject		= EditorUtility.CreateGameObjectWithHideFlags("Brush", HideFlags.None);
-                var brush				= brushGameObject.AddComponent<ChiselBrush>();
-                brush.BrushContainerAsset = newBrushContainerAsset;
+                var brushGameObject		    = EditorUtility.CreateGameObjectWithHideFlags("Brush", HideFlags.None);
+                var brush				    = brushGameObject.AddComponent<ChiselBrush>();
+                brush.BrushContainerAsset   = newBrushContainerAsset;
             
                 yield return null;
                 ChiselBrushContainerAssetManager.Update();
@@ -376,5 +376,5 @@ namespace BrushContainerAssetTests
                 UnityEngine.Object.DestroyImmediate(newBrushContainerAsset);
             }
         }
-    }
+    }*/
 }

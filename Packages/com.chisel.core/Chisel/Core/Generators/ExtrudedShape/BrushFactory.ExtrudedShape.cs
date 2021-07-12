@@ -12,60 +12,69 @@ using UnitySceneExtensions;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine.Profiling;
+using Unity.Collections;
+using Unity.Entities;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Burst;
 
 namespace Chisel.Core
 {
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        static float CalculateOrientation(Vector2[] vertices)
-        {        
-            // Newell's algorithm to create a plane for concave polygons.
-            // NOTE: doesn't work well for self-intersecting polygons
-            var direction = 0.0f;
-            var prevVertex	= vertices[vertices.Length - 1];
-            for (int n = 0; n < vertices.Length; n++)
+        static bool GetExtrudedVertices(UnsafeList<SegmentVertex> shapeVertices, Range range, Matrix4x4 matrix0, Matrix4x4 matrix1, in BlobBuilder builder, ref BrushMeshBlob root, out BlobBuilderArray<float3> localVertices, out NativeArray<int> segmentIndices, Allocator allocator)
+        {
+            const int pathSegments = 2;
+            var rangeLength = range.Length;
+            var vertexCount = rangeLength * pathSegments;
+
+            localVertices = default;
+            segmentIndices = default;
+            if (range.Length <= 0)
             {
-                var currVertex = vertices[n];
-                direction += ((prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y));
-                prevVertex = currVertex;
+                Debug.LogError($"range.Length <= 0");
+                return false;
             }
-            return direction;
+
+            if (range.start < 0)
+            {
+                Debug.LogError($"range.start < 0");
+                return false;
+            }
+
+            if (range.end > shapeVertices.length)
+            {
+                Debug.LogError($"range.end {range.end} > shapeVertices.length {shapeVertices.length}");
+                return false;
+            }
+
+
+            localVertices = builder.Allocate(ref root.localVertices, vertexCount);
+            segmentIndices = new NativeArray<int>(vertexCount, allocator);
+
+            for (int s = range.start, v = 0; s < range.end; s++, v++)
+            {
+                Debug.Assert(s < shapeVertices.length);
+                var srcPoint   = shapeVertices[s].position;
+                var srcSegment = shapeVertices[s].segmentIndex;
+                var srcPoint3  = new float3(srcPoint.x, srcPoint.y, 0);
+                localVertices[              v] = matrix0.MultiplyPoint(srcPoint3);
+                localVertices[rangeLength + v] = matrix1.MultiplyPoint(srcPoint3);
+                segmentIndices[              v] = srcSegment + 2;
+                segmentIndices[rangeLength + v] = srcSegment + 2;
+                Debug.Assert(rangeLength + v < vertexCount);
+            }
+            return true;
         }
 
-        static List<Vector2>    shapeVertices           = new List<Vector2>();
-        static List<int>        shapeSegmentIndices     = new List<int>();
-        static List<BrushMesh>  brushMeshesList         = new List<BrushMesh>();
-        public static bool GenerateExtrudedShape(ref ChiselBrushContainer brushContainer, ref ChiselExtrudedShapeDefinition definition)
+        [BurstCompile]
+        public static unsafe bool GenerateExtrudedShape(NativeList<BlobAssetReference<BrushMeshBlob>>   brushMeshes, 
+                                                        in UnsafeList<SegmentVertex>                    polygonVerticesArray, 
+                                                        in UnsafeList<int>                              polygonVerticesSegments,
+                                                        in UnsafeList<float4x4>                         pathMatrices,
+                                                        in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                        Allocator allocator)
         {
-            definition.Validate();
-
-            ref readonly var shape               = ref definition.shape;
-            int              curveSegments       = definition.curveSegments;
-
-            shapeVertices       .Clear();
-            shapeSegmentIndices .Clear();
-            GetPathVertices(shape, curveSegments, shapeVertices, shapeSegmentIndices);
-
-            Profiler.BeginSample("ConvexPartition");
-            Vector2[][]  polygonVerticesArray;
-            int[][]     polygonIndicesArray;
-            if (shapeVertices.Count == 3)
-            {
-                polygonVerticesArray = new [] { shapeVertices.ToArray() };
-                polygonIndicesArray = new [] { shapeSegmentIndices.ToArray() };
-            } else
-            { 
-                if (!Decomposition.ConvexPartition(shapeVertices, shapeSegmentIndices,
-                                                    out polygonVerticesArray,
-                                                    out polygonIndicesArray))
-                    return false;
-            }
-            Profiler.EndSample();
-
-            ref readonly var path                = ref definition.path;
-            path.UpgradeIfNecessary();
-
             // TODO: make each extruded quad split into two triangles when it's not a perfect plane,
             //			split it to make sure it's convex
 
@@ -78,91 +87,81 @@ namespace Chisel.Core
             // TODO:	make this work well with twisted rotations
             // TODO: make shape/path subdivisions be configurable / automatic
 
-
-            var originalBrushMeshes = brushContainer.brushMeshes;
-            int brushMeshIndex = 0;
-            int brushMeshCount = (originalBrushMeshes == null) ? 0 : originalBrushMeshes.Length;
-
-            brushMeshesList.Clear();
-            Profiler.BeginSample("CreateExtrudedSubMeshes");
-            for (int p = 0; p < polygonVerticesArray.Length; p++)
+            if (!brushMeshes.IsCreated)
             {
-                var polygonVertices = polygonVerticesArray[p];
-                var segmentIndices = polygonIndicesArray[p];
-                var shapeSegments = polygonVertices.Length;
+                Debug.Log($"brushMeshes.IsCreated {brushMeshes.IsCreated}");
+                return false;
+            }
 
-                if (CalculateOrientation(polygonVertices) < 0)
+            int brushMeshIndex = 0;
+
+            //Profiler.BeginSample("CreateExtrudedSubMeshes");
+            for (int p = 0; p < polygonVerticesSegments.Length; p++)
+            {
+                var range = new Range
+                { 
+                    start = p == 0 ? 0 : polygonVerticesSegments[p - 1],
+                    end   =              polygonVerticesSegments[p    ]
+                };
+
+                for (int s = 1; s < pathMatrices.Length; s++)
                 {
-                    Array.Reverse(segmentIndices);
-                    Array.Reverse(polygonVertices);
-                }
+                    var matrix0 = pathMatrices[s - 1];
+                    var matrix1 = pathMatrices[s];
 
-                for (int s = 0; s < path.segments.Length - 1; s++)
-                {
-                    var pathPointA = path.segments[s];
-                    var pathPointB = path.segments[s + 1];
-                    int subSegments = 1;
-                    var offsetQuaternion = pathPointB.rotation * Quaternion.Inverse(pathPointA.rotation);
-                    var offsetEuler = offsetQuaternion.eulerAngles;
-                    if (offsetEuler.x > 180) offsetEuler.x = 360 - offsetEuler.x;
-                    if (offsetEuler.y > 180) offsetEuler.y = 360 - offsetEuler.y;
-                    if (offsetEuler.z > 180) offsetEuler.z = 360 - offsetEuler.z;
-                    var maxAngle = math.max(math.max(offsetEuler.x, offsetEuler.y), offsetEuler.z);
-                    if (maxAngle != 0)
-                        subSegments = math.max(1, (int)math.ceil(maxAngle / 5));
+                    var polygonVertex4      = new float4(polygonVerticesArray[range.start].position, 0, 1);
+                    var distanceToBottom    = math.mul(math.inverse(matrix0), math.mul(matrix1, polygonVertex4)).z;
 
-                    if ((pathPointA.scale.x / pathPointA.scale.y) != (pathPointB.scale.x / pathPointB.scale.y) &&
-                        (subSegments & 1) == 1)
-                        subSegments += 1;
+                    if (distanceToBottom < 0) { var m = matrix0; matrix0 = matrix1; matrix1 = m; }
 
-                    for (int n = 0; n < subSegments; n++)
+                    if (brushMeshIndex >= brushMeshes.Length)
                     {
-                        var matrix0 = ChiselPathPoint.Lerp(ref path.segments[s], ref path.segments[s + 1], n / (float)subSegments);
-                        var matrix1 = ChiselPathPoint.Lerp(ref path.segments[s], ref path.segments[s + 1], (n + 1) / (float)subSegments);
+                        Debug.Log($"{brushMeshIndex} >= {brushMeshes.Length}");
+                        return false;
+                    }
+                    brushMeshes[brushMeshIndex] = BlobAssetReference<BrushMeshBlob>.Null;
 
-                        // TODO: this doesn't work if top and bottom polygons intersect
-                        //			=> need to split into two brushes then, invert one of the two brushes
-                        var invertDot = math.dot(matrix0.MultiplyVector(new Vector3(0,0,1)).normalized, (matrix1.MultiplyPoint(new Vector3(polygonVertices[0].x, polygonVertices[0].y, 0)) - matrix0.MultiplyPoint(new Vector3(polygonVertices[0].x, polygonVertices[0].y, 0))).normalized);
+                    using (var builder = new BlobBuilder(Allocator.Temp))
+                    {
+                        ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
+                        BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges;
+                        BlobBuilderArray<BrushMeshBlob.Polygon> polygons;
 
-                        if (invertDot == 0.0f)
+                        if (!GetExtrudedVertices(polygonVerticesArray, range, matrix0, matrix1, in builder, ref root, out var localVertices, out var segmentIndices, Allocator.Temp))
                             continue;
 
-                        if (invertDot < 0) { var m = matrix0; matrix0 = matrix1; matrix1 = m; }
-
-                        float3[] vertices;
-                        BrushMesh brushMesh;
-                        if (brushMeshIndex >= brushMeshCount)
+                        try
                         {
-                            vertices = null;
-                            if (!GetExtrudedVertices(polygonVertices, matrix0, matrix1, ref vertices))
-                                continue;
-                            brushMesh = new BrushMesh();
-                        } else
+                            CreateExtrudedSubMesh(range.Length, (int*)segmentIndices.GetUnsafePtr(), segmentIndices.Length, 0, 1, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out polygons, out halfEdges);
+                        }
+                        finally
                         {
-                            brushMesh = originalBrushMeshes[brushMeshIndex];
-                            vertices = brushMesh.vertices;
-                            if (!GetExtrudedVertices(polygonVertices, matrix0, matrix1, ref vertices))
-                                continue;
+                            segmentIndices.Dispose();
                         }
 
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, shapeSegments, segmentIndices, 0, 1, vertices, definition.surfaceDefinition);
-                        brushMeshesList.Add(brushMesh);
+                        if (!Validate(in localVertices, in halfEdges, in polygons, logErrors: true))
+                            return false;
+
+                        var localPlanes             = builder.Allocate(ref root.localPlanes, polygons.Length);
+                        var halfEdgePolygonIndices  = builder.Allocate(ref root.halfEdgePolygonIndices, halfEdges.Length);
+                        CalculatePlanes(ref localPlanes, in polygons, in halfEdges, in localVertices);
+                        UpdateHalfEdgePolygonIndices(ref halfEdgePolygonIndices, in polygons);
+                        root.localBounds = CalculateBounds(in localVertices);
+                        brushMeshes[brushMeshIndex] = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
                         brushMeshIndex++;
                     }
                 }
             }
-            Profiler.EndSample();
-
-            brushContainer.CopyFrom(brushMeshesList);
+            //Profiler.EndSample();
             return true;
         }
-        
+
         static Vector2 PointOnBezier(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, float t)
         {
             return (1 - t) * (1 - t) * (1 - t) * p0 + 3 * t * (1 - t) * (1 - t) * p1 + 3 * t * t * (1 - t) * p2 + t * t * t * p3;
         }
 
-        public static void GetPathVertices(Curve2D shape, int shapeCurveSegments, List<Vector2> shapeVertices, List<int> shapeSegmentIndices)
+        public static void GetPathVertices(Curve2D shape, int shapeCurveSegments, List<SegmentVertex> shapeVertices)
         {
             var points = shape.controlPoints;
             var length = points.Length;
@@ -180,12 +179,11 @@ namespace Chisel.Core
                     (points[index1].constraint2 == ControlPointConstraint.Straight &&
                      points[index2].constraint1 == ControlPointConstraint.Straight))
                 {
-                    shapeVertices.Add(v1);
-                    shapeSegmentIndices.Add(i);
+                    shapeVertices.Add(new SegmentVertex { position = v1, segmentIndex = i });
                     continue;
                 }
 
-                Vector2 v0, v3;
+                float2 v0, v3;
 
                 if (p1.constraint2 != ControlPointConstraint.Straight)
                     v0 = v1 - p1.tangent2;
@@ -196,31 +194,12 @@ namespace Chisel.Core
                 else
                     v3 = v2;
 
-                shapeSegmentIndices.Add(i);
-                shapeVertices.Add(v1);
+                shapeVertices.Add(new SegmentVertex { position = v1, segmentIndex = i });
                 for (int n = 1; n < shapeCurveSegments; n++)
                 {
-                    shapeSegmentIndices.Add(i);
-                    shapeVertices.Add(PointOnBezier(v1, v0, v3, v2, n / (float)shapeCurveSegments));
+                    shapeVertices.Add(new SegmentVertex { position = PointOnBezier(v1, v0, v3, v2, n / (float)shapeCurveSegments), segmentIndex = i });
                 }
             }
-        }
-
-        static bool GetExtrudedVertices(Vector2[] shapeVertices, Matrix4x4 matrix0, Matrix4x4 matrix1, ref float3[] vertices)
-        {
-            var pathSegments = 2;
-            var shapeSegments = shapeVertices.Length;
-            var vertexCount = shapeSegments * pathSegments;
-            if (vertices == null ||
-                vertices.Length != vertexCount)
-                vertices = new float3[vertexCount];
-
-            for (int s = 0; s < shapeSegments; s++)
-            {
-                vertices[s] = matrix0.MultiplyPoint(new Vector3(shapeVertices[s].x, shapeVertices[s].y, 0));
-                vertices[shapeSegments + s] = matrix1.MultiplyPoint(new Vector3(shapeVertices[s].x, shapeVertices[s].y, 0));
-            }
-            return true;
         }
     }
 }

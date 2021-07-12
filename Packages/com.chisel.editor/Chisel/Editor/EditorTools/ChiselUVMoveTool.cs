@@ -94,7 +94,7 @@ namespace Chisel.Editors
         static void TranslateSurfacesInWorldSpace(Vector3 translation)
         {
             var movementInWorldSpace = Matrix4x4.TRS(translation, Quaternion.identity, Vector3.one); 
-            Undo.RecordObjects(ChiselUVToolCommon.selectedBrushContainerAsset, "Moved UV coordinates");
+            Undo.RecordObjects(ChiselUVToolCommon.selectedNodes, "Moved UV coordinates");
             for (int i = 0; i < ChiselUVToolCommon.selectedSurfaceReferences.Length; i++)
             {
                 // Translates the uv surfaces in a given direction. Since the z direction, relatively to the surface, 

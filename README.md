@@ -10,7 +10,7 @@ Chisel is an extension for **Unity** that allows for _rapid_, iterative, **non d
 * If you have questions be sure to ask in the discord! **[Click here for to join the official Discord server!](https://discord.gg/zttNkPQ)**
 
 Notes:
-- Chisel requires Unity 2020.2.b11 or newer
+- Chisel requires Unity 2021.1.13f1 or newer
 - UX is still under development
 - CSG algorithm is still under development
 - It is *not yet* ready for production, but please feel free to try it out, or better yet, help out!
@@ -53,7 +53,7 @@ Extensions:
 
 Known issues:
 * [There are some cases where triangulation fails](https://github.com/RadicalCSG/Chisel.Prototype/issues/187)
-* There are some cases where overlapping surfaces create overlapping polygon
+* There are some cases where overlapping surfaces create overlapping polygons
 
 If you find any failure cases, if possible please provide us with a reproducible scene so we can more easily fix it!
 

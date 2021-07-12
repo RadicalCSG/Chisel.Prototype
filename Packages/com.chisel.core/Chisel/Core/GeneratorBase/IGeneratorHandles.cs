@@ -24,16 +24,53 @@ namespace Chisel.Core
 
         void RenderBox(Bounds bounds);
         void RenderBoxMeasurements(Bounds bounds);
+        void RenderCylinder(Bounds bounds, int segments);
         void RenderDistanceMeasurement(Vector3 from, Vector3 to);
         void RenderDistanceMeasurement(Vector3 from, Vector3 to, float forceValue);
-        void RenderCylinder(Bounds bounds, int segments);
         void RenderShape(Curve2D shape, float height);
 
         void DrawLine(Vector3 from, Vector3 to, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f);
         void DrawContinuousLines(Vector3[] points, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f);
+        void DrawContinuousLines(float3[] points, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f);
         void DrawContinuousLines(Vector3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f);
+        void DrawContinuousLines(float3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f);
         void DrawLineLoop(Vector3[] points, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f);
+        void DrawLineLoop(float3[] points, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f);
         void DrawLineLoop(Vector3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f);
+        void DrawLineLoop(float3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f);
+    }
+
+    public static class IChiselHandleRendererExtensions
+    {
+
+        public static bool DoBoundsHandle(this IChiselHandles handles, ref MinMaxAABB box, Vector3? snappingSteps = null, string undoMessage = null)
+        {
+            var bounds = new Bounds();
+            bounds.SetMinMax(box.Min, box.Max);
+            var result = handles.DoBoundsHandle(ref bounds, snappingSteps, undoMessage);
+            box.Min = bounds.min;
+            box.Max = bounds.max;
+            return result;
+        }
+        public static bool DoTurnHandle(this IChiselHandles handles, ref MinMaxAABB box, string undoMessage = null)
+        {
+            var bounds = new Bounds();
+            bounds.SetMinMax(box.Min, box.Max);
+            var result = handles.DoTurnHandle(ref box, undoMessage);
+            box.Min = bounds.min;
+            box.Max = bounds.max;
+            return result;
+        }
+
+        public static void RenderBox(this IChiselHandleRenderer renderer, MinMaxAABB bounds)               { renderer.RenderBox(new Bounds((bounds.Max + bounds.Min) * 0.5f, bounds.Max - bounds.Min)); }
+        public static void RenderBoxMeasurements(this IChiselHandleRenderer renderer, MinMaxAABB bounds)   { renderer.RenderBoxMeasurements(new Bounds((bounds.Max + bounds.Min) * 0.5f, bounds.Max - bounds.Min)); }
+        public static void RenderCylinder(this IChiselHandleRenderer renderer, MinMaxAABB bounds, int segments) { renderer.RenderCylinder(new Bounds((bounds.Max + bounds.Min) * 0.5f, bounds.Max - bounds.Min), segments); }
+        
+        public static void RenderDistanceMeasurement(this IChiselHandleRenderer renderer, float3 from, float3 to) { renderer.RenderDistanceMeasurement((Vector3)from, (Vector3)to); }
+        public static void RenderDistanceMeasurement(this IChiselHandleRenderer renderer, float3 from, float3 to, float forceValue) { renderer.RenderDistanceMeasurement((Vector3)from, (Vector3)to, forceValue); }
+        
+        public static void DrawLine(this IChiselHandleRenderer renderer, float3 from, float3 to, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { renderer.DrawLine((Vector3)from, (Vector3)to, lineMode, thickness, dashSize); }
+
     }
 
     public interface IChiselHandle
@@ -164,7 +201,7 @@ namespace Chisel.Core
         bool DoPlanarScaleHandle(ref Vector2 scale2D, Vector3 position, Quaternion rotation, string undoMessage = null);
     }
 
-    public interface IChiselMessages
+    public interface IChiselMessageHandler
     {
         void Warning(string message, Action buttonAction, string buttonText);
         void Warning(string message);

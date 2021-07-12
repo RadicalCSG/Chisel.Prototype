@@ -11,7 +11,6 @@ using Chisel.Components;
 namespace Chisel.Editors
 {
     [CustomEditor(typeof(ChiselNode), isFallback = true)]
-    [CanEditMultipleObjects]
     public sealed class ChiselFallbackNodeEditor : ChiselNodeEditor<ChiselNode>
     {
         protected override void OnEditSettingsGUI(SceneView sceneView) { }

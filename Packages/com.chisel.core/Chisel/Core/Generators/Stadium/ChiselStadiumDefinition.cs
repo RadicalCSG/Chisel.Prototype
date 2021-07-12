@@ -1,34 +1,33 @@
 using System;
-using Bounds = UnityEngine.Bounds;
-using Vector3 = UnityEngine.Vector3;
 using Debug = UnityEngine.Debug;
-using Mathf = UnityEngine.Mathf;
-using UnityEngine.Profiling;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Jobs;
+using Unity.Burst;
+using UnitySceneExtensions;
+using Vector3 = UnityEngine.Vector3;
 
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselStadiumDefinition : IChiselGenerator
+    public struct ChiselStadium : IBrushGenerator
     {
-        public const string kNodeTypeName = "Stadium";
+        public readonly static ChiselStadium DefaultValues = new ChiselStadium
+        {
+            width			= 1.0f,
+            height			= 1.0f,
+            length			= 1.0f,
 
-        const float         kNoCenterEpsilon            = 0.0001f;
+            topLength		= 0.25f,
+            bottomLength	= 0.25f,
 
-        public const float	kMinDiameter				= 0.01f;
-        public const float	kMinLength					= 0.01f;
-        public const float	kMinHeight					= 0.01f;
-        
-        public const float	kDefaultHeight				= 1.0f;
-        public const float	kDefaultLength				= 1.0f;
-        public const float	kDefaultTopLength			= 0.25f;
-        public const float	kDefaultBottomLength		= 0.25f;
-        public const float	kDefaultDiameter			= 1.0f;
-        
-        public const int	kDefaultTopSides			= 4;
-        public const int	SidesVertices				= 4;
-        
-        public float                diameter;
-        
+            topSides		= 4,
+            bottomSides		= 4
+        };
+
+        public float                width;        
         public float                height;
         public float                length;
         public float                topLength;
@@ -37,63 +36,84 @@ namespace Chisel.Core
         // TODO: better naming
         public int                  topSides;
         public int                  bottomSides;
-        
-        public int					sides				{ get { return (haveCenter ? 2 : 0) + Mathf.Max(topSides, 1) + Mathf.Max(bottomSides, 1); } }
-        public int					firstTopSide		{ get { return 0; } }
-        public int					lastTopSide			{ get { return Mathf.Max(topSides, 1); } }
-        public int					firstBottomSide		{ get { return lastTopSide + 1; } }
-        public int					lastBottomSide		{ get { return sides - 1; } }
-
-        public bool					haveRoundedTop		{ get { return (topLength    > 0) && (topSides    > 1); } }
-        public bool					haveRoundedBottom	{ get { return (bottomLength > 0) && (bottomSides > 1); } }
-        public bool					haveCenter			{ get { return (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= kNoCenterEpsilon; } }
 
 
-        [NamedItems(overflow = "Surface {0}")]
-        public ChiselSurfaceDefinition  surfaceDefinition;
+        #region Properties
+        internal const float kNoCenterEpsilon = 0.0001f;
 
-        public void Reset()
+        internal int				Sides				{ get { return (HaveCenter ? 2 : 0) + math.max(topSides, 1) + math.max(bottomSides, 1); } }
+        internal int				FirstTopSide		{ get { return 0; } }
+        internal int				LastTopSide			{ get { return math.max(topSides, 1); } }
+        internal int				FirstBottomSide		{ get { return LastTopSide + 1; } }
+        internal int				LastBottomSide		{ get { return Sides - 1; } }
+
+        internal bool				HaveRoundedTop		{ get { return (topLength    > 0) && (topSides    > 1); } }
+        internal bool				HaveRoundedBottom	{ get { return (bottomLength > 0) && (bottomSides > 1); } }
+        internal bool				HaveCenter			{ get { return (length - ((HaveRoundedTop ? topLength : 0) + (HaveRoundedBottom ? bottomLength : 0))) >= kNoCenterEpsilon; } }
+        #endregion
+
+        #region Generate
+        [BurstCompile]
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
-            diameter			= kDefaultDiameter;
-
-            height				= kDefaultHeight;
-
-            length				= kDefaultLength;
-            topLength			= kDefaultTopLength;
-            bottomLength		= kDefaultBottomLength;
-            
-            topSides			= kDefaultTopSides;
-            bottomSides			= SidesVertices;
-            
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
+            if (!BrushMeshFactory.GenerateStadium(width, height, length,
+                                                  topLength, topSides,
+                                                  bottomLength, bottomSides,
+                                                  in surfaceDefinitionBlob,
+                                                  out var newBrushMesh,
+                                                  allocator))
+                return default;
+            return newBrushMesh;
         }
+        #endregion
+
+        #region Surfaces
+        [BurstDiscard]
+        public int RequiredSurfaceCount { get { return 2 + Sides; } }
+
+        [BurstDiscard]
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        #endregion
+
+        #region Validation
+        public const float	kMinDiameter    = 0.01f;
+        public const float	kMinLength	    = 0.01f;
+        public const float	kMinHeight	    = 0.01f;
 
         public void Validate()
         {
-            if (surfaceDefinition == null)
-                surfaceDefinition = new ChiselSurfaceDefinition();
+            topLength	    = math.max(topLength,    0);
+            bottomLength	= math.max(bottomLength, 0);
+            length			= math.max(math.abs(length), (HaveRoundedTop ? topLength : 0) + (HaveRoundedBottom ? bottomLength : 0));
+            length			= math.max(math.abs(length), kMinLength);
 
-            topLength			= Mathf.Max(topLength,    0);
-            bottomLength		= Mathf.Max(bottomLength, 0);
-            length				= Mathf.Max(Mathf.Abs(length), (haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0));
-            length				= Mathf.Max(Mathf.Abs(length), kMinLength);
-            
-            height				= Mathf.Max(Mathf.Abs(height), kMinHeight);
-            diameter			= Mathf.Max(Mathf.Abs(diameter), kMinDiameter);
-            
-            topSides			= Mathf.Max(topSides,	 1);
-            bottomSides			= Mathf.Max(bottomSides, 1);
+            height			= math.max(math.abs(height), kMinHeight);
+            width			= math.max(math.abs(width), kMinDiameter);
 
-            var sides			= 2 + Mathf.Max(topSides,1) + Mathf.Max(bottomSides,1);
-            surfaceDefinition.EnsureSize(2 + sides);
+            topSides		= math.max(topSides,	 1);
+            bottomSides	    = math.max(bottomSides, 1);
         }
 
-        public bool Generate(ref ChiselBrushContainer brushContainer)
+        [BurstDiscard]
+        public void GetWarningMessages(IChiselMessageHandler messages)
         {
-            return BrushMeshFactory.GenerateStadium(ref brushContainer, ref this);
         }
+        #endregion
+        
+        #region Reset
+        public void Reset() { this = DefaultValues; }
+        #endregion
+    }
 
+    [Serializable]
+    public class ChiselStadiumDefinition : SerializedBrushGenerator<ChiselStadium>
+    {
+        public const string kNodeTypeName = "Stadium";
 
+        //[NamedItems(overflow = "Surface {0}")]
+        //public ChiselSurfaceDefinition  surfaceDefinition;
+
+        #region OnEdit
         //
         // TODO: code below needs to be cleaned up & simplified 
         //
@@ -107,18 +127,18 @@ namespace Chisel.Core
 
         static void DrawOutline(IChiselHandleRenderer renderer, ChiselStadiumDefinition definition, Vector3[] vertices, LineMode lineMode)
         {
-            var sides				= definition.sides;
-            var topSides			= Mathf.Max(definition.topSides, 1) + 1;
-            var bottomSides			= Mathf.Max(definition.bottomSides, 1) + 1;
+            var sides				= definition.settings.Sides;
+            var topSides			= math.max(definition.settings.topSides, 1) + 1;
+            var bottomSides			= math.max(definition.settings.bottomSides, 1) + 1;
 
-            var haveRoundedTop		= definition.haveRoundedTop;
-            var haveRoundedBottom	= definition.haveRoundedBottom;
-            var haveCenter			= definition.haveCenter;
+            var haveRoundedTop		= definition.settings.HaveRoundedTop;
+            var haveRoundedBottom	= definition.settings.HaveRoundedBottom;
+            var haveCenter			= definition.settings.HaveCenter;
             //renderer.DrawLineLoop(vertices,     0, sides, lineMode: lineMode, thickness: kCapLineThickness);
             //renderer.DrawLineLoop(vertices, sides, sides, lineMode: lineMode, thickness: kCapLineThickness);
 
-            var firstTopSide = definition.firstTopSide;
-            var lastTopSide  = definition.lastTopSide;
+            var firstTopSide = definition.settings.FirstTopSide;
+            var lastTopSide  = definition.settings.LastTopSide;
             for (int k = firstTopSide; k <= lastTopSide; k++)
             {
                 var sideLine	= !haveRoundedTop || (k == firstTopSide) || (k == lastTopSide);
@@ -127,8 +147,8 @@ namespace Chisel.Core
                 renderer.DrawLine(vertices[k], vertices[sides + k], lineMode: lineMode, thickness: thickness, dashSize: dashSize);
             }
             
-            var firstBottomSide = definition.firstBottomSide;
-            var lastBottomSide  = definition.lastBottomSide;
+            var firstBottomSide = definition.settings.FirstBottomSide;
+            var lastBottomSide  = definition.settings.LastBottomSide;
             for (int k = firstBottomSide; k <= lastBottomSide; k++)
             {
                 var sideLine	= haveCenter && (!haveRoundedBottom || (k == firstBottomSide) || (k == lastBottomSide));
@@ -144,7 +164,7 @@ namespace Chisel.Core
             //renderer.DrawLine(vertices[sides + firstTopSide   ], vertices[sides + lastTopSide   ], lineMode: lineMode, thickness: kVertLineThickness);
         }
 
-        public void OnEdit(IChiselHandles handles)
+        public override void OnEdit(IChiselHandles handles)
         {
             var baseColor       = handles.color;
             var upVector		= Vector3.up;
@@ -162,21 +182,21 @@ namespace Chisel.Core
                 handles.color = baseColor;
             }
 
-            var height		        = this.height;
-            var length		        = this.length;
-            var diameter	        = this.diameter;
-            var sides		        = this.sides;
+            var height		        = settings.height;
+            var length		        = settings.length;
+            var diameter	        = settings.width;
+            var sides		        = settings.Sides;
             
-            var firstTopSide	    = this.firstTopSide;
-            var lastTopSide		    = this.lastTopSide;
-            var firstBottomSide     = this.firstBottomSide;
-            var lastBottomSide      = this.lastBottomSide;
+            var firstTopSide	    = settings.FirstTopSide;
+            var lastTopSide		    = settings.LastTopSide;
+            var firstBottomSide     = settings.FirstBottomSide;
+            var lastBottomSide      = settings.LastBottomSide;
 
-            var haveRoundedTop		= this.haveRoundedTop;
-            var haveRoundedBottom	= this.haveRoundedBottom;
-            var haveCenter			= this.haveCenter;
-            var topLength			= this.topLength;
-            var bottomLength		= this.bottomLength;
+            var haveRoundedTop		= settings.HaveRoundedTop;
+            var haveRoundedBottom	= settings.HaveRoundedBottom;
+            var haveCenter			= settings.HaveCenter;
+            var topLength			= settings.topLength;
+            var bottomLength		= settings.bottomLength;
             
 
             var midY		= height * 0.5f;
@@ -199,7 +219,7 @@ namespace Chisel.Core
                     handles.DoDirectionHandle(ref topPoint, upVector);
                     var topHasFocus = handles.lastHandleHadFocus;
                     handles.backfaced = false;
-                    //if (this.haveRoundedTop)
+                    //if (settings.haveRoundedTop)
                     {
                         var thickness = topHasFocus ? kCapLineThicknessSelected : kCapLineThickness;
 
@@ -226,7 +246,7 @@ namespace Chisel.Core
                     handles.DoDirectionHandle(ref bottomPoint, -upVector);
                     var bottomHasFocus = handles.lastHandleHadFocus;
                     handles.backfaced = false;
-                    //if (this.haveRoundedBottom)
+                    //if (settings.haveRoundedBottom)
                     {
                         var thickness = bottomHasFocus ? kCapLineThicknessSelected : kCapLineThickness;
 
@@ -280,15 +300,12 @@ namespace Chisel.Core
             }
             if (handles.modified)
             {
-                this.height		= topPoint.y - bottomPoint.y;
-                this.length		= Mathf.Max(0, frontPoint.z - backPoint.z);
-                this.diameter	= leftPoint.x - rightPoint.x;
+                settings.height		= topPoint.y - bottomPoint.y;
+                settings.length		= math.max(0, frontPoint.z - backPoint.z);
+                settings.width	= leftPoint.x - rightPoint.x;
                 // TODO: handle sizing in some directions (needs to modify transformation?)
             }
         }
-
-        public void OnMessages(IChiselMessages messages)
-        {
-        }
+        #endregion
     }
 }

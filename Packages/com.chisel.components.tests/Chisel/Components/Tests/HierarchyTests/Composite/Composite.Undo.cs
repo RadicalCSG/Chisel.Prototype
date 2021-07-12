@@ -8,7 +8,7 @@ using Chisel.Core;
 using Chisel.Components;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
-
+/*
 namespace HierarchyTests
 {
     public partial class Composite_Undo
@@ -197,4 +197,4 @@ namespace HierarchyTests
             Assert.False(currentScene.isDirty);
         }
     }
-}
+}*/

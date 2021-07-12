@@ -6,21 +6,122 @@ using Vector3 = UnityEngine.Vector3;
 using Vector4 = UnityEngine.Vector4;
 using Quaternion = UnityEngine.Quaternion;
 using Matrix4x4 = UnityEngine.Matrix4x4;
-using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
 using Bounds = UnityEngine.Bounds;
 using UnitySceneExtensions;
 using System.Collections.Generic;
 using Unity.Mathematics;
+using Unity.Burst;
+using Unity.Entities;
+using System.Runtime.CompilerServices;
+using Unity.Collections;
 
 namespace Chisel.Core
 {
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        // TODO: clean up
-        public static bool GenerateSegmentedSubMesh(ref BrushMesh brushMesh, int horzSegments, int vertSegments, Vector3[] segmentVertices, bool topCap, bool bottomCap, int topVertex, int bottomVertex, in ChiselSurfaceDefinition surfaceDefinition)
+        [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float4 CalculatePlane(in BrushMeshBlob.Polygon polygon, in BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in BlobBuilderArray<float3> vertices)
+        {
+            // Newell's algorithm to create a plane for concave polygons.
+            // NOTE: doesn't work well for self-intersecting polygons
+            var lastEdge	= polygon.firstEdge + polygon.edgeCount;
+            var normal		= double3.zero;
+            var prevVertex	= (double3)vertices[halfEdges[lastEdge - 1].vertexIndex];
+            for (int n = polygon.firstEdge; n < lastEdge; n++)
+            {
+                var currVertex = (double3)vertices[halfEdges[n].vertexIndex];
+                normal.x += ((prevVertex.y - currVertex.y) * (prevVertex.z + currVertex.z));
+                normal.y += ((prevVertex.z - currVertex.z) * (prevVertex.x + currVertex.x));
+                normal.z += ((prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y));
+                prevVertex = currVertex;
+            }
+            normal = math.normalize(normal);
+
+            var d = 0.0;
+            for (int n = polygon.firstEdge; n < lastEdge; n++)
+                d -= math.dot(normal, vertices[halfEdges[n].vertexIndex]);
+            d /= polygon.edgeCount;
+
+            return new float4((float3)normal, (float)d);
+        }
+
+        [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void UpdateHalfEdgePolygonIndices(ref BlobBuilderArray<int> halfEdgePolygonIndices, in BlobBuilderArray<BrushMeshBlob.Polygon> polygons)
+        {
+            for (int p = 0; p < polygons.Length; p++)
+            {
+                var firstEdge = polygons[p].firstEdge;
+                var edgeCount = polygons[p].edgeCount;
+                var lastEdge  = firstEdge + edgeCount;
+                for (int e = firstEdge; e < lastEdge; e++)
+                    halfEdgePolygonIndices[e] = p;
+            }
+        }
+
+        [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static MinMaxAABB CalculateBounds(in BlobBuilderArray<float3> vertices)
+        {
+            var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+            var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                min = math.min(min, vertices[i]);
+                max = math.max(max, vertices[i]);
+            }
+            return new MinMaxAABB { Min = min, Max = max };
+        }
+
+        [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void FitXZ(ref BlobBuilderArray<float3> vertices, int firstVertex, int vertexCount, float2 expectedSize)
+        {
+            if (math.any(expectedSize == float2.zero))
+                return;
+            
+            var min     = vertices[firstVertex].xz;
+            var max     = vertices[firstVertex].xz;
+            var last    = firstVertex + vertexCount;
+            for (int v = firstVertex + 1; v < last; v++)
+            {
+                min = math.min(min, vertices[v].xz);
+                max = math.max(max, vertices[v].xz);
+            }
+
+            var size = math.abs(max - min);
+            if (math.any(size == float2.zero))
+                return;
+            
+            var translation = (max + min) * 0.5f;
+            var resize = expectedSize / size;
+            for (int v = firstVertex; v < last; v++)
+            {
+                vertices[v].xz -= translation;
+                vertices[v].xz = vertices[v].xz * resize;
+            }
+        }
+
+        [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CalculatePlanes(ref BlobBuilderArray<float4> planes, in BlobBuilderArray<BrushMeshBlob.Polygon> polygons, in BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in BlobBuilderArray<float3> vertices)
+        {
+            for (int p = 0; p < polygons.Length; p++)
+                planes[p] = CalculatePlane(in polygons[p], in halfEdges, in vertices);
+        }
+
+        [BurstCompile]
+        public unsafe static bool GenerateSegmentedSubMesh(int horzSegments, int vertSegments, bool topCap, bool bottomCap, int topVertex, int bottomVertex, 
+                                                           in BlobBuilderArray<float3> segmentVertices, 
+                                                           ref NativeChiselSurfaceDefinition surfaceDefinition,
+                                                           in BlobBuilder builder,
+                                                           ref BrushMeshBlob root,
+                                                           out BlobBuilderArray<BrushMeshBlob.Polygon> polygons,
+                                                           out BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges)
         {
             // FIXME: hack, to fix math below .. 
             vertSegments++;
@@ -57,18 +158,19 @@ namespace Chisel.Core
             var assetPolygonCount	= triangleCount + quadCount + capCount;
             var halfEdgeCount		= (triangleCount * 3) + (quadCount * 4) + (capCount * horzSegments);
 
+            polygons = default;
+            halfEdges = default;
             if (segmentVertices.Length != vertexCount)
             {
-                Debug.LogError("segmentVertices.Length (" + segmentVertices.Length + ") != expectedVertexCount (" + vertexCount + ")");
-                brushMesh.Clear();
+                Debug.LogError($"segmentVertices.Length ({segmentVertices.Length}) != expectedVertexCount ({vertexCount})");
                 return false;
             }
 
-            var vertices		= segmentVertices;
-            var	polygons		= new BrushMesh.Polygon[assetPolygonCount];
-            var halfEdges		= new BrushMesh.HalfEdge[halfEdgeCount];
+            polygons            = builder.Allocate(ref root.polygons, assetPolygonCount);
+            halfEdges		    = builder.Allocate(ref root.halfEdges, halfEdgeCount);
 
-            var twins			= new int[horzSegments];
+            // TODO: use NativeArray (safer)
+            var twins			= stackalloc int[horzSegments];
 
             var edgeIndex		= 0;
             var polygonIndex	= 0;
@@ -83,10 +185,10 @@ namespace Chisel.Core
                 for (int h = 0, p = horzSegments - 1; h < horzSegments; p = h, h++)
                 {
                     var currEdgeIndex = edgeIndex + (horzSegments - 1) - h;
-                    halfEdges[currEdgeIndex] = new BrushMesh.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p };
+                    halfEdges[currEdgeIndex] = new BrushMeshBlob.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p };
                     twins[h] = currEdgeIndex;
                 }
-                polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, surface = surfaceDefinition.surfaces[0] };
+                polygons[polygonIndex] = new BrushMeshBlob.Polygon { firstEdge = edgeIndex, edgeCount = polygonEdgeCount, descriptionIndex = 0, surface = surfaceDefinition.surfaces[0] };
                 edgeIndex += polygonEdgeCount;
                 polygonIndex++;
             }
@@ -110,9 +212,9 @@ namespace Chisel.Core
                         polygonEdgeCount = 3;
                         var p1 = (p * 3) + 1;
                         var n0 = (n * 3) + 0;
-                        halfEdges[edgeIndex + 0] = new BrushMesh.HalfEdge { twinIndex = p1, vertexIndex = topVertex };
-                        halfEdges[edgeIndex + 1] = new BrushMesh.HalfEdge { twinIndex = n0, vertexIndex = startVertex + (horzSegments - 1) - h};
-                        halfEdges[edgeIndex + 2] = new BrushMesh.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p};
+                        halfEdges[edgeIndex + 0] = new BrushMeshBlob.HalfEdge { twinIndex = p1, vertexIndex = topVertex };
+                        halfEdges[edgeIndex + 1] = new BrushMeshBlob.HalfEdge { twinIndex = n0, vertexIndex = startVertex + (horzSegments - 1) - h};
+                        halfEdges[edgeIndex + 2] = new BrushMeshBlob.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p};
                         twins[h] = edgeIndex + 2;
                     } else
                     if (v == lastVertSegment) // bottom
@@ -129,9 +231,9 @@ namespace Chisel.Core
                         var n0 = startEdge + (n * 3) + 0;
                         var t  = twins[h];
                         halfEdges[twins[h]].twinIndex = edgeIndex + 1;
-                        halfEdges[edgeIndex + 0] = new BrushMesh.HalfEdge { twinIndex = p2, vertexIndex = startVertex + (horzSegments - 1) - p};
-                        halfEdges[edgeIndex + 1] = new BrushMesh.HalfEdge { twinIndex =  t, vertexIndex = startVertex + (horzSegments - 1) - h};
-                        halfEdges[edgeIndex + 2] = new BrushMesh.HalfEdge { twinIndex = n0, vertexIndex = bottomVertex };
+                        halfEdges[edgeIndex + 0] = new BrushMeshBlob.HalfEdge { twinIndex = p2, vertexIndex = startVertex + (horzSegments - 1) - p};
+                        halfEdges[edgeIndex + 1] = new BrushMeshBlob.HalfEdge { twinIndex =  t, vertexIndex = startVertex + (horzSegments - 1) - h};
+                        halfEdges[edgeIndex + 2] = new BrushMeshBlob.HalfEdge { twinIndex = n0, vertexIndex = bottomVertex };
                     } else
                     {
                         //     0    t3   1
@@ -146,13 +248,13 @@ namespace Chisel.Core
                         var n0 = startEdge + (n * 4) + 0;
                         var t  = twins[h];
                         halfEdges[twins[h]].twinIndex = edgeIndex + 1;
-                        halfEdges[edgeIndex + 0] = new BrushMesh.HalfEdge { twinIndex = p1, vertexIndex = startVertex + (horzSegments - 1) - p};
-                        halfEdges[edgeIndex + 1] = new BrushMesh.HalfEdge { twinIndex =  t, vertexIndex = startVertex + (horzSegments - 1) - h};
-                        halfEdges[edgeIndex + 2] = new BrushMesh.HalfEdge { twinIndex = n0, vertexIndex = startVertex + (horzSegments - 1) - h + horzSegments};
-                        halfEdges[edgeIndex + 3] = new BrushMesh.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p + horzSegments};
+                        halfEdges[edgeIndex + 0] = new BrushMeshBlob.HalfEdge { twinIndex = p1, vertexIndex = startVertex + (horzSegments - 1) - p};
+                        halfEdges[edgeIndex + 1] = new BrushMeshBlob.HalfEdge { twinIndex =  t, vertexIndex = startVertex + (horzSegments - 1) - h};
+                        halfEdges[edgeIndex + 2] = new BrushMeshBlob.HalfEdge { twinIndex = n0, vertexIndex = startVertex + (horzSegments - 1) - h + horzSegments};
+                        halfEdges[edgeIndex + 3] = new BrushMeshBlob.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p + horzSegments};
                         twins[h] = edgeIndex + 3;
                     }
-                    polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, surface = surfaceDefinition.surfaces[0] };
+                    polygons[polygonIndex] = new BrushMeshBlob.Polygon { firstEdge = edgeIndex, edgeCount = polygonEdgeCount, descriptionIndex = 0, surface = surfaceDefinition.surfaces[0] };
                     edgeIndex += polygonEdgeCount;
                     polygonIndex++;
                 }
@@ -166,51 +268,33 @@ namespace Chisel.Core
                 {
                     var currEdgeIndex = edgeIndex + h; 
                     halfEdges[twins[h]].twinIndex = currEdgeIndex;
-                    halfEdges[currEdgeIndex] = new BrushMesh.HalfEdge { twinIndex = twins[h], vertexIndex = startVertex + (horzSegments - 1) - h };
+                    halfEdges[currEdgeIndex] = new BrushMeshBlob.HalfEdge { twinIndex = twins[h], vertexIndex = startVertex + (horzSegments - 1) - h };
                 }
-                polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, surface = surfaceDefinition.surfaces[0] };
+                polygons[polygonIndex] = new BrushMeshBlob.Polygon { firstEdge = edgeIndex, edgeCount = polygonEdgeCount, descriptionIndex = 0, surface = surfaceDefinition.surfaces[0] };
             }
-            
-            brushMesh.polygons	= polygons;
-            brushMesh.halfEdges	= halfEdges;
-            brushMesh.vertices = new float3[vertices.Length];
-            for (int i = 0; i < vertices.Length; i++)
-                brushMesh.vertices[i] = vertices[i];
             return true;
         }
 
-        enum SegmentTopology : sbyte
+
+
+        //public static bool CreateExtrudedSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, int segmentTopIndex, int segmentBottomIndex, Vector3[] vertices, in ChiselSurfaceDefinition surfaceDefinition)
+        [BurstCompile]
+        public static unsafe void CreateExtrudedSubMesh(int segments, int* segmentDescriptionIndices, int segmentDescriptionLength, int segmentTopIndex, int segmentBottomIndex, 
+                                                        in BlobBuilderArray<float3>                          localVertices,
+                                                        in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                        in BlobBuilder builder, ref BrushMeshBlob root,
+                                                        out BlobBuilderArray<BrushMeshBlob.Polygon>    polygons,
+                                                        out BlobBuilderArray<BrushMeshBlob.HalfEdge>   halfEdges)
         {
-            Quad = 0, 
-            TrianglesNegative = -1,
-            TrianglesPositive = 1,
-            TriangleNegative = -2,
-            TrianglePositive = 2,
-            None = 3
-        }
-
-        static SegmentTopology[]    segmentTopology;
-        static int[]                edgeIndices;
-
-
-        public static bool CreateExtrudedSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, int segmentTopIndex, int segmentBottomIndex, Vector3[] vertices, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            if (vertices.Length < 3)
-                return false;
+            ref var surfaceDefinition = ref surfaceDefinitionBlob.Value;
 
             // TODO: vertex reverse winding when it's not clockwise
             // TODO: handle duplicate vertices, remove them or avoid them being created in the first place (maybe use indices?)
 
-            if (segmentTopology == null ||
-                segmentTopology.Length < segments)
-                segmentTopology = new SegmentTopology[segments];
-
-            if (edgeIndices == null ||
-                edgeIndices.Length < segments * 2)
-                edgeIndices = new int[segments * 2];
-
-            var polygonCount = 2;
-            var edgeOffset = segments + segments;
+            var segmentTopology = stackalloc SegmentTopology[segments];
+            var edgeIndices     = stackalloc int[segments * 2];
+            var polygonCount    = 2;
+            var edgeOffset      = segments + segments;
             for (int p = segments - 2, e = segments - 1, n = 0; n < segments; p = e, e = n, n++)
             {
                 //			 	  t0	 
@@ -227,10 +311,10 @@ namespace Chisel.Core
                 //	 <-----    <-------   <-----  
                 //			      b0    
                 //
-                var v0 = vertices[p];
-                var v1 = vertices[e];
-                var v2 = vertices[e + segments];
-                var v3 = vertices[p + segments];
+                var v0 = localVertices[p];
+                var v1 = localVertices[e];
+                var v2 = localVertices[e + segments];
+                var v3 = localVertices[p + segments];
 
                 var equals03 = math.lengthsq(v0 - v3) < 0.0001f;
                 var equals12 = math.lengthsq(v1 - v2) < 0.0001f;
@@ -249,10 +333,10 @@ namespace Chisel.Core
 
                     var plane = new Plane(v0, v1, v3);
                     var dist = plane.GetDistanceToPoint(v2);
-                    if (UnityEngine.Mathf.Abs(dist) < 0.001f)
+                    if (math.abs(dist) < 0.001f)
                         segmentTopology[n] = SegmentTopology.Quad;
                     else
-                        segmentTopology[n] = (SegmentTopology)UnityEngine.Mathf.Sign(dist);
+                        segmentTopology[n] = (SegmentTopology)math.sign(dist);
                 }
                 
                 switch (segmentTopology[n])
@@ -290,23 +374,23 @@ namespace Chisel.Core
                 }
             }
 
-            var polygons = new BrushMesh.Polygon[polygonCount];
+            polygons = builder.Allocate(ref root.polygons, polygonCount);
 
-            var surface0 = surfaceDefinition.surfaces[segmentTopIndex];
-            var surface1 = surfaceDefinition.surfaces[segmentBottomIndex];
+            var surfaceTop      = surfaceDefinition.surfaces[segmentTopIndex];
+            var surfaceBottom   = surfaceDefinition.surfaces[segmentBottomIndex];
             
-            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge = 0,        edgeCount = segments, surface = surface0 };
-            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, surface = surface1 };
+            polygons[0] = new BrushMeshBlob.Polygon { firstEdge = 0,        edgeCount = segments, descriptionIndex = segmentTopIndex, surface = surfaceTop };
+            polygons[1] = new BrushMeshBlob.Polygon { firstEdge = segments, edgeCount = segments, descriptionIndex = segmentBottomIndex, surface = surfaceBottom };
 
             for (int s = 0, surfaceID = 2; s < segments; s++)
             {
-                var descriptionIndex = (segmentDescriptionIndices == null) ? s + 2 : (segmentDescriptionIndices[s]);
+                var descriptionIndex = (segmentDescriptionIndices == null || s >= segmentDescriptionLength) ? s + 2 : (segmentDescriptionIndices[s]);
                 var firstEdge = edgeIndices[(s * 2) + 0] - 1;
                 switch (segmentTopology[s])
                 {
                     case SegmentTopology.Quad:
                     {
-                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID++;
                         break;
                     }
@@ -316,15 +400,17 @@ namespace Chisel.Core
                         var smoothingGroup = surfaceID + 1; // TODO: create an unique smoothing group for faceted surfaces that are split in two, 
                                                             //			unless there's already a smoothing group for this edge; then use that
 
-                        polygons[surfaceID + 0] = new BrushMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge,     edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
-                        polygons[surfaceID + 1] = new BrushMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID + 0] = new BrushMeshBlob.Polygon { firstEdge = firstEdge,     edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID + 1] = new BrushMeshBlob.Polygon { firstEdge = firstEdge + 3, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID += 2;
                         break;
                     }
                     case SegmentTopology.TriangleNegative:
                     case SegmentTopology.TrianglePositive:
                     {
-                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        Debug.Assert(surfaceID < polygons.Length);
+                        Debug.Assert(descriptionIndex < surfaceDefinition.surfaces.Length);
+                        polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID++;
                         break;
                     }
@@ -335,7 +421,7 @@ namespace Chisel.Core
                 }
             }
 
-            var halfEdges = new BrushMesh.HalfEdge[edgeOffset];
+            halfEdges = builder.Allocate(ref root.halfEdges, edgeOffset);
             for (int p = segments - 2, e = segments - 1, n = 0; n < segments; p = e, e = n, n++)
             {
                 //var vi0 = p;
@@ -350,21 +436,21 @@ namespace Chisel.Core
                 {
                     case SegmentTopology.None:
                     {
-                        halfEdges[t0] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
-                        halfEdges[b0] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = t0 };
+                        halfEdges[t0] = new BrushMeshBlob.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
+                        halfEdges[b0] = new BrushMeshBlob.HalfEdge { vertexIndex = vi3, twinIndex = t0 };
                         break;
                     }
                     case SegmentTopology.TrianglePositive:
                     {
-                        halfEdges[t0] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = -1 };
-                        halfEdges[b0] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = -1 };
+                        halfEdges[t0] = new BrushMeshBlob.HalfEdge { vertexIndex = vi2, twinIndex = -1 };
+                        halfEdges[b0] = new BrushMeshBlob.HalfEdge { vertexIndex = vi3, twinIndex = -1 };
                         break;
                     }
                     case SegmentTopology.TriangleNegative:
                     default:
                     {
-                        halfEdges[t0] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = -1 };
-                        halfEdges[b0] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = -1 };
+                        halfEdges[t0] = new BrushMeshBlob.HalfEdge { vertexIndex = vi1, twinIndex = -1 };
+                        halfEdges[b0] = new BrushMeshBlob.HalfEdge { vertexIndex = vi3, twinIndex = -1 };
                         break;
                     }
                 }
@@ -417,11 +503,11 @@ namespace Chisel.Core
                         halfEdges[t0].twinIndex = e2;
                         halfEdges[b0].twinIndex = e4;
 
-                        halfEdges[e2] = new BrushMesh.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
-                        halfEdges[e3] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
+                        halfEdges[e2] = new BrushMeshBlob.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
+                        halfEdges[e3] = new BrushMeshBlob.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
 
-                        halfEdges[e4] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
-                        halfEdges[e5] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
+                        halfEdges[e4] = new BrushMeshBlob.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
+                        halfEdges[e5] = new BrushMeshBlob.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
                         break;
                     }
                     case SegmentTopology.TrianglesNegative:
@@ -454,13 +540,13 @@ namespace Chisel.Core
                         halfEdges[t0].twinIndex = e2;
                         halfEdges[b0].twinIndex = e6;
 
-                        halfEdges[e2] = new BrushMesh.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
-                        halfEdges[e3] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
-                        halfEdges[e4] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = e5 };
+                        halfEdges[e2] = new BrushMeshBlob.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
+                        halfEdges[e3] = new BrushMeshBlob.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
+                        halfEdges[e4] = new BrushMeshBlob.HalfEdge { vertexIndex = vi1, twinIndex = e5 };
 
-                        halfEdges[e5] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = e4 };
-                        halfEdges[e6] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
-                        halfEdges[e7] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
+                        halfEdges[e5] = new BrushMeshBlob.HalfEdge { vertexIndex = vi3, twinIndex = e4 };
+                        halfEdges[e6] = new BrushMeshBlob.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
+                        halfEdges[e7] = new BrushMeshBlob.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
                         break;
                     }
                     case SegmentTopology.TrianglesPositive:
@@ -493,13 +579,13 @@ namespace Chisel.Core
                         halfEdges[t0].twinIndex = e5;
                         halfEdges[b0].twinIndex = e4;
 
-                        halfEdges[e2] = new BrushMesh.HalfEdge { vertexIndex = vi0, twinIndex = e6 };
-                        halfEdges[e3] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
-                        halfEdges[e4] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
+                        halfEdges[e2] = new BrushMeshBlob.HalfEdge { vertexIndex = vi0, twinIndex = e6 };
+                        halfEdges[e3] = new BrushMeshBlob.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
+                        halfEdges[e4] = new BrushMeshBlob.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
 
-                        halfEdges[e5] = new BrushMesh.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
-                        halfEdges[e6] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = e2 };
-                        halfEdges[e7] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
+                        halfEdges[e5] = new BrushMeshBlob.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
+                        halfEdges[e6] = new BrushMeshBlob.HalfEdge { vertexIndex = vi2, twinIndex = e2 };
+                        halfEdges[e7] = new BrushMeshBlob.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
                         break;
                     }
                     case SegmentTopology.TriangleNegative:
@@ -531,10 +617,10 @@ namespace Chisel.Core
                         halfEdges[b0].twinIndex = e3;
 
                         // vi0 / vi3
-                        halfEdges[e2] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = t0 };
+                        halfEdges[e2] = new BrushMeshBlob.HalfEdge { vertexIndex = vi3, twinIndex = t0 };
 
-                        halfEdges[e3] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
-                        halfEdges[e4] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
+                        halfEdges[e3] = new BrushMeshBlob.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
+                        halfEdges[e4] = new BrushMeshBlob.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
                         break;
                     }
                     case SegmentTopology.TrianglePositive:
@@ -567,448 +653,50 @@ namespace Chisel.Core
                         halfEdges[t0].twinIndex = e2;
                         halfEdges[b0].twinIndex = e4;
 
-                        halfEdges[e2] = new BrushMesh.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
-                        halfEdges[e3] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
+                        halfEdges[e2] = new BrushMeshBlob.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
+                        halfEdges[e3] = new BrushMeshBlob.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
 
                         // vi1 / vi2
-                        halfEdges[e4] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
+                        halfEdges[e4] = new BrushMeshBlob.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
                         break;
                     }
                 }
             }
-
-            brushMesh.polygons = polygons;
-            brushMesh.halfEdges = halfEdges;
-            brushMesh.vertices = new float3[vertices.Length];
-            for (int i = 0; i < vertices.Length; i++)
-                brushMesh.vertices[i] = vertices[i];
-            brushMesh.CalculatePlanes();
-            if (!brushMesh.Validate(logErrors: true))
-                brushMesh.Clear();
-            return true;
         }
 
-
-
-        public static bool CreateExtrudedSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, int segmentTopIndex, int segmentBottomIndex, float3[] vertices, in ChiselSurfaceDefinition surfaceDefinition)
+        public static unsafe bool CreateExtrudedSubMesh(float3* sideVertices, int sideVertexCount, float3 extrusion, 
+                                                        int* segmentDescriptionIndices, int segmentDescriptionLength,
+                                                        ref NativeChiselSurfaceDefinition surfaceDefinition,
+                                                        in BlobBuilder builder, ref BrushMeshBlob root,
+                                                        out BlobBuilderArray<BrushMeshBlob.Polygon>    polygons,
+                                                        out BlobBuilderArray<BrushMeshBlob.HalfEdge>   halfEdges,
+                                                        out BlobBuilderArray<float3>                   localVertices)
         {
-            if (vertices.Length < 3)
-                return false;
-
-            // TODO: vertex reverse winding when it's not clockwise
-            // TODO: handle duplicate vertices, remove them or avoid them being created in the first place (maybe use indices?)
-            
-            if (segmentTopology == null ||
-                segmentTopology.Length < segments)
-                segmentTopology = new SegmentTopology[segments];
-
-            if (edgeIndices == null ||
-                edgeIndices.Length < segments * 2)
-                edgeIndices = new int[segments * 2];
-
-            var polygonCount = 2;
-            var edgeOffset = segments + segments;
-            for (int p = segments - 2, e = segments - 1, n = 0; n < segments; p = e, e = n, n++)
+            const float kDistanceEpsilon = 0.0000001f;
+            for (int i = sideVertexCount - 1; i >= 0; i--)
             {
-                //			 	  t0	 
-                //	 ------>   ------->   -----> 
-                //        v0 *          * v1
-                //	 <-----    <-------   <-----
-                //			^ |   e2   ^ |
-                //          | |        | |
-                //	   q1 p0| |e3 q2 e5| |n0 q3
-                //          | |        | |
-                //			| v   e4   | v
-                //	 ------>   ------->   ----->
-                //        v3 *          * v2
-                //	 <-----    <-------   <-----  
-                //			      b0    
-                //
-                var v0 = vertices[p];
-                var v1 = vertices[e];
-                var v2 = vertices[e + segments];
-                var v3 = vertices[p + segments];
-
-                var equals03 = math.lengthsq(v0 - v3) < 0.0001f;
-                var equals12 = math.lengthsq(v1 - v2) < 0.0001f;
-                if (equals03)
-                {
-                    if (equals12)
-                        segmentTopology[n] = SegmentTopology.None;
-                    else
-                        segmentTopology[n] = SegmentTopology.TriangleNegative;
-                } else
-                if (equals12)
-                {
-                    segmentTopology[n] = SegmentTopology.TrianglePositive;
-                } else
-                {
-
-                    var plane = new Plane(v0, v1, v3);
-                    var dist = plane.GetDistanceToPoint(v2);
-                    if (UnityEngine.Mathf.Abs(dist) < 0.001f)
-                        segmentTopology[n] = SegmentTopology.Quad;
-                    else
-                        segmentTopology[n] = (SegmentTopology)UnityEngine.Mathf.Sign(dist);
-                }
-                
-                switch (segmentTopology[n])
-                {
-                    case SegmentTopology.Quad:
-                    {
-                        edgeIndices[(n * 2) + 0] = edgeOffset + 1;
-                        polygonCount++;
-                        edgeOffset += 4;
-                        edgeIndices[(n * 2) + 1] = edgeOffset - 1;
-                        break;
-                    }
-                    case SegmentTopology.TrianglesNegative:
-                    case SegmentTopology.TrianglesPositive:
-                    {
-                        edgeIndices[(n * 2) + 0] = edgeOffset + 1;
-                        polygonCount += 2;
-                        edgeOffset += 6;
-                        edgeIndices[(n * 2) + 1] = edgeOffset - 1;
-                        break;
-                    }
-                    case SegmentTopology.TriangleNegative:
-                    case SegmentTopology.TrianglePositive:
-                    {
-                        edgeIndices[(n * 2) + 0] = edgeOffset + 1;
-                        polygonCount++;
-                        edgeOffset += 3;
-                        edgeIndices[(n * 2) + 1] = edgeOffset - 1;
-                        break;
-                    }
-                    case SegmentTopology.None:
-                        edgeIndices[(n * 2) + 0] = 0;
-                        edgeIndices[(n * 2) + 1] = 0;
-                        break;
-                }
-            }
-
-            var polygons = brushMesh.polygons;
-            if (polygons == null ||
-                polygons.Length != polygonCount)
-                polygons = new BrushMesh.Polygon[polygonCount];
-
-            var surface0 = surfaceDefinition.surfaces[segmentTopIndex];
-            var surface1 = surfaceDefinition.surfaces[segmentBottomIndex];
-            
-            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge = 0,        edgeCount = segments, surface = surface0 };
-            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, surface = surface1 };
-
-            for (int s = 0, surfaceID = 2; s < segments; s++)
-            {
-                var descriptionIndex = (segmentDescriptionIndices == null) ? s + 2 : (segmentDescriptionIndices[s] + 2);
-                var firstEdge = edgeIndices[(s * 2) + 0] - 1;
-                switch (segmentTopology[s])
-                {
-                    case SegmentTopology.Quad:
-                    {
-                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, surface = surfaceDefinition.surfaces[descriptionIndex] };
-                        surfaceID++;
-                        break;
-                    }
-                    case SegmentTopology.TrianglesNegative:
-                    case SegmentTopology.TrianglesPositive:
-                    {
-                        var smoothingGroup = surfaceID + 1; // TODO: create an unique smoothing group for faceted surfaces that are split in two, 
-                                                            //			unless there's already a smoothing group for this edge; then use that
-
-                        polygons[surfaceID + 0] = new BrushMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge,     edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
-                        polygons[surfaceID + 1] = new BrushMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
-                        surfaceID += 2;
-                        break;
-                    }
-                    case SegmentTopology.TriangleNegative:
-                    case SegmentTopology.TrianglePositive:
-                    {
-                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
-                        surfaceID++;
-                        break;
-                    }
-                    case SegmentTopology.None:
-                    {
-                        break;
-                    }
-                }
-            }
-            
-            var halfEdges = brushMesh.halfEdges;
-            if (halfEdges == null ||
-                halfEdges.Length != edgeOffset)
-                halfEdges = new BrushMesh.HalfEdge[edgeOffset];
-            for (int p = segments - 2, e = segments - 1, n = 0; n < segments; p = e, e = n, n++)
-            {
-                //var vi0 = p;
-                var vi1 = e;
-                var vi2 = e + segments;
-                var vi3 = p + segments;
-
-                var t0 = e;
-                var b0 = ((segments - 1) - e) + segments;
-
-                switch (segmentTopology[n])
-                {
-                    case SegmentTopology.None:
-                    {
-                        halfEdges[t0] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
-                        halfEdges[b0] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = t0 };
-                        break;
-                    }
-                    case SegmentTopology.TrianglePositive:
-                    {
-                        halfEdges[t0] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = -1 };
-                        halfEdges[b0] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = -1 };
-                        break;
-                    }
-                    case SegmentTopology.TriangleNegative:
-                    default:
-                    {
-                        halfEdges[t0] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = -1 };
-                        halfEdges[b0] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = -1 };
-                        break;
-                    }
-                }
-            }
-
-            for (int p = segments - 2, e = segments - 1, n = 0; n < segments; p = e, e = n, n++)
-            {
-                var vi0 = p;
-                var vi1 = e;
-                var vi2 = e + segments;
-                var vi3 = p + segments;
-
-                var t0 = e;
-                var b0 = ((segments - 1) - e) + segments;
-
-                var nn = (n + 1) % segments;
-
-                var p0 = edgeIndices[(e  * 2) + 1];
-                var n0 = edgeIndices[(nn * 2) + 0];
-
-                switch (segmentTopology[n])
-                {
-                    case SegmentTopology.None:
-                    {
-                        continue;
-                    }
-                    case SegmentTopology.Quad:
-                    {
-                        //			 	  t0	 
-                        //	 ------>   ------->   -----> 
-                        //        v0 *          * v1
-                        //	 <-----    <-------   <-----
-                        //			^ |   e2   ^ |
-                        //          | |        | |
-                        //	   q1 p0| |e3 q2 e5| |n0 q3
-                        //          | |        | |
-                        //			| v   e4   | v
-                        //	 ------>   ------->   ----->
-                        //        v3 *          * v2
-                        //	 <-----    <-------   <-----  
-                        //			      b0    
-                        //
-
-                        var q2 = edgeIndices[(n * 2) + 0];
-                        var e2 = q2 - 1;
-                        var e3 = q2 + 0;
-                        var e4 = q2 + 1;
-                        var e5 = q2 + 2;
-
-                        halfEdges[t0].twinIndex = e2;
-                        halfEdges[b0].twinIndex = e4;
-
-                        halfEdges[e2] = new BrushMesh.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
-                        halfEdges[e3] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
-
-                        halfEdges[e4] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
-                        halfEdges[e5] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
-                        break;
-                    }
-                    case SegmentTopology.TrianglesNegative:
-                    {
-                        //			 	    t0	 
-                        //	 ------>   ----------->   -----> 
-                        //        v0 *              * v1
-                        //	 <-----    <-----------   <-----
-                        //			^ |     e2   ^ ^ |
-                        //          | |        / / | |
-                        //          | |    e4/ /   | |
-                        //	   q1 p0| |e3   / /  e7| |n0 q3
-                        //          | |   / /e5    | |
-                        //          | | / /        | |
-                        //			| v/v   e6     | v
-                        //	 ------>   ----------->   ----->
-                        //        v3 *              * v2
-                        //	 <-----    <-----------   <-----  
-                        //			        b0    
-                        //
-
-                        var q2 = edgeIndices[(n * 2) + 0];
-                        var e2 = q2 - 1;
-                        var e3 = q2 + 0;
-                        var e4 = q2 + 1;
-                        var e5 = q2 + 2;
-                        var e6 = q2 + 3;
-                        var e7 = q2 + 4;
-
-                        halfEdges[t0].twinIndex = e2;
-                        halfEdges[b0].twinIndex = e6;
-
-                        halfEdges[e2] = new BrushMesh.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
-                        halfEdges[e3] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
-                        halfEdges[e4] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = e5 };
-
-                        halfEdges[e5] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = e4 };
-                        halfEdges[e6] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
-                        halfEdges[e7] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
-                        break;
-                    }
-                    case SegmentTopology.TrianglesPositive:
-                    {
-                        //			 	    t0	 
-                        //	 ------>   ----------->   -----> 
-                        //        v0 *              * v1
-                        //	 <-----    <-----------   <-----
-                        //			^ |^\   e5     ^ |
-                        //          | | \ \        | |
-                        //          | |   \ \ e6   | |
-                        //	   q1 p0| |e3 e2\ \  e7| |n0 q3
-                        //          | |       \ \  | |
-                        //          | |        \ \ | |
-                        //			| v   e4    \ v| v
-                        //	 ------>   ----------->   ----->
-                        //        v3 *              * v2
-                        //	 <-----    <-----------   <-----  
-                        //			        b0    
-                        //
-
-                        var q2 = edgeIndices[(n * 2) + 0];
-                        var e2 = q2 - 1;
-                        var e3 = q2 + 0;
-                        var e4 = q2 + 1;
-                        var e5 = q2 + 2;
-                        var e6 = q2 + 3;
-                        var e7 = q2 + 4;
-
-                        halfEdges[t0].twinIndex = e5;
-                        halfEdges[b0].twinIndex = e4;
-
-                        halfEdges[e2] = new BrushMesh.HalfEdge { vertexIndex = vi0, twinIndex = e6 };
-                        halfEdges[e3] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
-                        halfEdges[e4] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
-
-                        halfEdges[e5] = new BrushMesh.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
-                        halfEdges[e6] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = e2 };
-                        halfEdges[e7] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
-                        break;
-                    }
-                    case SegmentTopology.TriangleNegative:
-                    {
-                        //			 	  t0	 
-                        //	 --->                      -------> 
-                        //       \                  ^ * v1
-                        //	 <--- \                /  ^   <-----
-                        //	     \ \              / / | |
-                        //	      \ \            / /  | |
-                        //	       \ \      t0  / /   | |
-                        //	        \ \        / /e2  | | n0
-                        //           \ \      / /     | |
-                        //	          \ \    / / q2 e4| |   q3
-                        //             \ \  / /       | |
-                        //	            v \/ v   e3   | v
-                        //	 ------------>   ------->   ----->
-                        //              v3 *          * v2
-                        //	 <-----------    <-------   <-----  
-                        //			            b0    
-                        //
-
-                        var q2 = edgeIndices[(n * 2) + 0];
-                        var e2 = q2 - 1;
-                        var e3 = q2 + 0;
-                        var e4 = q2 + 1;
-
-                        halfEdges[t0].twinIndex = e2;
-                        halfEdges[b0].twinIndex = e3;
-
-                        // vi0 / vi3
-                        halfEdges[e2] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = t0 };
-
-                        halfEdges[e3] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
-                        halfEdges[e4] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
-                        break;
-                    }
-                    case SegmentTopology.TrianglePositive:
-                    {
-                        //			 	      	 
-                        //	 ------->                            ---->
-                        //        v0 * \                       ^ 
-                        //	 <-----     \                     /  <---
-                        //			^ |^ \                   / /
-                        //          | | \ \                 / /
-                        //          | |  \ \               / /
-                        //          | |   \ \ t0          / /
-                        //   q1     | | e2 \ \           / /
-                        //          | |     \ \         / /
-                        //	      p0| |e3    \ \       / /
-                        //          | |   q2  \ \     / /
-                        //          | |        \ \   / /
-                        //			| v   e4    \ v / v 
-                        //	 ------>   ----------->    ----->
-                        //        v3 *              * v2
-                        //	 <-----    <-----------    <-----  
-                        //			        b0    
-                        //
-
-                        var q2 = edgeIndices[(n * 2) + 0];
-                        var e2 = q2 - 1;
-                        var e3 = q2 + 0;
-                        var e4 = q2 + 1;
-
-                        halfEdges[t0].twinIndex = e2;
-                        halfEdges[b0].twinIndex = e4;
-
-                        halfEdges[e2] = new BrushMesh.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
-                        halfEdges[e3] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
-
-                        // vi1 / vi2
-                        halfEdges[e4] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
-                        break;
-                    }
-                }
-            }
-
-            brushMesh.polygons  = polygons;
-            brushMesh.halfEdges = halfEdges;
-            brushMesh.vertices  = vertices;
-            brushMesh.CalculatePlanes();
-            if (!brushMesh.Validate(logErrors: true))
-                brushMesh.Clear();
-            return true;
-        }
-
-        public static void CreateExtrudedSubMesh(ref BrushMesh brushMesh, Vector3[] sideVertices, Vector3 extrusion, int[] segmentDescriptionIndices, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            const float distanceEpsilon = 0.0000001f;
-            for (int i = sideVertices.Length - 1; i >= 0; i--)
-            {
-                var j = (i - 1 + sideVertices.Length) % sideVertices.Length;
+                var j = (i - 1 + sideVertexCount) % sideVertexCount;
                 var magnitude = math.lengthsq(sideVertices[j] - sideVertices[i]);
-                if (magnitude < distanceEpsilon)
+                if (magnitude < kDistanceEpsilon)
                 {
                     // TODO: improve on this
-                    var tmp = sideVertices.ToList();
-                    tmp.RemoveAt(i);
-                    sideVertices = tmp.ToArray();
+                    NativeListExtensions.MemMove(sideVertices, sideVertexCount, i, i + 1, sideVertexCount - (i + 1));
+                    sideVertexCount--;
                 }
             }
 
-            var segments		= sideVertices.Length;
-            var isSegmentConvex = new sbyte[segments];
-            var edgeIndices		= new int[segments * 2];
-            var vertices		= new Vector3[segments * 2];
+            polygons = default;
+            halfEdges = default;
+            localVertices = default;
+
+            if (sideVertexCount < 3)
+                return false;
+
+            var segments		= sideVertexCount;
+            var isSegmentConvex = stackalloc sbyte[segments]; // TODO: get rid of stackalloc
+            var edgeIndices		= stackalloc int[segments * 2];// TODO: get rid of stackalloc
+
+            localVertices = builder.Allocate(ref root.localVertices, segments * 2);
 
             var polygonCount	= 2;
             var edgeOffset		= segments + segments;
@@ -1034,18 +722,18 @@ namespace Chisel.Core
                 var v2 = sideVertices[e] + extrusion;
                 var v3 = sideVertices[p] + extrusion;
 
-                vertices[p] = v0;
-                vertices[e] = v1;
-                vertices[e + segments] = v2;
-                vertices[p + segments] = v3;
+                localVertices[p] = v0;
+                localVertices[e] = v1;
+                localVertices[e + segments] = v2;
+                localVertices[p + segments] = v3;
 
                 var plane = new Plane(v0, v1, v3);
                 var dist = plane.GetDistanceToPoint(v2);
 
-                if (UnityEngine.Mathf.Abs(dist) < 0.001f)
+                if (math.abs(dist) < 0.001f)
                     isSegmentConvex[n] = 0;
                 else
-                    isSegmentConvex[n] = (sbyte)UnityEngine.Mathf.Sign(dist);
+                    isSegmentConvex[n] = (sbyte)math.sign(dist);
 
                 edgeIndices[(n * 2) + 0] = edgeOffset + 1;
 
@@ -1061,36 +749,36 @@ namespace Chisel.Core
                 edgeIndices[(n * 2) + 1] = edgeOffset - 1;
             }
 
-            var polygons = new BrushMesh.Polygon[polygonCount];
+            polygons = builder.Allocate(ref root.polygons, polygonCount);
             
-            var surfaceIndex0 = (segmentDescriptionIndices == null) ? 0 : (segmentDescriptionIndices[0]);
-            var surfaceIndex1 = (segmentDescriptionIndices == null) ? 1 : (segmentDescriptionIndices[1]);
+            var surfaceIndex0 = (segmentDescriptionIndices == null || 0 >= segmentDescriptionLength) ? 0 : (segmentDescriptionIndices[0]);
+            var surfaceIndex1 = (segmentDescriptionIndices == null || 1 >= segmentDescriptionLength) ? 1 : (segmentDescriptionIndices[1]);
             var surface0 = surfaceDefinition.surfaces[surfaceIndex0];
             var surface1 = surfaceDefinition.surfaces[surfaceIndex1];
 
-            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge =        0, edgeCount = segments, surface = surface0 };
-            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, surface = surface1 };
+            polygons[0] = new BrushMeshBlob.Polygon { firstEdge =        0, edgeCount = segments, descriptionIndex = surfaceIndex0, surface = surface0 };
+            polygons[1] = new BrushMeshBlob.Polygon { firstEdge = segments, edgeCount = segments, descriptionIndex = surfaceIndex1, surface = surface1 };
 
             for (int s = 0, surfaceID = 2; s < segments; s++)
             {
-                var descriptionIndex = (segmentDescriptionIndices == null) ? s + 2 : (segmentDescriptionIndices[s + 2]);
+                var descriptionIndex = (segmentDescriptionIndices == null || (s + 2) >= segmentDescriptionLength) ? s + 2 : (segmentDescriptionIndices[s + 2]);
                 var firstEdge		 = edgeIndices[(s * 2) + 0] - 1;
                 if (isSegmentConvex[s] == 0)
                 {
-                    polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                    polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                     surfaceID++;
                 } else
                 {
                     var smoothingGroup = surfaceID + 1; // TODO: create an unique smoothing group for faceted surfaces that are split in two, 
                                                         //			unless there's already a smoothing group for this edge; then use that
 
-                    polygons[surfaceID + 0] = new BrushMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
-                    polygons[surfaceID + 1] = new BrushMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                    polygons[surfaceID + 0] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                    polygons[surfaceID + 1] = new BrushMeshBlob.Polygon { firstEdge = firstEdge + 3, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                     surfaceID += 2;
                 }
             }
 
-            var halfEdges = new BrushMesh.HalfEdge[edgeOffset];
+            halfEdges = builder.Allocate(ref root.halfEdges, edgeOffset);
             for (int p = segments - 2, e = segments - 1, n = 0; n < segments; p = e, e = n, n++)
             {
                 var vi1 = e; 
@@ -1099,8 +787,8 @@ namespace Chisel.Core
                 var t0 = e;
                 var b0 = ((segments - 1) - e) + segments;
 
-                halfEdges[t0] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = -1 };
-                halfEdges[b0] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = -1 };
+                halfEdges[t0] = new BrushMeshBlob.HalfEdge { vertexIndex = vi1, twinIndex = -1 };
+                halfEdges[b0] = new BrushMeshBlob.HalfEdge { vertexIndex = vi3, twinIndex = -1 };
             }
 
             for (int p = segments - 2, e = segments - 1, n = 0; n < segments; p = e, e = n, n++)
@@ -1142,11 +830,11 @@ namespace Chisel.Core
                     halfEdges[t0].twinIndex = e2;
                     halfEdges[b0].twinIndex = e4;
 
-                    halfEdges[e2] = new BrushMesh.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
-                    halfEdges[e3] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
+                    halfEdges[e2] = new BrushMeshBlob.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
+                    halfEdges[e3] = new BrushMeshBlob.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
 
-                    halfEdges[e4] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
-                    halfEdges[e5] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
+                    halfEdges[e4] = new BrushMeshBlob.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
+                    halfEdges[e5] = new BrushMeshBlob.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
                 } else
                 if (isSegmentConvex[e] == -1)
                 {
@@ -1178,13 +866,13 @@ namespace Chisel.Core
                     halfEdges[t0].twinIndex = e2;
                     halfEdges[b0].twinIndex = e6;
 
-                    halfEdges[e2] = new BrushMesh.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
-                    halfEdges[e3] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
-                    halfEdges[e4] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = e5 };
+                    halfEdges[e2] = new BrushMeshBlob.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
+                    halfEdges[e3] = new BrushMeshBlob.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
+                    halfEdges[e4] = new BrushMeshBlob.HalfEdge { vertexIndex = vi1, twinIndex = e5 };
 
-                    halfEdges[e5] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = e4 };
-                    halfEdges[e6] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
-                    halfEdges[e7] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
+                    halfEdges[e5] = new BrushMeshBlob.HalfEdge { vertexIndex = vi3, twinIndex = e4 };
+                    halfEdges[e6] = new BrushMeshBlob.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
+                    halfEdges[e7] = new BrushMeshBlob.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
                 } else
                 if (isSegmentConvex[e] == 1)
                 {
@@ -1216,24 +904,190 @@ namespace Chisel.Core
                     halfEdges[t0].twinIndex = e5;
                     halfEdges[b0].twinIndex = e4;
 
-                    halfEdges[e2] = new BrushMesh.HalfEdge { vertexIndex = vi0, twinIndex = e6 };
-                    halfEdges[e3] = new BrushMesh.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
-                    halfEdges[e4] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
+                    halfEdges[e2] = new BrushMeshBlob.HalfEdge { vertexIndex = vi0, twinIndex = e6 };
+                    halfEdges[e3] = new BrushMeshBlob.HalfEdge { vertexIndex = vi3, twinIndex = p0 };
+                    halfEdges[e4] = new BrushMeshBlob.HalfEdge { vertexIndex = vi2, twinIndex = b0 };
 
-                    halfEdges[e5] = new BrushMesh.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
-                    halfEdges[e6] = new BrushMesh.HalfEdge { vertexIndex = vi2, twinIndex = e2 };
-                    halfEdges[e7] = new BrushMesh.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
+                    halfEdges[e5] = new BrushMeshBlob.HalfEdge { vertexIndex = vi0, twinIndex = t0 };
+                    halfEdges[e6] = new BrushMeshBlob.HalfEdge { vertexIndex = vi2, twinIndex = e2 };
+                    halfEdges[e7] = new BrushMeshBlob.HalfEdge { vertexIndex = vi1, twinIndex = n0 };
                 }
             }
 
-            brushMesh.polygons	= polygons;
-            brushMesh.halfEdges	= halfEdges;
-            brushMesh.vertices = new float3[vertices.Length];
-            for (int i = 0; i < vertices.Length; i++)
-                brushMesh.vertices[i] = vertices[i];
-            if (!brushMesh.Validate(logErrors: true))
-                brushMesh.Clear();
+            return true;
         }
+
+        enum SegmentTopology : sbyte
+        {
+            Quad = 0, 
+            TrianglesNegative = -1,
+            TrianglesPositive = 1,
+            TriangleNegative = -2,
+            TrianglePositive = 2,
+            None = 3
+        }
+
+        static SegmentTopology[]    segmentTopology;
+        static int[]                edgeIndices;
+
+
+        public static bool Validate(in BlobBuilderArray<float3> vertices, in BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in BlobBuilderArray<BrushMeshBlob.Polygon> polygons, bool logErrors = false)
+        {
+            if (vertices.Length == 0)
+            {
+                if (logErrors) Debug.LogError("BrushMesh has no vertices set");
+                return false;
+            }
+
+            if (halfEdges.Length == 0)
+            {
+                if (logErrors) Debug.LogError("BrushMesh has no halfEdges set");
+                return false;
+            }
+
+            if (polygons.Length == 0)
+            {
+                if (logErrors) Debug.LogError("BrushMesh has no polygons set");
+                return false;
+            }
+
+            bool fail = false;
+
+            for (int h = 0; h < halfEdges.Length; h++)
+            {
+                if (halfEdges[h].vertexIndex < 0)
+                {
+                    if (logErrors) Debug.LogError($"halfEdges[{h}].vertexIndex is {halfEdges[h].vertexIndex}");
+                    fail = true;
+                } else
+                if (halfEdges[h].vertexIndex >= vertices.Length)
+                {
+                    if (logErrors) Debug.LogError($"halfEdges[{h}].vertexIndex is {halfEdges[h].vertexIndex}, but there are {vertices.Length} vertices.");
+                    fail = true;
+                }
+
+                if (halfEdges[h].twinIndex < 0)
+                {
+                    if (logErrors) Debug.LogError($"halfEdges[{h}].twinIndex is {halfEdges[h].twinIndex}");
+                    fail = true;
+                    continue;
+                } else
+                if (halfEdges[h].twinIndex >= halfEdges.Length)
+                {
+                    if (logErrors) Debug.LogError($"halfEdges[{h}].twinIndex is {halfEdges[h].twinIndex}, but there are {halfEdges.Length} edges.");
+                    fail = true;
+                    continue;
+                }
+
+                var twinIndex	= halfEdges[h].twinIndex;
+                var twin		= halfEdges[twinIndex];
+                if (twin.twinIndex != h)
+                {
+                    if (logErrors) Debug.LogError($"halfEdges[{h}].twinIndex is {halfEdges[h].twinIndex}, but the twinIndex of its twin is {twin.twinIndex} instead of {h}.");
+                    fail = true;
+                }
+            }
+
+            for (int p = 0; p < polygons.Length; p++)
+            {
+                var firstEdge = polygons[p].firstEdge;
+                var count     = polygons[p].edgeCount;
+                var polygonFail = false;
+                if (firstEdge < 0)
+                {
+                    if (logErrors) Debug.LogError($"polygons[{p}].firstEdge is {firstEdge}");
+                    polygonFail = true;
+                } else
+                if (firstEdge >= halfEdges.Length)
+                {
+                    if (logErrors) Debug.LogError($"polygons[{p}].firstEdge is {firstEdge}, but there are {halfEdges.Length} edges.");
+                    polygonFail = true;
+                }
+                if (count <= 2)
+                {
+                    if (logErrors) Debug.LogError($"polygons[{p}].edgeCount is {count}");
+                    polygonFail = true;
+                } else
+                if (firstEdge + count - 1 >= halfEdges.Length)
+                {
+                    if (logErrors) Debug.LogError($"polygons[{p}].firstEdge + polygons[{p}].edgeCount is {(firstEdge + count)}, but there are {halfEdges.Length} edges.");
+                    polygonFail = true;
+                } else
+                if (p < polygons.Length - 1 &&
+                    polygons[p + 1].firstEdge != firstEdge + count)
+                {
+                    if (logErrors) Debug.LogError($"polygons[{(p + 1)}].firstEdge does not equal polygons[{p}].firstEdge + polygons[{p}].edgeCount.");
+                    polygonFail = true;
+                }
+
+                fail = fail || polygonFail;
+                if (polygonFail)
+                    continue;
+                
+                for (int i0 = count - 1, i1 = 0; i1 < count; i0 = i1, i1++)
+                {
+                    var h0 = halfEdges[i0 + firstEdge];	// curr
+                    var h1 = halfEdges[i1 + firstEdge]; // curr.next
+                    if (h1.twinIndex < 0 || h1.twinIndex >= halfEdges.Length)
+                    {
+                        fail = true;
+                        continue;
+                    }
+                    var t1 = halfEdges[h1.twinIndex];   // curr.next.twin
+
+                    if (h0.vertexIndex != t1.vertexIndex)
+                    {
+                        if (logErrors)
+                        {
+                            Debug.LogError($"halfEdges[{(i0 + firstEdge)}].vertexIndex ({h0.vertexIndex}) is not equal to halfEdges[halfEdges[{(i1 + firstEdge)}].twinIndex({h1.twinIndex})].vertexIndex ({t1.vertexIndex}).");
+                        }
+                        fail = true;
+                    }
+                }
+            }
+            if (fail)
+                return false;
+
+            if (IsSelfIntersecting(in vertices, in halfEdges, in polygons))
+            {
+                if (logErrors)
+                {
+                    Debug.LogError("Brush is self intersecting");
+                }
+                return false;
+            }
+
+            if (!HasVolume(in vertices, in halfEdges, in polygons))
+            {
+                if (logErrors)
+                {
+                    Debug.LogError("Brush has no volume");
+                }
+                return false;
+            }
+
+            return true;
+        }
+        
+        public static bool IsSelfIntersecting(in BlobBuilderArray<float3> vertices, in BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in BlobBuilderArray<BrushMeshBlob.Polygon> polygons)
+        {
+            // TODO: determine if the brush is intersecting itself
+            return false;
+        }
+
+        public static bool HasVolume(in BlobBuilderArray<float3> vertices, in BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in BlobBuilderArray<BrushMeshBlob.Polygon> polygons)
+        {
+            if (polygons.Length == 0)
+                return false;
+            if (vertices.Length == 0)
+                return false;
+            if (halfEdges.Length == 0)
+                return false;
+
+            // TODO: determine if the brush is a singularity (1D) or flat (2D), or has a volume (3D)
+            return true;
+        }
+
 
         /// <summary>
         /// Creates a brush out of a set of planes. A brush consists of several faces, each of which can be defined by a plane (of which there must be at least four).
@@ -1243,13 +1097,13 @@ namespace Chisel.Core
         /// If you do not know the size of the resulting brush beforehand, this can also be oversized. For example +-4096 world units from the world center.
         /// If possible, perform your operations near the center of the world for optimal accuracy.</para>
         /// </summary>
-        public static void CreateFromPlanes(ref BrushMesh brushMesh, float4[] planes, Bounds bounds, in ChiselSurfaceDefinition surfaceDefinition)
+        public static void CreateFromPlanes(float4[] planes, Bounds bounds, ref ChiselSurfaceDefinition surfaceDefinition, ref BrushMesh brushMesh)
         {
             Debug.Assert(planes != null && planes.Length >= 4);
 
             // create a box brush with the size of the specified bounds.
-            surfaceDefinition.EnsureSize(6);
-            CreateBox(ref brushMesh, bounds.min, bounds.max, in surfaceDefinition);
+            surfaceDefinition.EnsureSize(planes.Length);
+            CreateBox(bounds.min, bounds.max, out brushMesh);
 
             // cut the brush using the given planes.
             brushMesh.Cut(planes);
@@ -1260,7 +1114,7 @@ namespace Chisel.Core
         /// The brush geometry is not centered unless your points are, use <seealso cref="BrushMesh.CenterAndSnapPlanes"/> to center and position the game object to match.
         /// <para>If possible, place your points near the center of the world for optimal accuracy.</para>
         /// </summary>
-        public static void CreateFromPoints(ref BrushMesh brushMesh, Vector3[] points, in ChiselSurfaceDefinition surfaceDefinition)
+        public static void CreateFromPoints(Vector3[] points, ref ChiselSurfaceDefinition surfaceDefinition, ref BrushMesh brushMesh)
         {
             Debug.Assert(points != null && points.Length >= 4);
 
@@ -1274,7 +1128,7 @@ namespace Chisel.Core
             convexHullCalculator.GenerateHull(points, ref planes, out Bounds bounds);
 
             // create a brush out of the convex hull.
-            CreateFromPlanes(ref brushMesh, planes.ToArray(), bounds, in surfaceDefinition);
+            CreateFromPlanes(planes.ToArray(), bounds, ref surfaceDefinition, ref brushMesh);
         }
     }
 }

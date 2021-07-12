@@ -1,20 +1,23 @@
 {
     "name": "com.chisel.core",
-    "rootNamespace": "",
+    "rootNamespace": "Chisel.Core",
     "references": [
         "Unity.Burst",
-        "com.scene.handle.extensions.runtime",
-        "Unity.Mathematics",
         "Unity.Collections",
         "Unity.Entities",
+        "Unity.Entities.Hybrid",
+        "Unity.Mathematics",
         "Unity.Mathematics.Extensions",
-        "Unity.Entities.Hybrid"
+        "Unity.Jobs",
+        "com.scene.handle.extensions.runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": true,
     "overrideReferences": false,
-    "precompiledReferences": [],
+    "precompiledReferences": [
+        ""
+    ],
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],

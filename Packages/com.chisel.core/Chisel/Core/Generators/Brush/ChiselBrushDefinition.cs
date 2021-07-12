@@ -1,13 +1,19 @@
 using System;
-using System.Linq;
-using UnityEngine;
-using System.Collections.Generic;
-using UnityEngine.Profiling;
+using Debug = UnityEngine.Debug;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Jobs;
+using Unity.Burst;
+using UnitySceneExtensions;
+using HideInInspector = UnityEngine.HideInInspector;
+using SerializeField = UnityEngine.SerializeField;
 
 namespace Chisel.Core
 {
     [Serializable]
-    public class ChiselBrushDefinition : IChiselGenerator
+    public class ChiselBrushDefinition : IChiselNodeGenerator
     {
         public const string kNodeTypeName = "Brush";
 
@@ -17,18 +23,16 @@ namespace Chisel.Core
         
         // TODO: avoid storing surfaceDefinition and surfaces in brushOutline twice, which is wasteful and causes potential conflicts
         [HideInInspector]
-        public BrushMesh                brushOutline;
+        public BrushMesh        brushOutline;
 
-        [NamedItems(overflow = "Surface {0}")]
-        public ChiselSurfaceDefinition  surfaceDefinition;
-        
-        [HideInInspector]
-        [SerializeField] bool           isInsideOut = false;
-        [HideInInspector]
-        [SerializeField] bool           validState = true;
 
-        public bool ValidState      { get { return validState; } set { validState = value; } }
-        public bool IsInsideOut     { get { return isInsideOut; } }
+        [HideInInspector]
+        [SerializeField] bool   isInsideOut = false;
+        [HideInInspector]
+        [SerializeField] bool   validState = true;
+
+        public bool ValidState  { get { return validState; } set { validState = value; } }
+        public bool IsInsideOut { get { return isInsideOut; } }
 
         public bool IsValid
         {
@@ -48,7 +52,6 @@ namespace Chisel.Core
         public void Reset()
         {
             brushOutline = null;
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public bool EnsurePlanarPolygons()
@@ -60,35 +63,25 @@ namespace Chisel.Core
             return brushOutline.SplitNonPlanarPolygons();
         }
 
+        public int RequiredSurfaceCount { get { return brushOutline?.polygons?.Length ?? 0; } }
+
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
+        {
+            if (surfaceDefinition.surfaces == null ||
+                surfaceDefinition.surfaces.Length == 0)
+                return;
+
+            for (int p = 0; p < brushOutline.polygons.Length; p++)
+                brushOutline.polygons[p].descriptionIndex = p;
+        }
+
         public void Validate()
         {
             if (!IsValid)
                 return;
 
             if (version != kLatestVersion)
-            {
                 version = kLatestVersion;
-                surfaceDefinition = null;
-            }
-
-            if (surfaceDefinition == null)
-            {
-                surfaceDefinition = new ChiselSurfaceDefinition();
-                surfaceDefinition.EnsureSize(brushOutline.polygons.Length);
-                if (brushOutline.polygons.Length > 0)
-                {
-                    for (int p = 0; p < brushOutline.polygons.Length; p++)
-                    {
-                        surfaceDefinition.surfaces[p].surfaceDescription = brushOutline.polygons[p].surface.surfaceDescription;
-                        surfaceDefinition.surfaces[p].brushMaterial = brushOutline.polygons[p].surface.brushMaterial;
-                    }
-                }
-            } else
-                surfaceDefinition.EnsureSize(brushOutline.polygons.Length);
-
-            // Temporary fix for misformed brushes
-            for (int i = 0; i < brushOutline.polygons.Length; i++)
-                brushOutline.polygons[i].surfaceID = i;
 
             brushOutline.CalculatePlanes();
             
@@ -110,6 +103,7 @@ namespace Chisel.Core
             }
         }
 
+        /*
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
             Profiler.BeginSample("GenerateBrush");
@@ -153,13 +147,22 @@ namespace Chisel.Core
             {
                 Profiler.EndSample();
             }
-        }
+        }*/
 
         public void OnEdit(IChiselHandles handles)
         {
         }
-        public void OnMessages(IChiselMessages messages)
+
+        public void GetWarningMessages(IChiselMessageHandler messages)
         {
+            if (!IsValid)
+            {
+                // TODO: show message that internal brush is invalid
+            }
+            if (ValidState)
+            {
+                // TODO: show message that brush is not in valid state
+            }
         }
     }
 } 

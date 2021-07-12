@@ -65,3 +65,6 @@ UIElementsSchema/
 # temporary (remove me before merging material browser PR)
 /Assets/Surfaces Beta 0.4/
 /Assets/Surfaces Beta 0.4.meta
+/UserSettings
+
+.vsconfig

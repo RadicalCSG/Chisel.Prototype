@@ -46,6 +46,7 @@ namespace Chisel.Editors
                 return nodeDetails;
             return generatorDefaultDetails;
         }
+
         public static GUIContent GetHierarchyIcon(ChiselNode node)
         {
             if (nodeDetailsLookup.TryGetValue(node.GetType(), out IChiselNodeDetails nodeDetails))
@@ -55,22 +56,48 @@ namespace Chisel.Editors
             return generatorDefaultDetails.GetHierarchyIconForGenericNode(node);
         }
 
-        public static GUIContent GetHierarchyIcon(ChiselNode node, out bool hasValidState)
+        class HierarchyMessageHandler : IChiselMessageHandler
         {
-            if (nodeDetailsLookup.TryGetValue(node.GetType(), out IChiselNodeDetails nodeDetails))
+            static System.Text.StringBuilder warningStringBuilder = new System.Text.StringBuilder();
+
+            // TODO: how to handle these kind of message in the hierarchy? cannot show buttons, 
+            //       but still want to show a coherent message
+            public void Warning(string message, Action buttonAction, string buttonText)
             {
-                hasValidState = nodeDetails.HasValidState(node);
-                return nodeDetails.GetHierarchyIconForGenericNode(node);
+                throw new NotImplementedException();
             }
-            hasValidState = generatorDefaultDetails.HasValidState(node);
-            return generatorDefaultDetails.GetHierarchyIconForGenericNode(node);
+
+            public void Warning(string message)
+            {
+                if (warningStringBuilder.Length > 0)
+                    warningStringBuilder.AppendLine();
+                warningStringBuilder.Append(message);
+            }
+
+            public void Clear() { warningStringBuilder.Clear(); }
+            public int Length { get { return warningStringBuilder.Length; } }
+            public override string ToString() { return warningStringBuilder.ToString(); }
         }
 
-        public static bool HasValidState(ChiselNode node)
+        static HierarchyMessageHandler hierarchyMessageHandler = new HierarchyMessageHandler();
+
+        public static GUIContent GetHierarchyIcon(ChiselNode node, out bool hasValidState)
         {
-            if (nodeDetailsLookup.TryGetValue(node.GetType(), out IChiselNodeDetails nodeDetails))
-                return nodeDetails.HasValidState(node);
-            return generatorDefaultDetails.HasValidState(node);
+            hierarchyMessageHandler.Clear();
+            node.GetWarningMessages(hierarchyMessageHandler);
+            string nodeMessage;
+            if (hierarchyMessageHandler.Length != 0)
+            {
+                hasValidState = false;
+                nodeMessage = hierarchyMessageHandler.ToString();
+            } else
+            {
+                hasValidState = true;
+                nodeMessage = string.Empty;
+            }
+            var hierarchyIcon = GetHierarchyIcon(node);
+            hierarchyIcon.tooltip = nodeMessage;
+            return hierarchyIcon;
         }
     }
 }

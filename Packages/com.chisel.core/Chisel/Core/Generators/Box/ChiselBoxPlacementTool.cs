@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.Mathematics;
+using UnityEngine;
 
 namespace Chisel.Core
 {
@@ -10,8 +11,8 @@ namespace Chisel.Core
         public override PlacementFlags PlacementFlags => placement;
 
         public override void OnUpdate(ref ChiselBoxDefinition definition, Bounds bounds) 
-        { 
-            definition.bounds = bounds; 
+        {
+            definition.settings.bounds = new MinMaxAABB { Min = bounds.min, Max = bounds.max }; 
         }
 
         public override void OnPaint(IChiselHandleRenderer renderer, Bounds bounds)

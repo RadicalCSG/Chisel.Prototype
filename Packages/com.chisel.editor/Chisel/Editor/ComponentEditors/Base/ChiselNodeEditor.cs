@@ -68,7 +68,7 @@ namespace Chisel.Editors
                 return false;
 
             return gameObject.GetComponent<ChiselGeneratorComponent>() ||
-                    gameObject.GetComponent<ChiselComposite>();
+                   gameObject.GetComponent<ChiselComposite>();
         }
 
         [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Additive), false, -1)] protected static void SetAdditiveOperation(MenuCommand menuCommand) { SetMenuOperation(menuCommand, CSGOperationType.Additive); }
@@ -79,14 +79,32 @@ namespace Chisel.Editors
         [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Intersecting), true)] protected static bool ValidateIntersectingOperation(MenuCommand menuCommand) { return MenuValidateOperation(menuCommand); }
 
 
+        protected static bool ValidateEncapsulateInCompositeInternal(GameObject[] gameObjects)
+        {
+            for (int i = 0; i < gameObjects.Length; i++)
+            {
+                if (gameObjects[i].GetComponent<ChiselGeneratorComponent>() ||
+                    gameObjects[i].GetComponent<ChiselComposite>())
+                    continue;
+                return false;
+            }
+            return true;
+        }
+
+
 
         [MenuItem("GameObject/Group in Composite", false, -1)]
         protected static void EncapsulateInComposite(MenuCommand menuCommand)
         {
-            if (!ValidateEncapsulateInComposite(menuCommand))
-                return;
-            
             var gameObjects = Selection.gameObjects;
+
+            if (gameObjects == null || gameObjects.Length == 0 ||                
+                // Workaround for "Unity calls each object in selection individually in menu item"
+                menuCommand.context != gameObjects[0])
+                return;
+
+            if (!ValidateEncapsulateInCompositeInternal(gameObjects))
+                return;
 
             // TODO: sort gameObjects by their siblingIndex / hierarchy position
 
@@ -99,7 +117,7 @@ namespace Chisel.Editors
             var compositeTransform  = composite.transform;
             compositeTransform.SetSiblingIndex(childSiblingIndex);
             Undo.RegisterCreatedObjectUndo(compositeGameObject, "Create " + compositeGameObject.name);
-            
+
             for (int i = 0; i < gameObjects.Length; i++)
                 Undo.SetTransformParent(gameObjects[i].transform, compositeTransform, "Moved GameObject under Composite");
 
@@ -116,17 +134,10 @@ namespace Chisel.Editors
         {
             var gameObjects = Selection.gameObjects;
             if (gameObjects == null ||
-                gameObjects.Length < 1)
+                gameObjects.Length == 0)
                 return false;
 
-            for (int i = 0; i < gameObjects.Length; i++)
-            {
-                if (gameObjects[i].GetComponent<ChiselGeneratorComponent>() ||
-                    gameObjects[i].GetComponent<ChiselComposite>())
-                    continue;
-                return false;
-            }
-            return true;
+            return ValidateEncapsulateInCompositeInternal(gameObjects);
         }
 
         public static bool InSceneSettingsContext = false;
@@ -147,7 +158,7 @@ namespace Chisel.Editors
                 if (!node)
                     continue;
 
-                node.EncapsulateBounds(ref bounds);
+                node.hierarchyItem.EncapsulateBounds(ref bounds);
             }
             return bounds;
         }
@@ -165,7 +176,7 @@ namespace Chisel.Editors
                 if (!node)
                     continue;
 
-                node.EncapsulateBounds(ref bounds, worldToGridSpace);
+                node.hierarchyItem.EncapsulateBounds(ref bounds, worldToGridSpace);
             }
 
             if (bounds.extents.sqrMagnitude == 0)
@@ -420,6 +431,122 @@ namespace Chisel.Editors
         static readonly GUIContent convertToBrushesContent  = new GUIContent("Convert to Brushes");
         static readonly GUIContent convertToBrushContent    = new GUIContent("Convert to Brush");
 
+        
+        static bool ConvertBrush(CSGTreeBrush srcBrush, in ChiselSurfaceDefinition srcSurfaceDefinition, out BrushMesh newBrushMesh, out ChiselSurfaceDefinition newSurfaceDefinition)
+        {
+            var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(srcBrush.BrushMesh.BrushMeshID);
+            newBrushMesh = BrushMeshManager.ConvertToBrushMesh(brushMeshBlob);
+
+            newSurfaceDefinition = new ChiselSurfaceDefinition
+            {
+                surfaces = new ChiselSurface[newBrushMesh.polygons.Length]
+            };
+            for (int p = 0; p < newBrushMesh.polygons.Length; p++)
+            {
+                var oldDescriptionIndex = newBrushMesh.polygons[p].descriptionIndex;
+                newSurfaceDefinition.surfaces[p] = srcSurfaceDefinition.surfaces[oldDescriptionIndex];
+                newBrushMesh.polygons[p].descriptionIndex = p;
+            }
+            return true;
+        }
+
+        static ChiselNode ConvertChildTreeNodesToGameObjects(Transform parent, in ChiselSurfaceDefinition surfaceDefinition, CSGTreeNode node)
+        {
+            if (node.Type == CSGNodeType.Brush)
+            {
+                var brushNode       = (CSGTreeBrush)node;
+                var brushComponent  = ChiselComponentFactory.Create<ChiselBrushComponent>("Brush", parent);
+                brushComponent.transform.SetLocal(brushNode.LocalTransformation);
+                brushComponent.Operation                 = brushNode.Operation;
+
+                ConvertBrush(brushNode, in surfaceDefinition, out var brushMesh, out var newSurfaceDefinition);
+                brushComponent.surfaceDefinition = newSurfaceDefinition;
+                brushComponent.definition = new ChiselBrushDefinition { brushOutline = brushMesh };
+                return brushComponent;
+            } 
+            
+            var compositeComponent = ChiselComponentFactory.Create<ChiselComposite>("Composite", parent);
+            //compositeComponent.transform.SetLocal(node.LocalTransformation);
+            //compositeComponent.LocalTransformation = Matrix4x4.identity;
+            compositeComponent.Operation = node.Operation;
+            var parentTransform = compositeComponent.transform;
+            for (int i = 0; i < node.Count; i++)
+                ConvertChildTreeNodesToGameObjects(parentTransform, in surfaceDefinition, node[i]);
+            return compositeComponent;
+        }
+
+        static ChiselNode ConvertTreeNodeToBrushes(GameObject parent, in ChiselSurfaceDefinition surfaceDefinition, CSGTreeNode node)
+        {
+            if (node.Type == CSGNodeType.Brush)
+            {
+                var brushNode       = (CSGTreeBrush)node;
+                var brushComponent  = ChiselComponentFactory.AddComponent<ChiselBrushComponent>(parent);
+                brushComponent.transform.SetLocal(brushNode.LocalTransformation);
+                brushComponent.Operation                 = brushNode.Operation;
+
+                ConvertBrush(brushNode, in surfaceDefinition, out var brushMesh, out var newSurfaceDefinition);
+                brushComponent.surfaceDefinition = newSurfaceDefinition;
+                brushComponent.definition = new ChiselBrushDefinition { brushOutline = brushMesh };
+                return brushComponent;
+            }
+
+            if (node.Count == 1)
+                return ConvertTreeNodeToBrushes(parent, in surfaceDefinition, node[0]);
+            
+            var compositeComponent = ChiselComponentFactory.AddComponent<ChiselComposite>(parent);
+            //compositeComponent.transform.SetLocal(node.LocalTransformation);
+            compositeComponent.Operation = node.Operation;
+            var parentTransform = compositeComponent.transform;
+            for (int i = 0; i < node.Count; i++)
+                ConvertChildTreeNodesToGameObjects(parentTransform, in surfaceDefinition, node[i]);
+            return compositeComponent;
+        }
+
+        public static bool ConvertToBrushes(ChiselGeneratorComponent chiselNode)
+        {
+            chiselNode.OnValidate();
+            if (!chiselNode.TopTreeNode.Valid)
+                return false;
+
+            var topGameObject       = chiselNode.gameObject;
+            var gameObjectIsActive  = topGameObject.activeSelf;
+            var surfaceDefinition   = chiselNode.SurfaceDefinition;
+            var nodeTypeName        = chiselNode.ChiselNodeTypeName;
+
+            // Destroying this Generator Component will destroy the treeNode
+            // So we need to copy the treeNode
+            var topNode = chiselNode.TopTreeNode;
+            // Set the treeNode to default in the component
+            // (so when we destroy it the original treeNode doesn't get destroyed)
+            chiselNode.ResetTreeNodes(doNotDestroy: true);
+            // Destroy the component
+            UnityEditor.Undo.DestroyObjectImmediate(chiselNode);
+            // ... and then destroy the treeNode ourselves after we're done with it
+
+            var topNodeType = topNode.Type;
+
+            bool result = false;
+            try
+            {
+                // We set the gameobject to not be active, this will prevent a lot of messages to 
+                // be send by Unity while we're still building the entire sub-hierarchy
+                topGameObject.SetActive(false);
+                var topComponent = ConvertTreeNodeToBrushes(topGameObject, in surfaceDefinition, topNode);
+                result = topComponent != null;
+            }
+            finally 
+            { 
+                // Activate the gameobject again (if it was active in the first place)
+                topGameObject.SetActive(gameObjectIsActive);
+
+                // Destroy the treeNode that was part of the original Generator Component
+                if (topNode.Valid)
+                    topNode.Destroy();
+            }
+            UnityEditor.Undo.SetCurrentGroupName((topNodeType == CSGNodeType.Brush) ? $"Converted {nodeTypeName} to brush" : $"Converted {nodeTypeName} to multiple brushes");
+            return result;
+        }
+
 
         // TODO: put somewhere else
         internal static void ConvertIntoBrushesButton(Rect rect, SerializedObject serializedObject)
@@ -429,11 +556,14 @@ namespace Chisel.Editors
             bool multiple = false;
             foreach (var targetObject in serializedObject.targetObjects)
             {
-                var node = targetObject as ChiselNode;
+                var node = targetObject as ChiselGeneratorComponent;
                 if (!node)
                     continue;
-                var count = node.GetAllTreeBrushCount();
-                singular = (count == 1) || singular;
+                var topTreeNode = node.TopTreeNode;
+                if (!topTreeNode.Valid)
+                    continue;
+                var count = topTreeNode.Count;
+                singular = (count <= 1) || singular;
                 multiple = (count > 1) || multiple;
             }
             if (multiple)
@@ -451,11 +581,11 @@ namespace Chisel.Editors
             bool modified = false;
             foreach (var targetObject in serializedObject.targetObjects)
             {
-                var node = targetObject as ChiselNode;
+                var node = targetObject as ChiselGeneratorComponent;
                 if (!node)
                     continue;
 
-                modified = node.ConvertToBrushes() || modified;
+                modified = ConvertToBrushes(node) || modified;
             }
 
             if (modified)
@@ -470,7 +600,7 @@ namespace Chisel.Editors
             rect.yMax -= kBottomPadding;
             var buttonRect = rect;
             buttonRect.xMax -= ChiselCompositeGUI.GetOperationChoicesInternalWidth(showAuto: false);
-            if (typeof(T) != typeof(ChiselBrush))
+            if (typeof(T) != typeof(ChiselBrushComponent))
             {
                 ConvertIntoBrushesButton(buttonRect, serializedObject);
                 ChiselCompositeGUI.ShowOperationChoicesInternal(rect, operationProp, showLabel: false);
@@ -646,20 +776,15 @@ namespace Chisel.Editors
         
         public GUIContent GetHierarchyIconForGenericNode(ChiselNode node)
         {
+            var brushGenerator = node as ChiselGeneratorComponent;
+            if (brushGenerator != null)
+                return GetHierarchyIcon(brushGenerator.Operation, node.ChiselNodeTypeName);
+
             var generator = node as ChiselGeneratorComponent;
             if (generator == null)
                 return GUIContent.none;
 
-            return GetHierarchyIcon(generator.Operation, node.NodeTypeName);
-        }
-
-        public bool HasValidState(ChiselNode node)
-        {
-            var generator = node as ChiselGeneratorComponent;
-            if (generator == null)
-                return false;
-
-            return node.HasValidState();
+            return GetHierarchyIcon(generator.Operation, node.ChiselNodeTypeName);
         }
     }
 
@@ -674,8 +799,8 @@ namespace Chisel.Editors
         }
 
         // Note: name is the same for every generator, but is hidden inside a generic class, hence the use of ChiselBrushDefinition
-        const string kDefinitionName = ChiselDefinedGeneratorComponent<ChiselBrushDefinition>.kDefinitionName;
-
+        const string kDefinitionName = ChiselNodeGeneratorComponent<ChiselBrushDefinition>.kDefinitionName;
+        
         List<SerializedProperty> children = new List<SerializedProperty>();
         SerializedProperty definitionSerializedProperty;
         protected void InitDefaultInspector()
@@ -688,10 +813,7 @@ namespace Chisel.Editors
                 do
                 {
                     if (iterator.name == kDefinitionName)
-                    {
                         definitionSerializedProperty = iterator.Copy();
-                        break;
-                    }
                 } while (iterator.NextVisible(false));
             }
 
@@ -703,7 +825,6 @@ namespace Chisel.Editors
             {
                 do
                 {
-                    //Debug.Log(iterator.name);
                     children.Add(iterator.Copy());
                 } while (iterator.NextVisible(false));
             }
@@ -773,14 +894,14 @@ namespace Chisel.Editors
             ShowInspectorHeader(operationProp);
         }
 
-        static readonly ChiselEditorMessages warnings = new ChiselEditorMessages();
-        protected virtual void OnMessages(IChiselMessages warnings) { }
+        static readonly ChiselComponentInspectorMessageHandler warnings = new ChiselComponentInspectorMessageHandler();
+        protected virtual void ShowWarningMessages(IChiselMessageHandler warnings) { }
 
 
         protected virtual void OnInspector() 
         { 
             OnDefaultInspector(); 
-            OnMessages(warnings); 
+            ShowWarningMessages(warnings); 
         }
 
         protected virtual void OnTargetModifiedInInspector() { OnShapeChanged(); }
@@ -835,7 +956,7 @@ namespace Chisel.Editors
             } else
             {
                 ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
-                ChiselEditGeneratorTool.CurrentEditorName = (target as T).NodeTypeName;
+                ChiselEditGeneratorTool.CurrentEditorName = (target as T).ChiselNodeTypeName;
             }
             Profiler.EndSample();
             Profiler.BeginSample("FindProperty");
@@ -863,19 +984,6 @@ namespace Chisel.Editors
             {
                 ChiselEditToolBase.ClearLastRememberedType();
             }
-        }
-
-        protected bool HasValidState()
-        {
-            foreach (var target in targets)
-            {
-                var generator = target as T;
-                if (!generator)
-                    continue;
-                if (!generator.HasValidState())
-                    return false;
-            }
-            return true;
         }
 
         static readonly HashSet<System.Object> s_FoundObjects = new HashSet<System.Object>();
@@ -1006,13 +1114,12 @@ namespace Chisel.Editors
 
             var generator   = target as T;
             var sceneView   = SceneView.currentDrawingSceneView;
-            var modelMatrix = ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
             
             // NOTE: allow invalid nodes to be edited to be able to recover from invalid state
 
             // NOTE: could loop over multiple instances from here, once we support that
             {
-                using (new UnityEditor.Handles.DrawingScope(SceneHandles.handleColor, modelMatrix * generator.LocalTransformationWithPivot))
+                using (new UnityEditor.Handles.DrawingScope(SceneHandles.handleColor, generator.GlobalTransformation))
                 {
                     handles.Start(generator, sceneView);
                     {

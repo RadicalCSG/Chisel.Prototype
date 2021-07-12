@@ -6,16 +6,16 @@ using System.Collections;
 using Chisel;
 using UnityEditor.SceneManagement;
 using Chisel.Core;
-
+/*
 namespace FoundationTests
-{
+{ 
     [TestFixture]
     public partial class SetGetBrushLocalToTreeTests
     {
         [SetUp]
         public void Init()
         {
-            CSGManager.Clear();
+            CompactHierarchyManager.Clear();
         }
 
         static Matrix4x4 testMatrix1 = Matrix4x4.TRS(Vector3.one,     Quaternion.Euler(30,45,60), Vector3.one * 2);
@@ -26,29 +26,29 @@ namespace FoundationTests
         {
             var brush1 = CSGTreeBrush.Create();
             var brush2 = CSGTreeBrush.Create();
-            CSGManager.ClearDirty(brush1);
-            CSGManager.ClearDirty(brush2);
+            CompactHierarchyManager.ClearDirty(brush1);
+            CompactHierarchyManager.ClearDirty(brush2);
 
             brush1.LocalTransformation = testMatrix1;
             brush2.LocalTransformation = testMatrix2;
 
             Assert.AreEqual(testMatrix1, brush1.LocalTransformation);
             Assert.AreEqual(testMatrix2, brush2.LocalTransformation);
-            Assert.AreEqual(true, brush1.Dirty);
-            Assert.AreEqual(true, brush2.Dirty);
+            Assert.IsTrue(brush1.Dirty);
+            Assert.IsTrue(brush2.Dirty);
         }
 
         [Test]
         public void Brush_SetLocalToTreeToMultipleValues_GetLocalToTreeIsLastSetValue()
         {
             var brush = CSGTreeBrush.Create();
-            CSGManager.ClearDirty(brush);
+            CompactHierarchyManager.ClearDirty(brush);
 
             brush.LocalTransformation = testMatrix1;
             brush.LocalTransformation = testMatrix2;
 
             Assert.AreEqual(testMatrix2, brush.LocalTransformation);
-            Assert.AreEqual(true, brush.Dirty);
+            Assert.IsTrue(brush.Dirty);
         }
 
         [Test]
@@ -59,4 +59,4 @@ namespace FoundationTests
             Assert.AreEqual(Matrix4x4.identity, brush.LocalTransformation);
         }
     }
-}
+}*/

@@ -7,7 +7,7 @@ using Chisel;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
-
+/*
 namespace HierarchyTests
 {
     public partial class Model_GeneratedMeshes
@@ -19,4 +19,4 @@ namespace HierarchyTests
         // TODO: test brushContainerAsset changes changing brushes etc.
         // TODO: test brushMaterials changes changing brushes/brushmeshes etc.
     }
-}
+}*/

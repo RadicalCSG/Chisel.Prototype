@@ -10,55 +10,108 @@ using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
 using Unity.Mathematics;
+using UnitySceneExtensions;
+using Unity.Collections;
+using Unity.Entities;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
 {
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        public static bool GeneratePathedStairs(ref ChiselBrushContainer brushContainer, ref ChiselPathedStairsDefinition definition)
+        public static int CountPathedStairBrushes(UnsafeList<SegmentVertex> shapeVertices,
+                                                  bool              closedLoop,
+                                                  
+                                                  MinMaxAABB        bounds,
+
+                                                  float	            stepHeight,
+                                                  float	            stepDepth,
+
+                                                  float	            treadHeight,
+
+                                                  float	            nosingDepth,
+
+                                                  float             plateauHeight,
+
+                                                  StairsRiserType   riserType,
+                                                  float	            riserDepth,
+
+                                                  StairsSideType    leftSide,
+                                                  StairsSideType    rightSide,
+        
+                                                  float	            sideWidth,
+                                                  float	            sideHeight,
+                                                  float	            sideDepth)
         {
-            definition.Validate();
-
-            var shapeVertices		= new List<Vector2>();
-            var shapeSegmentIndices = new List<int>();
-            GetPathVertices(definition.shape, definition.curveSegments, shapeVertices, shapeSegmentIndices);
-
             var totalSubMeshCount = 0;
-            for (int i = 0; i < shapeVertices.Count; i++)
+            for (int i = 0; i < shapeVertices.Length; i++)
             {
-                if (i == 0 && !definition.shape.closed)
+                if (i == 0 && !closedLoop)
                     continue;
 
-                var leftSide  = (!definition.shape.closed && i ==                       1) ? definition.stairs.leftSide  : StairsSideType.None;
-                var rightSide = (!definition.shape.closed && i == shapeVertices.Count - 1) ? definition.stairs.rightSide : StairsSideType.None;
-
-                totalSubMeshCount += BrushMeshFactory.GetLinearStairsSubMeshCount(definition.stairs, leftSide, rightSide);
+                var segmentLeftSide  = (!closedLoop && i ==                        1) ? leftSide : StairsSideType.None;
+                var segmentRightSide = (!closedLoop && i == shapeVertices.Length - 1) ? rightSide : StairsSideType.None;
+                
+                var description = new LineairStairsData(bounds, stepHeight, stepDepth, treadHeight,
+                                                        nosingDepth, nosingWidth: 0, plateauHeight,
+                                                        riserType, riserDepth,
+                                                        segmentLeftSide, segmentRightSide,
+                                                        sideWidth, sideHeight, sideDepth);
+                totalSubMeshCount += description.subMeshCount;
             }
-            if (totalSubMeshCount == 0)
-                return false;
+            return totalSubMeshCount;
+        }
+        
+        // TODO: kind of broken, needs fixing
+        public static bool GeneratePathedStairs(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes,
+                                                UnsafeList<SegmentVertex> shapeVertices,
+                                                bool                closedLoop,
+                                                MinMaxAABB          bounds,
 
-            //			var stairDirections = definition.shape.closed ? shapeVertices.Count : (shapeVertices.Count - 1);
+                                                float	            stepHeight,
+                                                float	            stepDepth,
 
-            brushContainer.EnsureSize(totalSubMeshCount);
+                                                float	            treadHeight,
 
-            var depth		= definition.stairs.absDepth;
-            var height		= definition.stairs.absHeight;
+                                                float	            nosingDepth,
+                                                
+                                                float               plateauHeight,
 
-            var halfDepth	= depth  * 0.5f;
-            var halfHeight	= height * 0.5f;
+                                                StairsRiserType     riserType,
+                                                float	            riserDepth,
+
+                                                StairsSideType      leftSide,
+                                                StairsSideType      rightSide,
+        
+                                                float	            sideWidth,
+                                                float	            sideHeight,
+                                                float	            sideDepth,
+                                                in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                Allocator allocator)
+        {
+            var absDepth    = math.abs(bounds.Max.z - bounds.Min.z);
+            var absHeight   = math.abs(bounds.Max.y - bounds.Min.y);
+            var width       = (bounds.Max.x - bounds.Min.x);
+            var centerX     = (bounds.Max.x + bounds.Min.x) * 0.5f;
+
+            var halfDepth	= absDepth  * 0.5f;
+            var halfHeight	= absHeight * 0.5f;
 
             int subMeshIndex = 0;
-            for (int vi0 = shapeVertices.Count - 3, vi1 = shapeVertices.Count - 2, vi2 = shapeVertices.Count - 1, vi3 = 0; vi3 < shapeVertices.Count; vi0 = vi1, vi1 = vi2, vi2 = vi3, vi3++)
+            var count = shapeVertices.Length;
+            if (count == 0)
+                return false;
+            for (int vi0 = (count + count - 3) % count, vi1 = (count + count - 2) % count, vi2 = (count + count - 1) % count, vi3 = 0; vi3 < count; vi0 = vi1, vi1 = vi2, vi2 = vi3, vi3++)
             {
-                if (vi2 == 0 && !definition.shape.closed)
+                if (vi2 == 0 && !closedLoop)
                     continue;
 
                 // TODO: optimize this, we're probably redoing a lot of stuff for every iteration
-                var v0 = shapeVertices[vi0];
-                var v1 = shapeVertices[vi1];
-                var v2 = shapeVertices[vi2];
-                var v3 = shapeVertices[vi3];
+                var v0 = shapeVertices[vi0].position;
+                var v1 = shapeVertices[vi1].position;
+                var v2 = shapeVertices[vi2].position;
+                var v3 = shapeVertices[vi3].position;
 
                 var m0 = (v0 + v1) * 0.5f;
                 var m1 = (v1 + v2) * 0.5f;
@@ -77,67 +130,81 @@ namespace Chisel.Core
                 d1 /= maxWidth1;
                 d2 /= maxWidth2;
 
-                var depthVector = new Vector3(d1.y, 0, -d1.x);
-                var lineCenter  = new Vector3(m1.x, halfHeight, m1.y) - (depthVector * halfDepth);
+                var depthVector = new float3(d1.y, 0, -d1.x);
+                var lineCenter  = new float3(m1.x, halfHeight, m1.y) - (depthVector * halfDepth);
 
-                var depthVector0 = new Vector2(d0.y, -d0.x) * depth;
-                var depthVector1 = new Vector2(d1.y, -d1.x) * depth;
-                var depthVector2 = new Vector2(d2.y, -d2.x) * depth;
+                var depthVector0 = new float2(d0.y, -d0.x) * absDepth;
+                var depthVector1 = new float2(d1.y, -d1.x) * absDepth;
+                var depthVector2 = new float2(d2.y, -d2.x) * absDepth;
 
                 m0 -= depthVector0;
                 m1 -= depthVector1;
                 m2 -= depthVector2;
 
-                Vector2 output;
+                float2 output;
                 var leftShear	= Intersect(m1, d1, m0, d0, out output) ?  math.dot(d1, (output - (m1 - halfWidth1))) : 0;
                 var rightShear	= Intersect(m1, d1, m2, d2, out output) ? -math.dot(d1, (output - (m1 + halfWidth1))) : 0;
 
-                var transform = Matrix4x4.TRS(lineCenter, // move to center of line
-                                              Quaternion.LookRotation(depthVector, Vector3.up),	// rotate to align with line
-                                              Vector3.one);
-                
-                // set the width to the width of the line
-                definition.stairs.width = maxWidth1 * (definition.stairs.width < 0 ? -1 : 1);
-                definition.stairs.nosingWidth = 0;
+                var transform = float4x4.TRS(lineCenter, // move to center of line
+                                              quaternion.LookRotationSafe(depthVector, Vector3.up),	// rotate to align with line
+                                              new float3(1));
 
-                var leftSide  = (!definition.shape.closed && vi2 ==                       1) ? definition.stairs.leftSide  : StairsSideType.None;
-                var rightSide = (!definition.shape.closed && vi2 == shapeVertices.Count - 1) ? definition.stairs.rightSide : StairsSideType.None;
-                var subMeshCount = BrushMeshFactory.GetLinearStairsSubMeshCount(definition.stairs, leftSide, rightSide);
+                // set the width to the width of the line
+                var newWidth = math.abs(maxWidth1);
+                var halfWidth = newWidth * 0.5f;
+                var min = bounds.Min;
+                var max = bounds.Max;
+                min.x = centerX - halfWidth;
+                max.x = centerX + halfWidth;
+                bounds.Min = min;
+                bounds.Max = max;
+
+                var segmentLeftSide  = (!closedLoop && vi2 ==                        1) ? leftSide  : StairsSideType.None;
+                var segmentRightSide = (!closedLoop && vi2 == shapeVertices.Length - 1) ? rightSide : StairsSideType.None;
+
+                var description = new LineairStairsData(bounds,
+                                                        stepHeight, stepDepth,
+                                                        treadHeight,
+                                                        nosingDepth, nosingWidth: 0,
+                                                        plateauHeight,
+                                                        riserType, riserDepth,
+                                                        segmentLeftSide, segmentRightSide,
+                                                        sideWidth, sideHeight, sideDepth);
+                var subMeshCount = description.subMeshCount;
                 if (subMeshCount == 0)
                     continue;
 
-                if (!BrushMeshFactory.GenerateLinearStairsSubMeshes(ref brushContainer, definition.stairs, leftSide, rightSide, subMeshIndex))
+                if (!GenerateLinearStairsSubMeshes(brushMeshes, subMeshIndex, in description, in surfaceDefinitionBlob, allocator))
                     return false;
 
-                var halfWidth = maxWidth1 * 0.5f;
                 for (int m = 0; m < subMeshCount; m++)
                 {
-                    var vertices = brushContainer.brushMeshes[subMeshIndex + m].vertices;
-                    for (int v = 0; v < vertices.Length; v++)
+                    ref var localVertices = ref brushMeshes[subMeshIndex + m].Value.localVertices;
+                    for (int v = 0; v < localVertices.Length; v++)
                     {
                         // TODO: is it possible to put all of this in a single matrix?
                         // lerp the stairs to go from less wide to wider depending on the depth of the vertex
-                        var depthFactor = 1.0f - ((vertices[v].z / depth) + 0.5f);
-                        var wideFactor  = (vertices[v].x / halfWidth) + 0.5f;
-                        var scale		= (vertices[v].x / halfWidth);
+                        var depthFactor = 1.0f - ((localVertices[v].z / absDepth) + 0.5f);
+                        var wideFactor  = (localVertices[v].x / halfWidth) + 0.5f;
+                        var scale		= (localVertices[v].x / halfWidth);
 
                         // lerp the stairs width depending on if it's on the left or right side of the stairs
-                        vertices[v].x = math.lerp( scale * (halfWidth - (rightShear * depthFactor)),
-                                                   scale * (halfWidth - (leftShear  * depthFactor)),
-                                                   wideFactor);
-                        vertices[v] = transform.MultiplyPoint(vertices[v]);
+                        localVertices[v].x = math.lerp( scale * (halfWidth - (rightShear * depthFactor)),
+                                                        scale * (halfWidth - (leftShear  * depthFactor)),
+                                                        wideFactor);
+                        localVertices[v] = math.mul(transform, new float4(localVertices[v], 1)).xyz;
                     }
                 }
 
                 subMeshIndex += subMeshCount;
             }
-            return false;
+            return true;
         }
 
 
         // TODO: move somewhere else
-        static bool Intersect(Vector2 p1, Vector2 d1,
-                              Vector2 p2, Vector2 d2, out Vector2 intersection)
+        static bool Intersect(float2 p1, float2 d1,
+                              float2 p2, float2 d2, out float2 intersection)
         {
             const float kEpsilon = 0.0001f;
 
@@ -145,7 +212,7 @@ namespace Chisel.Core
             // check if the rays are parallel
             if (f >= -kEpsilon && f <= kEpsilon)
             {
-                intersection = Vector2.zero;
+                intersection = float2.zero;
                 return false;
             }
 

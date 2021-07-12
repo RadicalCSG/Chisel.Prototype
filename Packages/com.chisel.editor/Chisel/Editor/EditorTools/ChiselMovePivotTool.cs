@@ -53,7 +53,7 @@ namespace Chisel.Editors
                 var selectedNodes = SelectedNodes;
                 if (selectedNodes != null && selectedNodes.Count != 0)
                 {
-                    var center = FindSelectionCenter(selectedNodes);
+                    var center = FindSelectionWorldSpaceCenter(selectedNodes);
                     MovePivotTo(selectedNodes, center);
                 }
             }
@@ -67,41 +67,46 @@ namespace Chisel.Editors
             }
         }
 
-        static Vector3 FindSelectionCenter(ChiselNode selectedNode)
+        static Vector3 FindSelectionWorldSpaceCenter(ChiselNode selectedNode)
         {
-            var bounds = selectedNode.CalculateBounds();
-            var min = bounds.min;
-            var max = bounds.max;
-            var center = (min + max) * 0.5f;
+            var hierarchyItem = selectedNode.hierarchyItem;
+            var bounds          = hierarchyItem.Bounds; // Note: bounds in tree space, not world space
+            var modelTransform  = hierarchyItem.Model.hierarchyItem.LocalToWorldMatrix;
+            var center = modelTransform.MultiplyPoint((bounds.min + bounds.max) * 0.5f);
             return center;
         }
 
-        static Vector3 FindSelectionCenter(List<ChiselNode> selectedNodes)
+        static Vector3 FindSelectionWorldSpaceCenter(List<ChiselNode> selectedNodes)
         {
             if (selectedNodes == null || selectedNodes.Count == 0)
                 return Vector3.zero;
 
             Vector3 center;
-            if (selectedNodes.Count > 1)
+            var hierarchyItem = selectedNodes[0].hierarchyItem;
+            var bounds = hierarchyItem.Bounds;
+            var modelTransform = hierarchyItem.Model.hierarchyItem.LocalToWorldMatrix;
+            var boundsCenter = modelTransform.MultiplyPoint((bounds.min + bounds.max) * 0.5f);
+            if (selectedNodes.Count == 1)
+                return boundsCenter;
+
+            var min = boundsCenter;
+            var max = boundsCenter;
+            for (int i = 1; i < selectedNodes.Count; i++)
             {
-                var bounds = selectedNodes[0].CalculateBounds();
-                var min = bounds.min;
-                var max = bounds.max;
-                for (int i = 1; i < selectedNodes.Count; i++)
-                {
-                    bounds = selectedNodes[i].CalculateBounds();
+                hierarchyItem = selectedNodes[i].hierarchyItem;
+                bounds = hierarchyItem.Bounds; // Note: bounds in tree space, not world space
+                modelTransform = hierarchyItem.Model.hierarchyItem.LocalToWorldMatrix;
+                boundsCenter = modelTransform.MultiplyPoint((bounds.min + bounds.max) * 0.5f);
 
-                    min.x = Mathf.Min(min.x, bounds.min.x);
-                    min.y = Mathf.Min(min.y, bounds.min.y);
-                    min.z = Mathf.Min(min.z, bounds.min.z);
+                min.x = Mathf.Min(min.x, boundsCenter.x);
+                min.y = Mathf.Min(min.y, boundsCenter.y);
+                min.z = Mathf.Min(min.z, boundsCenter.z);
 
-                    max.x = Mathf.Max(max.x, bounds.max.x);
-                    max.y = Mathf.Max(max.y, bounds.max.y);
-                    max.z = Mathf.Max(max.z, bounds.max.z);
-                }
-                center = (min + max) * 0.5f;
-            } else
-                center = selectedNodes[0].CalculateBounds().center;
+                max.x = Mathf.Max(max.x, boundsCenter.x);
+                max.y = Mathf.Max(max.y, boundsCenter.y);
+                max.z = Mathf.Max(max.z, boundsCenter.z);
+            }
+            center = (min + max) * 0.5f;
             return center;
         }
         #endregion
@@ -329,17 +334,21 @@ namespace Chisel.Editors
 
             foreach (var intersection in s_FoundIntersections)
             {
-                var csgBrush    = intersection.brushIntersection.brush;
-                var csgTree     = intersection.brushIntersection.tree;
-                var brushMesh   = BrushMeshManager.GetBrushMesh(csgBrush.BrushMesh);
-                var polygons    = brushMesh.polygons;
-                var halfEdges   = brushMesh.halfEdges;
-                var vertices    = brushMesh.vertices;
-                var halfEdgePolygonIndices = brushMesh.halfEdgePolygonIndices;
+                var csgBrush        = intersection.brushIntersection.brush;
+                var csgTree         = intersection.brushIntersection.tree;
+                var brushMeshBlob   = BrushMeshManager.GetBrushMeshBlob(csgBrush.BrushMesh);
+                if (!brushMeshBlob.IsCreated)
+                    continue;
+
+                ref var brushMesh               = ref brushMeshBlob.Value;
+                ref var polygons                = ref brushMesh.polygons;
+                ref var halfEdges               = ref brushMesh.halfEdges;
+                ref var vertices                = ref brushMesh.localVertices;
+                ref var halfEdgePolygonIndices  = ref brushMesh.halfEdgePolygonIndices;
 
                 var model           = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(csgTree.UserID) as ChiselModel;
-                var worldToNode     = csgBrush.TreeToNodeSpaceMatrix * model.hierarchyItem.WorldToLocalMatrix;
-                var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * csgBrush.NodeToTreeSpaceMatrix;
+                var worldToNode     = (Matrix4x4)csgBrush.TreeToNodeSpaceMatrix * model.hierarchyItem.WorldToLocalMatrix;
+                var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * (Matrix4x4)csgBrush.NodeToTreeSpaceMatrix;
                 
                 var brushRayStart       = worldToNode.MultiplyPoint(worldRayStart);
                 var brushRayDirection   = worldToNode.MultiplyVector(worldRayDirection).normalized;
@@ -467,7 +476,7 @@ namespace Chisel.Editors
                     continue;
                 
                 s_SelectedNodes.Clear();
-                node.CollectCSGTreeNodes(s_SelectedNodes);
+                ChiselNodeHierarchyManager.GetChildrenOfHierarchyItem(s_SelectedNodes, node.hierarchyItem);
                 foreach (var child in s_SelectedNodes)
                 {
                     if (!child.Valid || child.Type != CSGNodeType.Brush)
@@ -487,17 +496,21 @@ namespace Chisel.Editors
             foreach (var csgBrush in s_SelectedBrushes)
             {
                 var csgTree     = csgBrush.Tree;
-                var brushMesh   = BrushMeshManager.GetBrushMesh(csgBrush.BrushMesh);
-                var polygons    = brushMesh.polygons;
-                var halfEdges   = brushMesh.halfEdges;
-                var vertices    = brushMesh.vertices;
-                var planes      = brushMesh.planes;
-                var halfEdgePolygonIndices = brushMesh.halfEdgePolygonIndices;
+                var brushMeshBlob   = BrushMeshManager.GetBrushMeshBlob(csgBrush.BrushMesh);
+                if (!brushMeshBlob.IsCreated)
+                    continue;
+
+                ref var brushMesh   = ref brushMeshBlob.Value;
+                ref var polygons    = ref brushMesh.polygons;
+                ref var halfEdges   = ref brushMesh.halfEdges;
+                ref var vertices    = ref brushMesh.localVertices;
+                ref var planes      = ref brushMesh.localPlanes;
+                ref var halfEdgePolygonIndices = ref brushMesh.halfEdgePolygonIndices;
 
                 // TODO: store this information with brush 
                 var model           = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(csgTree.UserID) as ChiselModel;
-                var worldToNode     = csgBrush.TreeToNodeSpaceMatrix * model.hierarchyItem.WorldToLocalMatrix;
-                var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * csgBrush.NodeToTreeSpaceMatrix;
+                var worldToNode     = (Matrix4x4)csgBrush.TreeToNodeSpaceMatrix * model.hierarchyItem.WorldToLocalMatrix;
+                var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * (Matrix4x4)csgBrush.NodeToTreeSpaceMatrix;
                 
                 var brushPoint      = worldToNode.MultiplyPoint(currentWorldPoint);
                 var brushPlane      = worldToNode.TransformPlane(worldSlidePlane);
@@ -819,8 +832,8 @@ namespace Chisel.Editors
 
         static readonly List<Vector3> s_PolygonVertices = new List<Vector3>();
 
-        static readonly HashSet<(int, int)> s_usedVertices = new HashSet<(int, int)>();
-        static readonly HashSet<(int, int)> s_usedSurfaces = new HashSet<(int, int)>();
+        static readonly HashSet<(CSGTreeNode, int)> s_usedVertices = new HashSet<(CSGTreeNode, int)>();
+        static readonly HashSet<(CSGTreeNode, int)> s_usedSurfaces = new HashSet<(CSGTreeNode, int)>();
         static void DrawCustomSnappedEvent()
         {
 #if false
@@ -842,8 +855,7 @@ namespace Chisel.Editors
             for (int i = 0; i < s_DrawVertexSnapEvents.Count; i++)
             {
                 var intersection    = s_DrawVertexSnapEvents[i];
-                //s_usedSurfaces.Add((intersection.brush.NodeID, intersection.surfaceIndex));
-                var vertexKey       = (intersection.brush.NodeID, intersection.vertexIndex);
+                var vertexKey       = (intersection.brush, intersection.vertexIndex);
                 if (!s_usedVertices.Add(vertexKey))
                     continue;
                 HandleRendering.RenderVertexBox(intersection.intersection);
@@ -852,11 +864,11 @@ namespace Chisel.Editors
             for (int i = 0; i < s_DrawEdgeSnapEvents.Count; i++)
             {
                 var intersection    = s_DrawEdgeSnapEvents[i];
-                s_usedSurfaces.Add((intersection.brush.NodeID, intersection.surfaceIndex0));
-                s_usedSurfaces.Add((intersection.brush.NodeID, intersection.surfaceIndex1));
+                s_usedSurfaces.Add((intersection.brush, intersection.surfaceIndex0));
+                s_usedSurfaces.Add((intersection.brush, intersection.surfaceIndex1));
 
-                var vertexKey0      = (intersection.brush.NodeID, intersection.vertexIndex0);
-                var vertexKey1      = (intersection.brush.NodeID, intersection.vertexIndex1);
+                var vertexKey0      = (intersection.brush, intersection.vertexIndex0);
+                var vertexKey1      = (intersection.brush, intersection.vertexIndex1);
                 if (!s_usedVertices.Add(vertexKey0) ||
                     !s_usedVertices.Add(vertexKey1))
                     continue;
@@ -866,7 +878,7 @@ namespace Chisel.Editors
             for (int i = 0; i < s_DrawSurfaceSnapEvents.Count; i++)
             {
                 var surfaceSnapEvent    = s_DrawSurfaceSnapEvents[i];
-                var surfaceKey          = (surfaceSnapEvent.brush.NodeID, surfaceSnapEvent.surfaceIndex);
+                var surfaceKey          = (surfaceSnapEvent.brush, surfaceSnapEvent.surfaceIndex);
                 if (!s_usedSurfaces.Add(surfaceKey))
                     continue;
 
@@ -879,19 +891,23 @@ namespace Chisel.Editors
 
                 var brush           = surfaceSnapEvent.brush;
                 var surfaceIndex    = surfaceSnapEvent.surfaceIndex;
-                var brushMesh       = BrushMeshManager.GetBrushMesh(brush.BrushMesh);
+                var brushMeshBlob   = BrushMeshManager.GetBrushMeshBlob(brush.BrushMesh);
+                if (!brushMeshBlob.IsCreated)
+                    continue;
+
+                ref var brushMesh   = ref brushMeshBlob.Value;
                 var polygon         = brushMesh.polygons[surfaceIndex];
                 var firstEdge       = polygon.firstEdge;
                 var lastEdge        = firstEdge + polygon.edgeCount;
                 s_PolygonVertices.Clear();
                 for (int e = firstEdge; e < lastEdge; e++)
                 {
-                    var vertex = brushMesh.vertices[brushMesh.halfEdges[e].vertexIndex];
+                    var vertex = brushMesh.localVertices[brushMesh.halfEdges[e].vertexIndex];
                     s_PolygonVertices.Add(vertex);
                 }
                 
                 var model           = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(brush.Tree.UserID) as ChiselModel;
-                var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * brush.NodeToTreeSpaceMatrix;
+                var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * (Matrix4x4)brush.NodeToTreeSpaceMatrix;
                 ChiselOutlineRenderer.DrawLineLoop(nodeToWorld, s_PolygonVertices, Handles.color, thickness: 2);
             }
 
@@ -901,39 +917,45 @@ namespace Chisel.Editors
 
         public static void MovePivotTo(List<ChiselNode> nodes, Vector3 newPosition)
         {
-            var nodesWithChildren = new HashSet<UnityEngine.Object>();
+            // TODO: optimize
+            var nodesWithChildObjects = new HashSet<UnityEngine.Object>();
+            var nodesWithChildren = new HashSet<ChiselNode>();
             foreach (var node in nodes)
             {
-                var children = node.GetComponentsInChildren<ChiselNode>();
+                var children = node.GetComponentsInChildren<ChiselNode>(includeInactive: true);
                 foreach (var child in children)
                 {
                     nodesWithChildren.Add(child);
-                    nodesWithChildren.Add(child.hierarchyItem.Transform);
+                    nodesWithChildObjects.Add(child);
+                    nodesWithChildObjects.Add(child.hierarchyItem.Transform);
                 }
             }
 
-            Undo.RecordObjects(nodesWithChildren.ToArray(), "Move Pivot");
-            foreach (var node in nodes)
+            Undo.RecordObjects(nodesWithChildObjects.ToArray(), "Move Pivot");
+            foreach (var node in nodesWithChildren)
                 node.SetPivot(newPosition);
         }
 
         public static void MovePivotToCenter(List<ChiselNode> nodes)
         {
-            var nodesWithChildren = new HashSet<UnityEngine.Object>();
+            // TODO: optimize
+            var nodesWithChildObjects = new HashSet<UnityEngine.Object>();
+            var nodesWithChildren = new HashSet<ChiselNode>();
             foreach (var node in nodes)
             {
-                var children = node.GetComponentsInChildren<ChiselNode>();
+                var children = node.GetComponentsInChildren<ChiselNode>(includeInactive: true);
                 foreach (var child in children)
                 {
                     nodesWithChildren.Add(child);
-                    nodesWithChildren.Add(child.hierarchyItem.Transform);
+                    nodesWithChildObjects.Add(child);
+                    nodesWithChildObjects.Add(child.hierarchyItem.Transform);
                 }
             }
 
-            Undo.RecordObjects(nodesWithChildren.ToArray(), "Move Pivot");
-            foreach (var node in nodes)
+            Undo.RecordObjects(nodesWithChildObjects.ToArray(), "Move Pivot");
+            foreach (var node in nodesWithChildren)
             {
-                var newPosition = FindSelectionCenter(node);
+                var newPosition = FindSelectionWorldSpaceCenter(node);
                 node.SetPivot(newPosition);
             }
         }

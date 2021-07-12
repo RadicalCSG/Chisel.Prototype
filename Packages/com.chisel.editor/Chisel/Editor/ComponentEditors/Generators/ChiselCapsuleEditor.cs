@@ -4,10 +4,10 @@ using UnityEditor;
 
 namespace Chisel.Editors
 {
-    [CustomEditor(typeof(ChiselCapsule))]
-    public sealed class ChiselCapsuleEditor : ChiselGeneratorDefinitionEditor<ChiselCapsule, ChiselCapsuleDefinition>
+    [CustomEditor(typeof(Components.ChiselCapsuleComponent))]
+    public sealed class ChiselCapsuleEditor : ChiselGeneratorDefinitionEditor<Components.ChiselCapsuleComponent, ChiselCapsuleDefinition>
     {
-        [MenuItem("GameObject/Chisel/Create/" + ChiselCapsule.kNodeTypeName, false, 0)]
-        static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselCapsule.kNodeTypeName); }
+        [MenuItem("GameObject/Chisel/Create/" + Components.ChiselCapsuleComponent.kNodeTypeName, false, 0)]
+        static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, Components.ChiselCapsuleComponent.kNodeTypeName); }
     }
 }
