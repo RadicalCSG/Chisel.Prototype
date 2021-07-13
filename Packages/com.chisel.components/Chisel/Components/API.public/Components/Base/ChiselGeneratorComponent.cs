@@ -373,12 +373,12 @@ namespace Chisel.Components
         }
 
         [HideInInspector, SerializeField] int prevMaterialHash;
-        [HideInInspector, SerializeField] int prevMeshHash;
+        [HideInInspector, SerializeField] int prevDefinitionHash;
 
-        protected void ClearHashes()
+        public void ClearHashes()
         {
             prevMaterialHash = 0;
-            prevMeshHash = 0;
+            prevDefinitionHash = 0;
         }
 
         public override void UpdateGeneratorNodes()
@@ -427,12 +427,12 @@ namespace Chisel.Components
 
         void UpdateMeshesWhenModified()
         {
-            var currMaterialHash = SurfaceDefinition?.GetHashCode() ?? 0;
-            var currMeshHash     = GetDefinitionHash();
-            if (prevMaterialHash != currMaterialHash || prevMeshHash != currMeshHash)
+            var currMaterialHash    = SurfaceDefinition?.GetHashCode() ?? 0;
+            var currDefinitionHash  = GetDefinitionHash();
+            if (prevMaterialHash != currMaterialHash || prevDefinitionHash != currDefinitionHash)
             {
-                prevMaterialHash = currMaterialHash;
-                prevMeshHash     = currMeshHash;
+                prevMaterialHash    = currMaterialHash;
+                prevDefinitionHash  = currDefinitionHash;
 
                 Profiler.BeginSample("UpdateGeneratorNodes");
                 try
