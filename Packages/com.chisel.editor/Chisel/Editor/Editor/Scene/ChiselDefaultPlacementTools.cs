@@ -78,6 +78,7 @@ namespace Chisel.Editors
                                                     CSGOperationType.Additive);
                         PlacementToolDefinition.OnUpdate(ref generatedComponent.definition, height);
                         generatedComponent.OnValidate();
+                        generatedComponent.ClearHashes(); // TODO: remove need for this
                     }
                     break;
                 }
@@ -188,8 +189,11 @@ namespace Chisel.Editors
                                                     CSGOperationType.Additive);
                         PlacementToolDefinition.OnUpdate(ref generatedComponent.definition, bounds);
                         generatedComponent.OnValidate();
+
                         if ((generatoreModeFlags & PlacementFlags.GenerateFromCenterY) == PlacementFlags.GenerateFromCenterY)
                             generatedComponent.transform.localPosition = componentPosition - ((upAxis * height) * 0.5f);
+
+                        generatedComponent.ClearHashes(); // TODO: remove need for this
                     }
                     break;
                 }
