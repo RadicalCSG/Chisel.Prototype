@@ -399,21 +399,7 @@ namespace Chisel.Components
                     return;
             }
 
-            var currMaterialHash = SurfaceDefinition?.GetHashCode() ?? 0;
-            var currMeshHash     = GetDefinitionHash();
-            if (prevMaterialHash != currMaterialHash || prevMeshHash != currMeshHash)
-            {
-                prevMaterialHash = currMaterialHash;
-                prevMeshHash     = currMeshHash;
-
-                Profiler.BeginSample("UpdateGeneratorNodes");
-                try
-                {
-                    var treeRoot = this.hierarchyItem.Model.Node;
-                    UpdateGeneratorNodesInternal(in treeRoot, ref Node);
-                }
-                finally { Profiler.EndSample(); }
-            }
+            UpdateMeshesWhenModified();
 
             if (ValidNodes)
             {
@@ -439,14 +425,32 @@ namespace Chisel.Components
             return Node;
         }
 
+        void UpdateMeshesWhenModified()
+        {
+            var currMaterialHash = SurfaceDefinition?.GetHashCode() ?? 0;
+            var currMeshHash     = GetDefinitionHash();
+            if (prevMaterialHash != currMaterialHash || prevMeshHash != currMeshHash)
+            {
+                prevMaterialHash = currMaterialHash;
+                prevMeshHash     = currMeshHash;
+
+                Profiler.BeginSample("UpdateGeneratorNodes");
+                try
+                {
+                    var treeRoot = this.hierarchyItem.Model.Node;
+                    UpdateGeneratorNodesInternal(in treeRoot, ref Node);
+                }
+                finally { Profiler.EndSample(); }
+            }
+        }
+
         public override void SetDirty()
         {
             if (!ValidNodes)
                 return;
 
             TopTreeNode.SetDirty();
-            var treeRoot = this.hierarchyItem.Model.Node;
-            UpdateGeneratorNodesInternal(in treeRoot, ref Node);
+            UpdateMeshesWhenModified();
         }
 
 

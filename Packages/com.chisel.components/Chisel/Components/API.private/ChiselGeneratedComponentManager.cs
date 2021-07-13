@@ -265,10 +265,9 @@ namespace Chisel.Components
                 if (brushGenerator)
                 {
                     var treeNode = node.TopTreeNode;
-                    if (!CompactHierarchyManager.IsValidNodeID(treeNode))
+                    if (!treeNode.Valid)
                         continue;
-
-                    var model               = brushGenerator.hierarchyItem.Model;
+                    var model = brushGenerator.hierarchyItem.Model;
                     if (model == null)
                         Debug.LogError($"{brushGenerator.hierarchyItem.Component} model {model} == null", brushGenerator.hierarchyItem.Component);
                     if (model)
@@ -289,13 +288,15 @@ namespace Chisel.Components
             {
                 if (!model || !model.isActiveAndEnabled || model.generated == null)
                     continue;
-                var modelNode           = model.TopTreeNode;
+                var modelNode = model.TopTreeNode;
+                if (!modelNode.Valid)
+                    continue;
                 var modelCompactNodeID  = CompactHierarchyManager.GetCompactNodeID(modelNode);
                 if (!visibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState state))
                 {
                     visibilityStateLookup[modelCompactNodeID] = VisibilityState.AllVisible;
                     model.generated.visibilityState = VisibilityState.AllVisible;
-                    continue;
+                    continue; 
                 }
                 if (state == VisibilityState.Mixed ||
                     state != model.generated.visibilityState)
