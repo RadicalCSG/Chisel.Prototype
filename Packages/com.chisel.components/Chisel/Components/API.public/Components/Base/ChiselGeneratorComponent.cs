@@ -157,8 +157,13 @@ namespace Chisel.Components
         }
     }
 
+    public interface IChiselHasOperation
+    {
+        CSGOperationType Operation { get; set; }
+    }
+
     [DisallowMultipleComponent]
-    public abstract class ChiselGeneratorComponent : ChiselNode
+    public abstract class ChiselGeneratorComponent : ChiselNode, IChiselHasOperation
     {
         // This ensures names remain identical, or a compile error occurs.
         public const string kOperationFieldName = nameof(operation);
@@ -385,7 +390,14 @@ namespace Chisel.Components
         {
             if (!Node.Valid)
             {
-                var treeRoot = this.hierarchyItem.Model.Node;
+                var model = this.hierarchyItem?.Model;
+                if (model == null)
+                {
+                    Debug.LogError("Model not yet initialized");
+                    return;
+                }
+
+                var treeRoot = model.Node;
                 var instanceID = GetInstanceID();
                 Profiler.BeginSample("EnsureTopNodeCreated");
                 try

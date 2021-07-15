@@ -16,21 +16,21 @@ using ToolManager = UnityEditor.EditorTools;
 namespace Chisel.Editors
 {
     [EditorTool("Chisel " + kToolName + " Tool")]
-    class ChiselCreateTool : ChiselEditToolBase
+    class ChiselPlacementTool : ChiselEditToolBase
     {
-        public const string kToolName = "Create";
+        public const string kToolName = "Placement";
         public override string ToolName => kToolName;
 
         public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllGeometry; } }
 
         public override GUIContent Content { get { return ChiselGeneratorManager.GeneratorMode.Content; } }
 
-        public static bool IsActive() { return ToolManager.activeToolType == typeof(ChiselCreateTool); }
+        public static bool IsActive() { return ToolManager.activeToolType == typeof(ChiselPlacementTool); }
         
         #region Keyboard Shortcut
         const string kEditModeShotcutName = kToolName + " Mode";
         [Shortcut(ChiselKeyboardDefaults.ShortCutEditModeBase + kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToCreateEditMode, displayName = kEditModeShotcutName)]
-        public static void ActivateTool() { ToolManager.SetActiveTool<ChiselCreateTool>(); }
+        public static void ActivateTool() { ToolManager.SetActiveTool<ChiselPlacementTool>(); }
 
         public static void DeactivateTool(bool selectNode = false)
         {
@@ -42,7 +42,7 @@ namespace Chisel.Editors
             if (!IsActive())
                 return;
 
-            if (selectNode && ChiselToolsOverlay.HaveNodesInSelection())
+            if (selectNode && ChiselToolbarUtility.HaveNodesInSelection())
             {
                 ChiselEditGeneratorTool.ActivateTool();
                 if (!IsActive())
@@ -59,15 +59,18 @@ namespace Chisel.Editors
 
         public override void OnActivate()
         {
+            ChiselPlacementOptionsOverlay.Show();
             base.OnActivate();
             UnityEditor.Selection.selectionChanged -= OnSelectionChanged;
             UnityEditor.Selection.selectionChanged += OnSelectionChanged;
             ChiselGeneratorManager.GeneratorMode.OnActivate();
             ChiselOutlineRenderer.VisualizationMode = VisualizationMode.None;
+            UpdatePlacementToolIcon();
         }
 
         public override void OnDeactivate()
         {
+            ChiselPlacementOptionsOverlay.Hide();
             base.OnDeactivate();
             UnityEditor.Selection.selectionChanged -= OnSelectionChanged;
             ChiselGeneratorManager.GeneratorMode.OnDeactivate();
@@ -77,14 +80,6 @@ namespace Chisel.Editors
         {
             DeactivateTool(selectNode: true);
         }
-
-        #region In-scene Options GUI
-        public override string OptionsTitle => $"{ChiselGeneratorManager.GeneratorMode.ToolName} Options";
-        public override void OnInSceneOptionsGUI(SceneView sceneView)
-        {
-            ChiselGeneratorManager.GeneratorMode.OnSceneSettingsGUI(sceneView);
-        }
-        #endregion
 
         public virtual void Cancel()
         {
@@ -132,8 +127,24 @@ namespace Chisel.Editors
                 }
             }
 
-            ChiselOptionsOverlay.AdditionalSettings = OnInSceneOptionsGUI;
             generatorMode.ShowSceneGUI(sceneView, dragArea);
+        }
+
+        static SortedList<string, ChiselEditToolBase> editModes = new SortedList<string, ChiselEditToolBase>();
+
+        internal static void Register(ChiselEditToolBase editMode)
+        {
+            if (editMode.GetType() == typeof(ChiselPlacementTool))
+                return;
+            editModes[editMode.ToolName] = editMode;
+            editMode.UpdateIcon();
+        }
+
+        public static void UpdatePlacementToolIcon()
+        {
+            if (!editModes.TryGetValue(ChiselPlacementTool.kToolName, out ChiselEditToolBase toolBase))
+                return;
+            toolBase.UpdateIcon();
         }
     }
 }

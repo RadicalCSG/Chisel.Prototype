@@ -78,6 +78,7 @@ namespace Chisel.Editors
 
             Reset();
             UpdateSurfaceSelection();
+            ChiselSurfaceOverlay.Show();
         }
 
         public void OnDeactivate()
@@ -85,6 +86,7 @@ namespace Chisel.Editors
             ChiselSurfaceSelectionManager.selectionChanged -= UpdateSurfaceSelection;
             Reset();
             DestroyOldSurfaces();
+            ChiselSurfaceOverlay.Hide();
         }
 
         void Reset()
