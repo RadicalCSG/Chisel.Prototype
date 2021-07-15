@@ -50,20 +50,11 @@ namespace Chisel.Editors
         
         public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllUV; } }
 
-        #region In-scene Options GUI
-        public override string OptionsTitle => $"UV Options";
-        public override void OnInSceneOptionsGUI(SceneView sceneView)
-        {
-            ChiselUVToolCommon.Instance.OnSceneSettingsGUI(sceneView);
-        }
-
         static readonly int kSurfaceEditModeHash		= "SurfaceScaleEditMode".GetHashCode();
         static readonly int kSurfaceScaleHash			= "SurfaceScale".GetHashCode();
         
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            ChiselOptionsOverlay.AdditionalSettings = OnInSceneOptionsGUI;
-            
             var defaultID = GUIUtility.GetControlID(kSurfaceEditModeHash, FocusType.Passive, dragArea);
             HandleUtility.AddDefaultControl(defaultID);
 
@@ -90,7 +81,6 @@ namespace Chisel.Editors
                 Event.current.type != EventType.Repaint)
                 SceneView.RepaintAll();
         }
-        #endregion
 
 
         static bool     haveScaleStartLength = false;

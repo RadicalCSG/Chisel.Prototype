@@ -19,8 +19,8 @@ namespace Chisel.Editors
         const float kSingleSpacing      = 0.0f;
         
         public const int   kButtonSize      = 32 + (kButtonPadding * 2);
-        public const int   kButtonMargin    = ChiselToolsOverlay.kButtonMargin;
-        public const int   kButtonPadding   = ChiselToolsOverlay.kButtonPadding;
+        public const int   kButtonMargin    = 1;
+        public const int   kButtonPadding   = 2;
 
 
         [MenuItem("Window/Chisel/Placement Tools")]
@@ -99,7 +99,7 @@ namespace Chisel.Editors
                 {
                     // TODO: make undoable
                     generator.InToolBox = true;
-                    ChiselCreateTool.ActivateTool();
+                    ChiselPlacementTool.ActivateTool();
                     ChiselGeneratorManager.GeneratorMode = generator;
                     ChiselEditorSettings.Save();
                     SceneView.RepaintAll();
@@ -167,11 +167,13 @@ namespace Chisel.Editors
                 {
                     ChiselPlacementToolsSelectionWindow.SetInToolBox(generator, false);
                 } else
-                { 
-                    ChiselCreateTool.ActivateTool();
-                    ChiselGeneratorManager.GeneratorMode = generator;
+                {
                     if (value)
+                    {
+                        ChiselPlacementTool.ActivateTool();
+                        ChiselGeneratorManager.GeneratorMode = generator;
                         ChiselEditorSettings.Save();
+                    }
                     SceneView.RepaintAll();
                 }
             }
@@ -241,11 +243,6 @@ namespace Chisel.Editors
 
         Vector2 scrollPosition = Vector2.zero;
 
-        class TO : ScriptableObject
-        {
-
-        }
-
         public void OnGUI()
         {
             // TODO: add search functionality
@@ -253,7 +250,7 @@ namespace Chisel.Editors
 
             InitStyles();
             var generatorModes  = ChiselGeneratorManager.generatorModes;
-            var isActive        = ChiselCreateTool.IsActive();
+            var isActive        = ChiselPlacementTool.IsActive();
 
             float height = 0;
             var previousGroup = string.Empty;
@@ -289,8 +286,11 @@ namespace Chisel.Editors
             }
             EditorGUILayout.EndScrollView();
         }
-
-        public static readonly GUILayoutOption kMinInnerWidthLayout = GUILayout.MinWidth(ChiselOverlay.kMinWidth - 8);
+        
+        // TODO: CLEAN THIS UP
+        public const int kMinWidth = ((248 + 32) - ((32 + 2) * ChiselPlacementToolsSelectionWindow.kToolsWide)) + (ChiselPlacementToolsSelectionWindow.kButtonSize * ChiselPlacementToolsSelectionWindow.kToolsWide);
+        public static readonly GUILayoutOption kMinWidthLayout = GUILayout.MinWidth(kMinWidth);
+        public static readonly GUILayoutOption kMinInnerWidthLayout = GUILayout.MinWidth(kMinWidth - 8);
 
         public const int kToolsWide = 8;
 
@@ -310,7 +310,7 @@ namespace Chisel.Editors
             InitStyles();
 
             var generatorModes  = ChiselGeneratorManager.generatorModes;
-            var isActive        = ChiselCreateTool.IsActive();
+            var isActive        = ChiselPlacementTool.IsActive();
 
             var style           = styles.toggleStyleMid;
 
@@ -324,7 +324,7 @@ namespace Chisel.Editors
             }
 
             int rows = Mathf.CeilToInt((usedModes + 1) / (float)kToolsWide);
-            var groupRect = EditorGUILayout.GetControlRect(false, (rows * style.fixedHeight) + styles.boxStyleVerticalMargin, ChiselOverlay.kMinWidthLayout);
+            var groupRect = EditorGUILayout.GetControlRect(false, (rows * style.fixedHeight) + styles.boxStyleVerticalMargin, kMinWidthLayout);
             groupRect.xMin -= 2;
             groupRect.yMin += 5;
             groupRect.xMax += 3;

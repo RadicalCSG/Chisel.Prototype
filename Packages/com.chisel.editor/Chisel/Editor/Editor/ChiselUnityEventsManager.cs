@@ -154,9 +154,6 @@ namespace Chisel.Editors
                     ChiselDragAndDropManager.Instance.OnSceneGUI(sceneView);
                     ChiselClickSelectionManager.Instance.OnSceneGUI(sceneView);
                 }
-
-                if (Tools.current != Tool.Custom)
-                    ChiselEditToolBase.ShowDefaultOverlay();
             }
             finally
             {
@@ -179,7 +176,6 @@ namespace Chisel.Editors
         {
             ChiselClickSelectionManager.Instance.OnSelectionChanged();
             ChiselOutlineRenderer.Instance.OnSelectionChanged();
-            ChiselEditToolBase.NotifyOnSelectionChanged();
         }
 
         private static void OnSurfaceSelectionChanged()

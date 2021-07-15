@@ -131,45 +131,29 @@ namespace Chisel.Editors
             return image;
         }
 
+        static byte[] nameBuffer;
 
-        static int HashLowerInvariant(string name)
+        static unsafe int HashLowerInvariant(string name)
         {
             var length = name.Length;
             if (length == 0)
                 return 0;
-            if (length == 1)
-                return (int)char.ToLowerInvariant(name[0]);
 
-            int4 v = int4.zero;
-            int i = 0;
-            int h = 0;
-            int4 h4 = int4.zero;
-            for (int n=0; i + 4 < length; i += 4)
+            if (nameBuffer == null || nameBuffer.Length < length)
+                nameBuffer = new byte[length];
+            else
+                Array.Clear(nameBuffer, 0, length);
+
+            for (int i = 0; i < length; i++)
             {
-                v[0] = char.ToLowerInvariant(name[i + 0]);
-                v[1] = char.ToLowerInvariant(name[i + 1]);
-                v[2] = char.ToLowerInvariant(name[i + 2]);
-                v[3] = char.ToLowerInvariant(name[i + 3]);
-                h4[n] = (int)math.hash(v); n++;
-                if (n == 3)
-                {
-                    h4[n] = h;
-                    h = (int)math.hash(h4);
-                    h4 = int4.zero;
-                    n = 0;
-                }
+                var lowerChar = char.ToLowerInvariant(name[i + 0]);
+                nameBuffer[i] = (byte)lowerChar; // yes, we're making the assumption that the character is ASCII ...
             }
-            h = (int)math.hash(h4);
-            h4 = int4.zero;
-            if (i < length)
+
+            fixed (byte* nameBufferPtr = &nameBuffer[0])
             {
-                int n = 0;
-                for (; i < length; i++)
-                    v[n] = char.ToLowerInvariant(name[i]); n++;
-                h4[n] = h;
-                h = (int)math.hash(h4);
+                unchecked { return (int)math.hash(nameBufferPtr, length); }
             }
-            return h;
         }
 
 

@@ -110,9 +110,11 @@ namespace Chisel.Editors
             if (!generatorModified)
                 return;
 
-            var activeGenerators = activeOutlines.Keys.ToArray();
-            if (activeGenerators.Length > 0)                
-                Undo.RecordObjects(activeGenerators, activeGenerators.Length == 1 ? "Modified brush" : "Modified brushes");
+            var activeGenerators = activeOutlines.Keys.ToList();
+            for (int i = activeGenerators.Count - 1; i >= 0; i--)
+                if (activeGenerators[i] == null) activeGenerators.RemoveAt(i);
+            if (activeGenerators.Count > 0)
+                Undo.RecordObjects(activeGenerators.ToArray(), activeGenerators.Count == 1 ? "Modified brush" : "Modified brushes"); ;
 
             // Remove redundant vertices and fix the selection so that the correct edges/vertices etc. are selected
             foreach (var generator in activeGenerators)

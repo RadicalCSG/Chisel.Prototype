@@ -47,22 +47,14 @@ namespace Chisel.Editors
             ChiselUVToolCommon.Instance.OnDeactivate();
         }
         #endregion
-        public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllUV; } }
 
-        #region In-scene Options GUI
-        public override string OptionsTitle => $"UV Options";
-        public override void OnInSceneOptionsGUI(SceneView sceneView)
-        {
-            ChiselUVToolCommon.Instance.OnSceneSettingsGUI(sceneView);
-        }
+        public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllUV; } }
 
         static readonly int kSurfaceEditModeHash		= "SurfaceRotateEditMode".GetHashCode();
         static readonly int kSurfaceRotateHash			= "SurfaceRotate".GetHashCode();
         
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            ChiselOptionsOverlay.AdditionalSettings = OnInSceneOptionsGUI;
-
             var defaultID = GUIUtility.GetControlID(kSurfaceEditModeHash, FocusType.Passive, dragArea);
             HandleUtility.AddDefaultControl(defaultID);
 
@@ -89,7 +81,6 @@ namespace Chisel.Editors
                 Event.current.type != EventType.Repaint)
                 SceneView.RepaintAll();
         }
-        #endregion
 
         #region Surface Rotate Tool
         static void RotateSurfacesInWorldSpace(Vector3 center, Vector3 normal, float rotateAngle)
