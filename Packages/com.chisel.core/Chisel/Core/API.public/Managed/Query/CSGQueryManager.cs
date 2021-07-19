@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using Unity.Collections;
-using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -61,7 +60,7 @@ namespace Chisel.Core
                                   CSGTree           tree,
                                   CSGTreeBrush      brush,
 
-                                  ref BlobArray<ChiselSurfaceRenderBuffer> surfaces,
+                                  ref ChiselBlobArray<ChiselSurfaceRenderBuffer> surfaces,
 
 						          Vector3           treeSpaceRayStart,
 						          Vector3           treeSpaceRayEnd,
@@ -256,8 +255,8 @@ namespace Chisel.Core
                     if (!brush.IsSelectable)
                         continue;
 #endif
-                    var minMaxAABB = brush.Bounds;
-                    if (minMaxAABB.IsEmpty)
+                    var aabb = brush.Bounds;
+                    if (aabb.IsEmpty)
                         continue;
                     if (s_IgnoreNodeIndices.Contains(brush) ||
                         (s_FilterNodeIndices.Count > 0 && !s_FilterNodeIndices.Contains(brush)))
@@ -267,7 +266,7 @@ namespace Chisel.Core
                     if (!brushRenderBufferLookup.TryGetValue(brushCompactNodeID, out var brushRenderBuffer))
                         continue;
 
-                    var bounds = new Bounds((minMaxAABB.Max + minMaxAABB.Min) / 2, minMaxAABB.Max - minMaxAABB.Min);
+                    var bounds = new Bounds((aabb.Max + aabb.Min) / 2, aabb.Max - aabb.Min);
                     if (!bounds.IntersectRay(treeSpaceRay))
                         continue;
 

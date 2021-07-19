@@ -13,7 +13,6 @@ using UnitySceneExtensions;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using Unity.Burst;
-using Unity.Entities;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
 
@@ -24,7 +23,7 @@ namespace Chisel.Core
     {
         [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float4 CalculatePlane(in BrushMeshBlob.Polygon polygon, in BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in BlobBuilderArray<float3> vertices)
+        public static float4 CalculatePlane(in BrushMeshBlob.Polygon polygon, in ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in ChiselBlobBuilderArray<float3> vertices)
         {
             // Newell's algorithm to create a plane for concave polygons.
             // NOTE: doesn't work well for self-intersecting polygons
@@ -51,7 +50,7 @@ namespace Chisel.Core
 
         [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void UpdateHalfEdgePolygonIndices(ref BlobBuilderArray<int> halfEdgePolygonIndices, in BlobBuilderArray<BrushMeshBlob.Polygon> polygons)
+        public static void UpdateHalfEdgePolygonIndices(ref ChiselBlobBuilderArray<int> halfEdgePolygonIndices, in ChiselBlobBuilderArray<BrushMeshBlob.Polygon> polygons)
         {
             for (int p = 0; p < polygons.Length; p++)
             {
@@ -65,7 +64,7 @@ namespace Chisel.Core
 
         [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static MinMaxAABB CalculateBounds(in BlobBuilderArray<float3> vertices)
+        public static ChiselAABB CalculateBounds(in ChiselBlobBuilderArray<float3> vertices)
         {
             var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
             var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
@@ -74,12 +73,12 @@ namespace Chisel.Core
                 min = math.min(min, vertices[i]);
                 max = math.max(max, vertices[i]);
             }
-            return new MinMaxAABB { Min = min, Max = max };
+            return new ChiselAABB { Min = min, Max = max };
         }
 
         [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void FitXZ(ref BlobBuilderArray<float3> vertices, int firstVertex, int vertexCount, float2 expectedSize)
+        public static void FitXZ(ref ChiselBlobBuilderArray<float3> vertices, int firstVertex, int vertexCount, float2 expectedSize)
         {
             if (math.any(expectedSize == float2.zero))
                 return;
@@ -108,7 +107,7 @@ namespace Chisel.Core
 
         [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void CalculatePlanes(ref BlobBuilderArray<float4> planes, in BlobBuilderArray<BrushMeshBlob.Polygon> polygons, in BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in BlobBuilderArray<float3> vertices)
+        public static void CalculatePlanes(ref ChiselBlobBuilderArray<float4> planes, in ChiselBlobBuilderArray<BrushMeshBlob.Polygon> polygons, in ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in ChiselBlobBuilderArray<float3> vertices)
         {
             for (int p = 0; p < polygons.Length; p++)
                 planes[p] = CalculatePlane(in polygons[p], in halfEdges, in vertices);
@@ -116,12 +115,12 @@ namespace Chisel.Core
 
         [BurstCompile]
         public unsafe static bool GenerateSegmentedSubMesh(int horzSegments, int vertSegments, bool topCap, bool bottomCap, int topVertex, int bottomVertex, 
-                                                           in BlobBuilderArray<float3> segmentVertices, 
+                                                           in ChiselBlobBuilderArray<float3> segmentVertices, 
                                                            ref NativeChiselSurfaceDefinition surfaceDefinition,
-                                                           in BlobBuilder builder,
+                                                           in ChiselBlobBuilder builder,
                                                            ref BrushMeshBlob root,
-                                                           out BlobBuilderArray<BrushMeshBlob.Polygon> polygons,
-                                                           out BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges)
+                                                           out ChiselBlobBuilderArray<BrushMeshBlob.Polygon> polygons,
+                                                           out ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges)
         {
             // FIXME: hack, to fix math below .. 
             vertSegments++;
@@ -280,11 +279,11 @@ namespace Chisel.Core
         //public static bool CreateExtrudedSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, int segmentTopIndex, int segmentBottomIndex, Vector3[] vertices, in ChiselSurfaceDefinition surfaceDefinition)
         [BurstCompile]
         public static unsafe void CreateExtrudedSubMesh(int segments, int* segmentDescriptionIndices, int segmentDescriptionLength, int segmentTopIndex, int segmentBottomIndex, 
-                                                        in BlobBuilderArray<float3>                          localVertices,
-                                                        in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
-                                                        in BlobBuilder builder, ref BrushMeshBlob root,
-                                                        out BlobBuilderArray<BrushMeshBlob.Polygon>    polygons,
-                                                        out BlobBuilderArray<BrushMeshBlob.HalfEdge>   halfEdges)
+                                                        in ChiselBlobBuilderArray<float3>                          localVertices,
+                                                        in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                        in ChiselBlobBuilder builder, ref BrushMeshBlob root,
+                                                        out ChiselBlobBuilderArray<BrushMeshBlob.Polygon>    polygons,
+                                                        out ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge>   halfEdges)
         {
             ref var surfaceDefinition = ref surfaceDefinitionBlob.Value;
 
@@ -667,10 +666,10 @@ namespace Chisel.Core
         public static unsafe bool CreateExtrudedSubMesh(float3* sideVertices, int sideVertexCount, float3 extrusion, 
                                                         int* segmentDescriptionIndices, int segmentDescriptionLength,
                                                         ref NativeChiselSurfaceDefinition surfaceDefinition,
-                                                        in BlobBuilder builder, ref BrushMeshBlob root,
-                                                        out BlobBuilderArray<BrushMeshBlob.Polygon>    polygons,
-                                                        out BlobBuilderArray<BrushMeshBlob.HalfEdge>   halfEdges,
-                                                        out BlobBuilderArray<float3>                   localVertices)
+                                                        in ChiselBlobBuilder builder, ref BrushMeshBlob root,
+                                                        out ChiselBlobBuilderArray<BrushMeshBlob.Polygon>    polygons,
+                                                        out ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge>   halfEdges,
+                                                        out ChiselBlobBuilderArray<float3>                   localVertices)
         {
             const float kDistanceEpsilon = 0.0000001f;
             for (int i = sideVertexCount - 1; i >= 0; i--)
@@ -931,7 +930,7 @@ namespace Chisel.Core
         static int[]                edgeIndices;
 
 
-        public static bool Validate(in BlobBuilderArray<float3> vertices, in BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in BlobBuilderArray<BrushMeshBlob.Polygon> polygons, bool logErrors = false)
+        public static bool Validate(in ChiselBlobBuilderArray<float3> vertices, in ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in ChiselBlobBuilderArray<BrushMeshBlob.Polygon> polygons, bool logErrors = false)
         {
             if (vertices.Length == 0)
             {
@@ -1069,13 +1068,13 @@ namespace Chisel.Core
             return true;
         }
         
-        public static bool IsSelfIntersecting(in BlobBuilderArray<float3> vertices, in BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in BlobBuilderArray<BrushMeshBlob.Polygon> polygons)
+        public static bool IsSelfIntersecting(in ChiselBlobBuilderArray<float3> vertices, in ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in ChiselBlobBuilderArray<BrushMeshBlob.Polygon> polygons)
         {
             // TODO: determine if the brush is intersecting itself
             return false;
         }
 
-        public static bool HasVolume(in BlobBuilderArray<float3> vertices, in BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in BlobBuilderArray<BrushMeshBlob.Polygon> polygons)
+        public static bool HasVolume(in ChiselBlobBuilderArray<float3> vertices, in ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in ChiselBlobBuilderArray<BrushMeshBlob.Polygon> polygons)
         {
             if (polygons.Length == 0)
                 return false;

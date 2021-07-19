@@ -4,7 +4,6 @@ using System;
 using Chisel.Core;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
-using Unity.Entities;
 using Unity.Collections;
 
 namespace Chisel.Components
@@ -77,7 +76,7 @@ namespace Chisel.Components
             }
         }
 
-        public BlobAssetReference<BrushMeshBlob> BrushMesh
+        public ChiselBlobAssetReference<BrushMeshBlob> BrushMesh
         {
             get
             {

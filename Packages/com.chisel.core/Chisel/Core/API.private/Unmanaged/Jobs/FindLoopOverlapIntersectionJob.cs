@@ -3,7 +3,6 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
 using Debug = UnityEngine.Debug;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
@@ -25,8 +24,8 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<float3>                                      outputSurfaceVertices;        
         [NoAlias, ReadOnly] public NativeArray<int2>.ReadOnly                               outputSurfacesRange;
         [NoAlias, ReadOnly] public NativeArray<BrushIntersectionLoop>                       outputSurfaces;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>        basePolygonCache;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlaneCache;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BasePolygonsBlob>>        basePolygonCache;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlaneCache;
 
         // Read Write
         [NativeDisableParallelForRestriction]
@@ -90,7 +89,7 @@ namespace Chisel.Core
             int brushNodeOrder      = brushIndexOrder.nodeOrder;
 
             // Can happen when BrushMeshes are not initialized correctly
-            if (basePolygonCache[brushNodeOrder] == BlobAssetReference<BasePolygonsBlob>.Null)
+            if (basePolygonCache[brushNodeOrder] == ChiselBlobAssetReference<BasePolygonsBlob>.Null)
             {
                 if (!loopVerticesLookup.IsIndexCreated(brushIndexOrder.nodeOrder))
                     loopVerticesLookup.AllocateWithCapacityForIndex(brushIndexOrder.nodeOrder, 16);
@@ -417,7 +416,7 @@ namespace Chisel.Core
             }
         }
 
-        public void FindLoopPlaneIntersections(NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes,
+        public void FindLoopPlaneIntersections(NativeArray<ChiselBlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes,
                                                int intersectionBrushOrder1, //int intersectionBrushOrder0,
                                                HashedVertices hashedTreeSpaceVertices, NativeListArray<Edge>.NativeList edges)
         {
@@ -565,7 +564,7 @@ namespace Chisel.Core
             }
         }
         
-        public void FindBasePolygonPlaneIntersections(ref BlobArray<float4>             otherPlanes,
+        public void FindBasePolygonPlaneIntersections(ref ChiselBlobArray<float4>             otherPlanes,
                                                       //ref BlobArray<float4>           selfPlanes,
                                                       NativeListArray<Edge>.NativeList  selfEdges,
                                                       HashedVertices                    combinedVertices)
@@ -711,7 +710,7 @@ namespace Chisel.Core
         }
 
 
-        public void FindLoopVertexOverlaps(ref BlobArray<float4> selfPlanes,
+        public void FindLoopVertexOverlaps(ref ChiselBlobArray<float4> selfPlanes,
                                            NativeListArray<Edge>.NativeList selfEdges,
                                            NativeListArray<Edge>.NativeList otherEdges,
                                            HashedVertices combinedVertices)

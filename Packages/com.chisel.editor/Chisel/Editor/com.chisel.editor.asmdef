@@ -8,8 +8,7 @@
         "com.scene.handle.extensions.runtime",
         "Unity.Mathematics",
         "Unity.Mathematics.Extensions",
-        "Unity.Collections",
-        "Unity.Entities"
+        "Unity.Collections"
     ],
     "includePlatforms": [
         "Editor"

@@ -1,5 +1,4 @@
 ﻿using System;
-using Unity.Entities;
 using Unity.Mathematics;
 using Mathf = UnityEngine.Mathf;
 
@@ -35,14 +34,14 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool Intersects(this MinMaxAABB left, MinMaxAABB right, double epsilon)
+        public static bool Intersects(this ChiselAABB left, ChiselAABB right, double epsilon)
         {
             return ((right.Max.x - left.Min.x) >= -epsilon) && ((left.Max.x - right.Min.x) >= -epsilon) &&
                    ((right.Max.y - left.Min.y) >= -epsilon) && ((left.Max.y - right.Min.y) >= -epsilon) &&
                    ((right.Max.z - left.Min.z) >= -epsilon) && ((left.Max.z - right.Min.z) >= -epsilon);
         }
 
-        public static MinMaxAABB Create(float4x4 transformation, float3[] vertices)
+        public static ChiselAABB Create(float4x4 transformation, float3[] vertices)
         {
             if (vertices == null ||
                 vertices.Length == 0)
@@ -57,10 +56,10 @@ namespace Chisel.Core
                 min = math.min(min, vert);
                 max = math.max(max, vert);
             }
-            return new MinMaxAABB { Min = min, Max = max };
+            return new ChiselAABB { Min = min, Max = max };
         }
 
-        public static MinMaxAABB Create(ref BlobArray<float3> vertices, float4x4 transformation)
+        public static ChiselAABB Create(ref ChiselBlobArray<float3> vertices, float4x4 transformation)
         {
             if (vertices.Length == 0)
                 return default;
@@ -74,7 +73,7 @@ namespace Chisel.Core
                 min = math.min(min, vert);
                 max = math.max(max, vert);
             }
-            return new MinMaxAABB { Min = min, Max = max };
+            return new ChiselAABB { Min = min, Max = max };
         }
     }
 }

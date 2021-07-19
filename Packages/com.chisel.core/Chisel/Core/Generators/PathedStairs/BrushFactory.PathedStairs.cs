@@ -12,7 +12,6 @@ using Debug = UnityEngine.Debug;
 using Unity.Mathematics;
 using UnitySceneExtensions;
 using Unity.Collections;
-using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
@@ -23,7 +22,7 @@ namespace Chisel.Core
         public static int CountPathedStairBrushes(UnsafeList<SegmentVertex> shapeVertices,
                                                   bool              closedLoop,
                                                   
-                                                  MinMaxAABB        bounds,
+                                                  ChiselAABB        bounds,
 
                                                   float	            stepHeight,
                                                   float	            stepDepth,
@@ -64,10 +63,10 @@ namespace Chisel.Core
         }
         
         // TODO: kind of broken, needs fixing
-        public static bool GeneratePathedStairs(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes,
+        public static bool GeneratePathedStairs(NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes,
                                                 UnsafeList<SegmentVertex> shapeVertices,
                                                 bool                closedLoop,
-                                                MinMaxAABB          bounds,
+                                                ChiselAABB          bounds,
 
                                                 float	            stepHeight,
                                                 float	            stepDepth,
@@ -87,7 +86,7 @@ namespace Chisel.Core
                                                 float	            sideWidth,
                                                 float	            sideHeight,
                                                 float	            sideDepth,
-                                                in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
                                                 Allocator allocator)
         {
             var absDepth    = math.abs(bounds.Max.z - bounds.Min.z);

@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
-using Unity.Entities;
 using Unity.Mathematics;
 using System.Runtime.CompilerServices;
 

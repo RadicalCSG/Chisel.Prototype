@@ -13,7 +13,6 @@ using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine.Profiling;
 using Unity.Collections;
-using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
 
@@ -22,7 +21,7 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        static bool GetExtrudedVertices(UnsafeList<SegmentVertex> shapeVertices, Range range, Matrix4x4 matrix0, Matrix4x4 matrix1, in BlobBuilder builder, ref BrushMeshBlob root, out BlobBuilderArray<float3> localVertices, out NativeArray<int> segmentIndices, Allocator allocator)
+        static bool GetExtrudedVertices(UnsafeList<SegmentVertex> shapeVertices, Range range, Matrix4x4 matrix0, Matrix4x4 matrix1, in ChiselBlobBuilder builder, ref BrushMeshBlob root, out ChiselBlobBuilderArray<float3> localVertices, out NativeArray<int> segmentIndices, Allocator allocator)
         {
             const int pathSegments = 2;
             var rangeLength = range.Length;
@@ -68,11 +67,11 @@ namespace Chisel.Core
         }
 
         [BurstCompile]
-        public static unsafe bool GenerateExtrudedShape(NativeList<BlobAssetReference<BrushMeshBlob>>   brushMeshes, 
+        public static unsafe bool GenerateExtrudedShape(NativeList<ChiselBlobAssetReference<BrushMeshBlob>>   brushMeshes, 
                                                         in UnsafeList<SegmentVertex>                    polygonVerticesArray, 
                                                         in UnsafeList<int>                              polygonVerticesSegments,
                                                         in UnsafeList<float4x4>                         pathMatrices,
-                                                        in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                        in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
                                                         Allocator allocator)
         {
             // TODO: make each extruded quad split into two triangles when it's not a perfect plane,
@@ -119,13 +118,13 @@ namespace Chisel.Core
                         Debug.Log($"{brushMeshIndex} >= {brushMeshes.Length}");
                         return false;
                     }
-                    brushMeshes[brushMeshIndex] = BlobAssetReference<BrushMeshBlob>.Null;
+                    brushMeshes[brushMeshIndex] = ChiselBlobAssetReference<BrushMeshBlob>.Null;
 
-                    using (var builder = new BlobBuilder(Allocator.Temp))
+                    using (var builder = new ChiselBlobBuilder(Allocator.Temp))
                     {
                         ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
-                        BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges;
-                        BlobBuilderArray<BrushMeshBlob.Polygon> polygons;
+                        ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges;
+                        ChiselBlobBuilderArray<BrushMeshBlob.Polygon> polygons;
 
                         if (!GetExtrudedVertices(polygonVerticesArray, range, matrix0, matrix1, in builder, ref root, out var localVertices, out var segmentIndices, Allocator.Temp))
                             continue;

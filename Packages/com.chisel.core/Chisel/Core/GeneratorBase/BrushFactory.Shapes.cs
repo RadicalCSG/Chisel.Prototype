@@ -12,7 +12,6 @@ using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
 using System.Collections.Generic;
 using Unity.Burst;
-using Unity.Entities;
 using Unity.Collections;
 using Unity.Mathematics;
 using System.Runtime.CompilerServices;
@@ -38,22 +37,22 @@ namespace Chisel.Core
         
         [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static BlobAssetReference<BrushMeshBlob> CreateSquarePyramidAssetPolygons(float3 vertex0,
+        public static ChiselBlobAssetReference<BrushMeshBlob> CreateSquarePyramidAssetPolygons(float3 vertex0,
                                                                                          float3 vertex1,
                                                                                          float3 vertex2,
                                                                                          float3 vertex3,
                                                                                          float3 vertex4,
-                                                                                         in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
+                                                                                         in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
                                                                                          Allocator allocator)
         {
-            if (surfaceDefinition == BlobAssetReference<NativeChiselSurfaceDefinition>.Null)
-                return BlobAssetReference<BrushMeshBlob>.Null;
+            if (surfaceDefinition == ChiselBlobAssetReference<NativeChiselSurfaceDefinition>.Null)
+                return ChiselBlobAssetReference<BrushMeshBlob>.Null;
 
             ref var surfaces = ref surfaceDefinition.Value.surfaces;
             if (surfaces.Length < 5)
-                return BlobAssetReference<BrushMeshBlob>.Null;
+                return ChiselBlobAssetReference<BrushMeshBlob>.Null;
 
-            using (var builder = new BlobBuilder(Allocator.Temp))
+            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
             {
                 const int kTotalVertices    = 5;
                 const int kTotalHalfEdges   = 16;
@@ -226,21 +225,21 @@ namespace Chisel.Core
         
         [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static BlobAssetReference<BrushMeshBlob> CreateTriangularPyramidAssetPolygons(float3 vertex0,
+        public static ChiselBlobAssetReference<BrushMeshBlob> CreateTriangularPyramidAssetPolygons(float3 vertex0,
                                                                                              float3 vertex1,
                                                                                              float3 vertex2,
                                                                                              float3 vertex3,
-                                                                                             in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
+                                                                                             in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
                                                                                              Allocator allocator)
         {
-            if (surfaceDefinition == BlobAssetReference<NativeChiselSurfaceDefinition>.Null)
-                return BlobAssetReference<BrushMeshBlob>.Null;
+            if (surfaceDefinition == ChiselBlobAssetReference<NativeChiselSurfaceDefinition>.Null)
+                return ChiselBlobAssetReference<BrushMeshBlob>.Null;
 
             ref var surfaces = ref surfaceDefinition.Value.surfaces;
             if (surfaces.Length < 5)
-                return BlobAssetReference<BrushMeshBlob>.Null;
+                return ChiselBlobAssetReference<BrushMeshBlob>.Null;
 
-            using (var builder = new BlobBuilder(Allocator.Temp))
+            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
             {
                 const int kTotalVertices    = 4;
                 const int kTotalHalfEdges   = 12;
@@ -394,23 +393,23 @@ namespace Chisel.Core
         
         [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static BlobAssetReference<BrushMeshBlob> CreateWedgeAssetPolygons(float3 vertex0,
+        public static ChiselBlobAssetReference<BrushMeshBlob> CreateWedgeAssetPolygons(float3 vertex0,
                                                                                  float3 vertex1,
                                                                                  float3 vertex2,
                                                                                  float3 vertex3,
                                                                                  float3 vertex4,
                                                                                  float3 vertex5,
-                                                                                 in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
+                                                                                 in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
                                                                                  Allocator allocator)
         {
-            if (surfaceDefinition == BlobAssetReference<NativeChiselSurfaceDefinition>.Null)
-                return BlobAssetReference<BrushMeshBlob>.Null;
+            if (surfaceDefinition == ChiselBlobAssetReference<NativeChiselSurfaceDefinition>.Null)
+                return ChiselBlobAssetReference<BrushMeshBlob>.Null;
 
             ref var surfaces = ref surfaceDefinition.Value.surfaces;
             if (surfaces.Length < 5)
-                return BlobAssetReference<BrushMeshBlob>.Null;
+                return ChiselBlobAssetReference<BrushMeshBlob>.Null;
 
-            using (var builder = new BlobBuilder(Allocator.Temp))
+            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
             {
                 const int kTotalVertices    = 6;
                 const int kTotalHalfEdges   = 18;

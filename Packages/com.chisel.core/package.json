@@ -11,11 +11,11 @@
   ],
   "unity": "2020.2",
   "version": "0.0.1-preview",
-  "dependencies": {
-    "com.unity.burst": "1.4.1",
-    "com.unity.collections": "0.14.0-preview.16",
-    "com.unity.entities": "0.16.0-preview.21",
-    "com.unity.mathematics": "1.2.1"
-  },
+    "dependencies": {
+        "com.unity.burst": "1.6.0-pre.2",
+        "com.unity.jobs": "0.8.0-preview.23",
+        "com.unity.collections": "0.15.0-preview.21",
+        "com.unity.mathematics": "1.2.1"
+    },
   "type": "library"
 }

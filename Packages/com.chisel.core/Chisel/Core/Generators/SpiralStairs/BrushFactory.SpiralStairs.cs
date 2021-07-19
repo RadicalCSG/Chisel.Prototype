@@ -13,7 +13,6 @@ using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine.Profiling;
 using Unity.Collections;
-using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
 
@@ -23,21 +22,21 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        public static BlobAssetReference<BrushMeshBlob> CreateBrushBlob(BrushMesh brushMesh, in ChiselSurfaceDefinition surfaceDefinition)
+        public static ChiselBlobAssetReference<BrushMeshBlob> CreateBrushBlob(BrushMesh brushMesh, in ChiselSurfaceDefinition surfaceDefinition)
         {
             // TODO: eventually remove when it's more battle tested
             if (!brushMesh.Validate(logErrors: true))
-                return BlobAssetReference<BrushMeshBlob>.Null;
+                return ChiselBlobAssetReference<BrushMeshBlob>.Null;
             brushMesh.CalculatePlanes();
             brushMesh.UpdateHalfEdgePolygonIndices();
             return BrushMeshManager.ConvertToBrushMeshBlob(brushMesh, in surfaceDefinition, Allocator.Persistent);
         }
 
-        public static BlobAssetReference<BrushMeshBlob> CreateBrushBlob(BrushMesh brushMesh, in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
+        public static ChiselBlobAssetReference<BrushMeshBlob> CreateBrushBlob(BrushMesh brushMesh, in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
         {
             // TODO: eventually remove when it's more battle tested
             if (!brushMesh.Validate(logErrors: true))
-                return BlobAssetReference<BrushMeshBlob>.Null;
+                return ChiselBlobAssetReference<BrushMeshBlob>.Null;
             brushMesh.CalculatePlanes();
             brushMesh.UpdateHalfEdgePolygonIndices();
             return BrushMeshManager.ConvertToBrushMeshBlob(brushMesh, in surfaceDefinitionBlob, Allocator.Persistent);
@@ -46,9 +45,9 @@ namespace Chisel.Core
         // TODO: create helper method to cut brushes, use that instead of intersection + subtraction brushes
         // TODO: create spiral sides support
         [BurstCompile]
-        public static bool GenerateSpiralStairs(NativeList<BlobAssetReference<BrushMeshBlob>>        brushMeshes, 
+        public static bool GenerateSpiralStairs(NativeList<ChiselBlobAssetReference<BrushMeshBlob>>        brushMeshes, 
                                                 ref ChiselSpiralStairs                               definition, 
-                                                in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
                                                 Allocator                                            allocator)
         {
             const bool fitToBounds = false;

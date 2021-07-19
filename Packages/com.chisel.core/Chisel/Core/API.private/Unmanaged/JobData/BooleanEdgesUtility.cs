@@ -2,7 +2,6 @@ using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
-using Unity.Entities;
 using Unity.Burst;
 using System.Runtime.CompilerServices;
 
@@ -83,7 +82,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static unsafe bool IsOutsidePlanes([NoAlias] ref BlobArray<float4> planes, float4 localVertex)
+        static unsafe bool IsOutsidePlanes([NoAlias] ref ChiselBlobArray<float4> planes, float4 localVertex)
         {
             for (int n = 0; n < planes.Length; n++)
             {
@@ -139,7 +138,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static EdgeCategory CategorizeEdge(Edge edge, [NoAlias] ref BlobArray<float4> planes, [NoAlias] in NativeArray<Edge> edges, [NoAlias] in HashedVertices vertices)
+        internal static EdgeCategory CategorizeEdge(Edge edge, [NoAlias] ref ChiselBlobArray<float4> planes, [NoAlias] in NativeArray<Edge> edges, [NoAlias] in HashedVertices vertices)
         {
             // TODO: use something more clever than looping through all edges
             if (IndexOf(in edges, edge, out bool inverted) != -1)
@@ -152,7 +151,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static EdgeCategory CategorizeEdge(Edge edge, [NoAlias] ref BlobArray<float4> planes, [NoAlias] in NativeListArray<Edge>.NativeList edges, [NoAlias] in HashedVertices vertices)
+        internal static EdgeCategory CategorizeEdge(Edge edge, [NoAlias] ref ChiselBlobArray<float4> planes, [NoAlias] in NativeListArray<Edge>.NativeList edges, [NoAlias] in HashedVertices vertices)
         {
             // TODO: use something more clever than looping through all edges
             if (IndexOf(in edges, edge, out bool inverted) != -1)

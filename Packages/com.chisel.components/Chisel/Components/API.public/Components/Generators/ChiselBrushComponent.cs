@@ -2,7 +2,6 @@
 using Chisel.Core;
 using Unity.Jobs;
 using Unity.Collections;
-using Unity.Entities;
 using UnityEngine.Profiling;
 using System;
 

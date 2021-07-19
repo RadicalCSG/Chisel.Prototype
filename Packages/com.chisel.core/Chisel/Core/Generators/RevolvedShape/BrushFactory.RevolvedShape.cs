@@ -12,7 +12,6 @@ using Debug = UnityEngine.Debug;
 using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 using UnitySceneExtensions;
 using System.Runtime.CompilerServices;
 

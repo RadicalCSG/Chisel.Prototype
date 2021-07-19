@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 
 namespace Chisel.Core
 {
     internal static class BlobArrayExtensions
     {
-        public static bool Contains<T>(ref BlobArray<T> array, T value)
+        public static bool Contains<T>(ref ChiselBlobArray<T> array, T value)
             where T : struct
         {
             for (int i = 0; i < array.Length; i++)
@@ -18,7 +17,7 @@ namespace Chisel.Core
             return false;
         }
 
-        public static unsafe T2[] ToArray<T1, T2>(ref BlobArray<T1> array)
+        public static unsafe T2[] ToArray<T1, T2>(ref ChiselBlobArray<T1> array)
             where T1 : unmanaged
             where T2 : unmanaged
         {

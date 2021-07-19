@@ -5,7 +5,6 @@ using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
 using System.Collections.Generic;
 using Unity.Burst;
-using Unity.Entities;
 using Unity.Collections;
 using Unity.Mathematics;
 using System.Runtime.CompilerServices;
@@ -70,7 +69,7 @@ namespace Chisel.Core
             [NoAlias, ReadOnly] public NativeArray<int> totalCounts;
 
             [NoAlias] public NativeList<GeneratedNodeDefinition>            generatedNodeDefinitions;
-            [NoAlias] public NativeList<BlobAssetReference<BrushMeshBlob>>  brushMeshBlobs;
+            [NoAlias] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>  brushMeshBlobs;
 
             public void Execute()
             {
@@ -116,7 +115,7 @@ namespace Chisel.Core
 
             Profiler.BeginSample("GenPool_Allocator"); 
             var generatedNodeDefinitions    = new NativeList<GeneratedNodeDefinition>(Allocator.TempJob);
-            var brushMeshBlobs              = new NativeList<BlobAssetReference<BrushMeshBlob>>(Allocator.TempJob);
+            var brushMeshBlobs              = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(Allocator.TempJob);
 
             var resizeTempLists = new ResizeTempLists
             {
@@ -315,7 +314,7 @@ namespace Chisel.Core
         JobHandle ScheduleUpdateHierarchyJob(bool runInParallel, JobHandle dependsOn, int index, NativeArray<int> totalCounts);
         JobHandle ScheduleInitializeArraysJob([NoAlias, ReadOnly] NativeList<CompactHierarchy>                      inHierarchyList, 
                                               [NoAlias, WriteOnly] NativeList<GeneratedNodeDefinition>              outGeneratedNodeDefinitions,
-                                              [NoAlias, WriteOnly] NativeList<BlobAssetReference<BrushMeshBlob>>    outBrushMeshBlobs,
+                                              [NoAlias, WriteOnly] NativeList<ChiselBlobAssetReference<BrushMeshBlob>>    outBrushMeshBlobs,
                                               JobHandle dependsOn);
     }
 
@@ -323,9 +322,9 @@ namespace Chisel.Core
     public class GeneratorBrushJobPool<Generator> : GeneratorJobPool
         where Generator : unmanaged, IBrushGenerator
     {
-        NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>>   surfaceDefinitions;
+        NativeList<ChiselBlobAssetReference<NativeChiselSurfaceDefinition>>   surfaceDefinitions;
         NativeList<Generator>                                           generators;
-        NativeList<BlobAssetReference<BrushMeshBlob>>                   brushMeshes;
+        NativeList<ChiselBlobAssetReference<BrushMeshBlob>>                   brushMeshes;
         NativeList<NodeID>                                              nodes;
 
         JobHandle updateHierarchyJobHandle = default;
@@ -343,8 +342,8 @@ namespace Chisel.Core
             previousJobHandle.Complete(); // <- make sure we've completed the previous schedule
             previousJobHandle = default;
             
-            if (surfaceDefinitions.IsCreated) surfaceDefinitions.Clear(); else surfaceDefinitions = new NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>>(Allocator.Persistent);
-            if (brushMeshes       .IsCreated) brushMeshes       .Clear(); else brushMeshes        = new NativeList<BlobAssetReference<BrushMeshBlob>>(Allocator.Persistent);
+            if (surfaceDefinitions.IsCreated) surfaceDefinitions.Clear(); else surfaceDefinitions = new NativeList<ChiselBlobAssetReference<NativeChiselSurfaceDefinition>>(Allocator.Persistent);
+            if (brushMeshes       .IsCreated) brushMeshes       .Clear(); else brushMeshes        = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(Allocator.Persistent);
             if (generators        .IsCreated) generators        .Clear(); else generators         = new NativeList<Generator>(Allocator.Persistent);
             if (nodes             .IsCreated) nodes             .Clear(); else nodes              = new NativeList<NodeID>(Allocator.Persistent);
         }
@@ -374,7 +373,7 @@ namespace Chisel.Core
             }
         }
 
-        public void ScheduleUpdate(CSGTreeNode node, Generator settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition)
+        public void ScheduleUpdate(CSGTreeNode node, Generator settings, ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition)
         {
             if (!nodes.IsCreated)
                 AllocateOrClear();
@@ -401,8 +400,8 @@ namespace Chisel.Core
         unsafe struct CreateBrushesJob : IJobParallelForDefer
         {
             [NoAlias, ReadOnly] public NativeArray<Generator>                                           settings;
-            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>>   surfaceDefinitions;
-            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>                  brushMeshes;
+            [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<NativeChiselSurfaceDefinition>>   surfaceDefinitions;
+            [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>                  brushMeshes;
 
             public void Execute(int index)
             {
@@ -498,10 +497,10 @@ namespace Chisel.Core
 
             [NoAlias, ReadOnly] public NativeArray<NodeID>                              nodes;
             [NoAlias, ReadOnly] public NativeArray<CompactHierarchy>                    hierarchyList;
-            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>   brushMeshes;
+            [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>   brushMeshes;
 
             [NoAlias, WriteOnly] public NativeList<GeneratedNodeDefinition>.ParallelWriter              generatedNodeDefinitions;
-            [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushMeshBlob>>.ParallelWriter    brushMeshBlobs;
+            [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>.ParallelWriter    brushMeshBlobs;
 
             public void Execute()
             {
@@ -535,7 +534,7 @@ namespace Chisel.Core
 
         public JobHandle ScheduleInitializeArraysJob([NoAlias, ReadOnly] NativeList<CompactHierarchy> hierarchyList, 
                                                      [NoAlias, WriteOnly] NativeList<GeneratedNodeDefinition> generatedNodeDefinitions,
-                                                     [NoAlias, WriteOnly] NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshBlobs,
+                                                     [NoAlias, WriteOnly] NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshBlobs,
                                                      JobHandle dependsOn)
         {
             var initializeArraysJob = new InitializeArraysJob
@@ -564,7 +563,7 @@ namespace Chisel.Core
     public class GeneratorBranchJobPool<Generator> : GeneratorJobPool
         where Generator : unmanaged, IBranchGenerator
     {
-        NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
+        NativeList<ChiselBlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
         NativeList<Generator>                                         generators;
         NativeList<Range>                                             ranges;
         NativeList<GeneratedNode>                                     generatedNodes;
@@ -579,7 +578,7 @@ namespace Chisel.Core
             previousJobHandle.Complete(); // <- make sure we've completed the previous schedule
             previousJobHandle = default;
 
-            if (surfaceDefinitions.IsCreated) surfaceDefinitions.Clear(); else surfaceDefinitions = new NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>>(Allocator.Persistent);
+            if (surfaceDefinitions.IsCreated) surfaceDefinitions.Clear(); else surfaceDefinitions = new NativeList<ChiselBlobAssetReference<NativeChiselSurfaceDefinition>>(Allocator.Persistent);
             if (generatorNodeIDs  .IsCreated) generatorNodeIDs  .Clear(); else generatorNodeIDs   = new NativeList<NodeID>(Allocator.Persistent);
             if (generatedNodes    .IsCreated) generatedNodes    .Clear(); else generatedNodes     = new NativeList<GeneratedNode>(Allocator.Persistent);
             if (generators        .IsCreated) generators        .Clear(); else generators         = new NativeList<Generator>(Allocator.Persistent);
@@ -602,7 +601,7 @@ namespace Chisel.Core
             ranges = default;
         }
 
-        public void ScheduleUpdate(CSGTreeNode node, Generator settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition)
+        public void ScheduleUpdate(CSGTreeNode node, Generator settings, ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition)
         {
             if (!generatorNodeIDs.IsCreated)
                 AllocateOrClear();
@@ -676,7 +675,7 @@ namespace Chisel.Core
         [BurstCompile(CompileSynchronously = true)]
         unsafe struct CreateBrushesJob : IJobParallelForDefer
         {
-            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
+            [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
             [NoAlias] public NativeArray<Range>                     ranges;
             [NoAlias] public NativeArray<Generator>                 settings;
             [NativeDisableParallelForRestriction]
@@ -878,7 +877,7 @@ namespace Chisel.Core
 
             // Write
             [NoAlias, WriteOnly] public NativeList<GeneratedNodeDefinition>.ParallelWriter              generatedNodeDefinitions;
-            [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushMeshBlob>>.ParallelWriter    brushMeshBlobs;
+            [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>.ParallelWriter    brushMeshBlobs;
 
             public void Execute()
             {
@@ -938,7 +937,7 @@ namespace Chisel.Core
 
         public JobHandle ScheduleInitializeArraysJob([NoAlias, ReadOnly] NativeList<CompactHierarchy>                   hierarchyList, 
                                                      [NoAlias, WriteOnly] NativeList<GeneratedNodeDefinition>           generatedNodeDefinitions, 
-                                                     [NoAlias, WriteOnly] NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshBlobs, 
+                                                     [NoAlias, WriteOnly] NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshBlobs, 
                                                      JobHandle dependsOn)
         {
             var initializeArraysJob = new InitializeArraysJob

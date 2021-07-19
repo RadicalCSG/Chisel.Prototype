@@ -2,7 +2,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using System;
 using Unity.Mathematics;
-using Unity.Entities.UniversalDelegates;
 using UnityEngine.Profiling;
 
 namespace Chisel.Core

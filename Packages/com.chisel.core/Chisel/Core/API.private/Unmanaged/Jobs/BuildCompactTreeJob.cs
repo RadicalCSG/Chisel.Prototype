@@ -2,7 +2,6 @@
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
@@ -27,7 +26,7 @@ namespace Chisel.Core
 
 
         // Write
-        [NoAlias, WriteOnly] public NativeReference<BlobAssetReference<CompactTree>> compactTreeRef;
+        [NoAlias, WriteOnly] public NativeReference<ChiselBlobAssetReference<CompactTree>> compactTreeRef;
 
         public void Execute()
         {

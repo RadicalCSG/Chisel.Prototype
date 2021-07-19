@@ -1,5 +1,4 @@
 ﻿using System;
-using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -25,12 +24,12 @@ namespace Chisel.Core
 
     struct CompactTree
     {
-        public BlobArray<CompactHierarchyNode>      compactHierarchy;
-        public BlobArray<BrushAncestorLegend>       brushAncestorLegend;
-        public BlobArray<int>                       brushAncestors;
+        public ChiselBlobArray<CompactHierarchyNode>      compactHierarchy;
+        public ChiselBlobArray<BrushAncestorLegend>       brushAncestorLegend;
+        public ChiselBlobArray<int>                       brushAncestors;
 
         public int                                  minBrushIDValue;
-        public BlobArray<int>                       brushIDValueToAncestorLegend;
+        public ChiselBlobArray<int>                       brushIDValueToAncestorLegend;
         public int                                  minNodeIDValue;
         public int                                  maxNodeIDValue;
     }
