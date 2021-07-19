@@ -58,7 +58,7 @@ namespace Chisel.Core.Memory
                 static void* CustomResize(void* oldPointer, long oldCount, long newCount, Allocator allocator, long size, int align)
                 {
                     AllocatorManager.Block block = default;
-                    block.Range.Allocator = new AllocatorManager.AllocatorHandle { Value = (int)allocator };
+                    block.Range.Allocator = new AllocatorManager.AllocatorHandle { Index = (ushort)allocator };
                     block.Range.Items = (int)newCount;
                     block.Range.Pointer = (IntPtr)oldPointer;
                     block.BytesPerItem = (int)size;
