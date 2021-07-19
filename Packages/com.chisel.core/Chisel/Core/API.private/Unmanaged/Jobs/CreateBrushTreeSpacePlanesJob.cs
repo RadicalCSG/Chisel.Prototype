@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
@@ -16,16 +15,16 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>.ReadOnly  brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>.ReadOnly  brushMeshLookup;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
+        [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        BlobAssetReference<BrushTreeSpacePlanes> Build(ref BrushMeshBlob brushMeshBlob, float4x4 nodeToTreeTransformation)
+        ChiselBlobAssetReference<BrushTreeSpacePlanes> Build(ref BrushMeshBlob brushMeshBlob, float4x4 nodeToTreeTransformation)
         {
             var nodeToTreeInversed = math.inverse(nodeToTreeTransformation);
             var nodeToTreeInverseTransposed = math.transpose(nodeToTreeInversed);
@@ -34,7 +33,7 @@ namespace Chisel.Core
 
             var totalSize = 16 + (localPlanes.Length * UnsafeUtility.SizeOf<float4>());
 
-            var builder = new BlobBuilder(Allocator.Temp, totalSize);
+            var builder = new ChiselBlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BrushTreeSpacePlanes>();
             var treeSpacePlaneArray = builder.Allocate(ref root.treeSpacePlanes, localPlanes.Length);
             for (int i = 0; i < localPlanes.Length; i++)
@@ -57,7 +56,7 @@ namespace Chisel.Core
             if (!brushMeshBlob.IsCreated)
             {
                 Debug.LogError($"BrushMeshBlob invalid for brush with index {brushIndexOrder.compactNodeID}");
-                brushTreeSpacePlanes[brushNodeOrder] = BlobAssetReference<BrushTreeSpacePlanes>.Null;
+                brushTreeSpacePlanes[brushNodeOrder] = ChiselBlobAssetReference<BrushTreeSpacePlanes>.Null;
                 return;
             }
             var worldPlanes     = Build(ref brushMeshLookup[brushNodeOrder].Value, transformationCache[brushNodeOrder].nodeToTree);

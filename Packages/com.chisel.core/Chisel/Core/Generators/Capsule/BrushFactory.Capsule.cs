@@ -11,7 +11,6 @@ using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
 using Unity.Mathematics;
 using Unity.Burst;
-using Unity.Entities;
 using Unity.Collections;
 
 namespace Chisel.Core
@@ -22,12 +21,12 @@ namespace Chisel.Core
 
         [BurstCompile]
         public static bool GenerateCapsule(in ChiselCapsule                                   settings,
-                                           in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition,
-                                           out BlobAssetReference<BrushMeshBlob>                brushMesh,
+                                           in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition,
+                                           out ChiselBlobAssetReference<BrushMeshBlob>                brushMesh,
                                            Allocator                                            allocator)
         {
-            brushMesh = BlobAssetReference<BrushMeshBlob>.Null;
-            using (var builder = new BlobBuilder(Allocator.Temp))
+            brushMesh = ChiselBlobAssetReference<BrushMeshBlob>.Null;
+            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
                 if (!GenerateCapsuleVertices(in settings, in builder, ref root, out var localVertices))
@@ -64,9 +63,9 @@ namespace Chisel.Core
 
         [BurstCompile]
         public static bool GenerateCapsuleVertices(in ChiselCapsule             settings,
-                                                   in BlobBuilder               builder, 
+                                                   in ChiselBlobBuilder               builder, 
                                                    ref BrushMeshBlob            root,
-                                                   out BlobBuilderArray<float3> localVertices)
+                                                   out ChiselBlobBuilderArray<float3> localVertices)
         {
             var haveTopHemisphere		= settings.HaveRoundedTop;
             var haveBottomHemisphere	= settings.HaveRoundedBottom;

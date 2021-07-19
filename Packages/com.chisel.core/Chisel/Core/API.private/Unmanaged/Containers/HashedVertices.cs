@@ -5,7 +5,6 @@ using Unity.Burst;
 using Unity.Burst.CompilerServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
@@ -414,7 +413,7 @@ namespace Chisel.Core
             m_Vertices->AddRangeNoResize<float3>(*otherHashedVertices.m_Vertices);
         }
 
-        public HashedVertices(ref BlobArray<float3> uniqueVertices, Allocator allocator = Allocator.Persistent)
+        public HashedVertices(ref ChiselBlobArray<float3> uniqueVertices, Allocator allocator = Allocator.Persistent)
             : this(uniqueVertices.Length, allocator)
         {
             // Add Unique vertex
@@ -613,7 +612,7 @@ namespace Chisel.Core
         }
 
 
-        public unsafe void AddUniqueVertices(ref BlobArray<float3> uniqueVertices)
+        public unsafe void AddUniqueVertices(ref ChiselBlobArray<float3> uniqueVertices)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
@@ -651,7 +650,7 @@ namespace Chisel.Core
             }
         }
         
-        public unsafe void ReplaceIfExists(ref BlobArray<float3> uniqueVertices, float4x4 nodeToTreeSpaceMatrix)
+        public unsafe void ReplaceIfExists(ref ChiselBlobArray<float3> uniqueVertices, float4x4 nodeToTreeSpaceMatrix)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
@@ -677,7 +676,7 @@ namespace Chisel.Core
             }
         }
 
-        public unsafe void ReplaceIfExists(ref BlobArray<float3> uniqueVertices)
+        public unsafe void ReplaceIfExists(ref ChiselBlobArray<float3> uniqueVertices)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);

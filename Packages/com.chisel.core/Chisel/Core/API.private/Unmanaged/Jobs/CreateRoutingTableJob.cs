@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
-using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
@@ -19,12 +18,12 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeReference<BlobAssetReference<CompactTree>>         compactTreeRef;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
+        [NoAlias, ReadOnly] public NativeReference<ChiselBlobAssetReference<CompactTree>>         compactTreeRef;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<RoutingTable>>           routingTableLookup;
+        [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<RoutingTable>>           routingTableLookup;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<QueuedEvent>         queuedEvents;
@@ -49,7 +48,7 @@ namespace Chisel.Core
             int processedNodeOrder  = processedIndexOrder.nodeOrder;
 
             var brushesTouchedByBrush = brushesTouchedByBrushes[processedNodeOrder];
-            if (brushesTouchedByBrush == BlobAssetReference<BrushesTouchedByBrush>.Null)
+            if (brushesTouchedByBrush == ChiselBlobAssetReference<BrushesTouchedByBrush>.Null)
                 return;
 
             ref var compactTree                 = ref compactTreeRef.Value.Value;
@@ -84,7 +83,7 @@ namespace Chisel.Core
             var totalNodesSize          = 16 + (categoryStackNodeCount * UnsafeUtility.SizeOf<int>());
             var totalSize               = totalInputsSize + totalRoutingRowsSize + totalLookupsSize + totalNodesSize;
 
-            var builder = new BlobBuilder(Allocator.Temp, totalSize);
+            var builder = new ChiselBlobBuilder(Allocator.Temp, totalSize);
             ref var root    = ref builder.ConstructRoot<RoutingTable>();
             var routingRows = builder.Allocate(ref root.routingRows,    categoryStackNodeCount);
 
@@ -196,7 +195,7 @@ namespace Chisel.Core
         static int GetStackNodes(CompactNodeID processedNodeID, 
                                  [NoAlias] ref BrushesTouchedByBrush            brushesTouchedByBrush, 
                                  [NoAlias] ref NativeArray<CategoryStackNode>   output,
-                                 [NoAlias] ref BlobArray<CompactHierarchyNode>  compactHierarchy,
+                                 [NoAlias] ref ChiselBlobArray<CompactHierarchyNode>  compactHierarchy,
                                  [NoAlias] ref NativeArray<QueuedEvent>         queuedEvents,
                                  [NoAlias] ref NativeArray<CategoryStackNode>   tempStackArray,
                                  [NoAlias] ref NativeBitArray                   combineUsedIndices,
@@ -421,7 +420,7 @@ namespace Chisel.Core
         static void Combine([NoAlias] ref NativeArray<CategoryStackNode> leftStack, int leftHaveGoneBeyondSelf, int leftStackStart, ref int leftStackEnd,
                             [NoAlias] ref NativeArray<CategoryStackNode> rightStack, int rightHaveGoneBeyondSelf, int rightStackLength,
                             CSGOperationType operation,
-                            [NoAlias] ref BlobArray<CompactHierarchyNode>   compactHierarchy,
+                            [NoAlias] ref ChiselBlobArray<CompactHierarchyNode>   compactHierarchy,
                             [NoAlias] ref NativeBitArray                    combineUsedIndices,
 #if USE_OPTIMIZATIONS
                             [NoAlias] ref NativeArray<int>                  combineIndexRemap,

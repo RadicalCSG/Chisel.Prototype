@@ -2,7 +2,6 @@ using System;
 using Debug = UnityEngine.Debug;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Jobs;
 using Unity.Burst;
@@ -16,10 +15,10 @@ namespace Chisel.Core
     {
         public readonly static ChiselBox DefaultValues = new ChiselBox
         {
-            bounds = new MinMaxAABB { Min = new float3(-0.5f), Max = new float3(0.5f) }
+            bounds = new ChiselAABB { Min = new float3(-0.5f), Max = new float3(0.5f) }
         };
 
-        public MinMaxAABB bounds;
+        public ChiselAABB bounds;
 
 
         #region Properties
@@ -53,7 +52,7 @@ namespace Chisel.Core
 
         #region Generate
         [BurstCompile]
-        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public ChiselBlobAssetReference<BrushMeshBlob> GenerateMesh(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.CreateBox(bounds.Min, bounds.Max,
                                             in surfaceDefinitionBlob,

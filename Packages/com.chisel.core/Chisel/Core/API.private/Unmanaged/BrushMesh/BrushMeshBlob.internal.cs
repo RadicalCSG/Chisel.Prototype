@@ -3,7 +3,6 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 using Unity.Mathematics;
 
 namespace Chisel.Core
@@ -51,13 +50,13 @@ namespace Chisel.Core
         }
 
 
-        public MinMaxAABB		    localBounds;
+        public ChiselAABB		    localBounds;
 
-        public BlobArray<float3>	localVertices;
-        public BlobArray<HalfEdge>	halfEdges;
-        public BlobArray<int>       halfEdgePolygonIndices;
-        public BlobArray<Polygon>	polygons;
-        public BlobArray<float4>    localPlanes;        // surface planes + edge planes (to reject vertices at sharp plane intersections)
+        public ChiselBlobArray<float3>	localVertices;
+        public ChiselBlobArray<HalfEdge>	halfEdges;
+        public ChiselBlobArray<int>       halfEdgePolygonIndices;
+        public ChiselBlobArray<Polygon>	polygons;
+        public ChiselBlobArray<float4>    localPlanes;        // surface planes + edge planes (to reject vertices at sharp plane intersections)
         public int                  localPlaneCount;    // number of surface planes
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

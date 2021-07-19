@@ -2,7 +2,6 @@ using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
@@ -15,13 +14,13 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushCache;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>.ReadOnly      brushMeshLookup;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesCache;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushCache;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>.ReadOnly      brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesCache;
         
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>           basePolygonCache;
+        [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<BasePolygonsBlob>>           basePolygonCache;
 
 
         // Per thread scratch memory
@@ -82,7 +81,7 @@ namespace Chisel.Core
             }
         }
 
-        bool CopyPolygonToIndices(BlobAssetReference<BrushMeshBlob> mesh, ref BlobArray<float3> treeSpaceVertices, int polygonIndex, HashedVertices hashedTreeSpaceVertices, NativeArray<Edge> edges, ref int edgeCount)
+        bool CopyPolygonToIndices(ChiselBlobAssetReference<BrushMeshBlob> mesh, ref ChiselBlobArray<float3> treeSpaceVertices, int polygonIndex, HashedVertices hashedTreeSpaceVertices, NativeArray<Edge> edges, ref int edgeCount)
         {
             ref var halfEdges   = ref mesh.Value.halfEdges;
             ref var polygon     = ref mesh.Value.polygons[polygonIndex];
@@ -137,7 +136,7 @@ namespace Chisel.Core
             var indexOrder = allUpdateBrushIndexOrders[b];
             int nodeOrder  = indexOrder.nodeOrder;
             
-            if (treeSpaceVerticesCache[nodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
+            if (treeSpaceVerticesCache[nodeOrder] == ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
                 return;
 
             var mesh                    = brushMeshLookup[nodeOrder];
@@ -220,7 +219,7 @@ namespace Chisel.Core
                 if (intersectingNodeOrder < nodeOrder)
                     continue;
 
-                if (treeSpaceVerticesCache[intersectingNodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
+                if (treeSpaceVerticesCache[intersectingNodeOrder] == ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
                     continue;
 
                 // In order, goes through the previous brushes in the tree, 
@@ -244,7 +243,7 @@ namespace Chisel.Core
             var totalVertexSize     = 16 + (hashedTreeSpaceVertices.Length * UnsafeUtility.SizeOf<float3>());
             var totalSize           = totalEdgeSize + totalPolygonSize + totalSurfaceSize + totalVertexSize;
 
-            var builder = new BlobBuilder(Allocator.Temp, totalSize);
+            var builder = new ChiselBlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BasePolygonsBlob>();
             var polygonArray = builder.Allocate(ref root.polygons, totalSurfaceCount);
             builder.Construct(ref root.edges,    edges   , totalEdgeCount);

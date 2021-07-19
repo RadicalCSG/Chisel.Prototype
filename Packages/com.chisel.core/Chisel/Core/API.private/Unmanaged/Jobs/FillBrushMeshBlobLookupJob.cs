@@ -1,7 +1,6 @@
 ﻿using System;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Entities;
 using Unity.Jobs;
 using Debug = UnityEngine.Debug;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
@@ -17,7 +16,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<int>          allBrushMeshIDs;
 
         // Write
-        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshLookup;
+        [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshLookup;
         [NoAlias, WriteOnly] public NativeReference<int> surfaceCountRef;
 
         public void Execute()
@@ -36,7 +35,7 @@ namespace Chisel.Core
                     if (brushMeshHash == 0)
                     {
                         // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly
-                        brushMeshLookup[nodeOrder] = BlobAssetReference<BrushMeshBlob>.Null;
+                        brushMeshLookup[nodeOrder] = ChiselBlobAssetReference<BrushMeshBlob>.Null;
                     } else
                     {
                         // *should* never happen
@@ -45,7 +44,7 @@ namespace Chisel.Core
                         var nodeID = indexOrder.compactNodeID;
 
                         Debug.LogError($"Brush with ID {nodeID} has its brushMeshID set to {brushMeshHash}, which is not initialized.");
-                        brushMeshLookup[nodeOrder] = BlobAssetReference<BrushMeshBlob>.Null;
+                        brushMeshLookup[nodeOrder] = ChiselBlobAssetReference<BrushMeshBlob>.Null;
                     }
                 }
             }

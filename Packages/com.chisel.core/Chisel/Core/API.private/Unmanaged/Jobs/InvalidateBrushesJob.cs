@@ -2,7 +2,6 @@
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
@@ -22,7 +21,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public CompactHierarchy*                                                compactHierarchyPtr;
         [NoAlias, ReadOnly] public NativeReference<bool>                                            needRemappingRef;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly                                 rebuildTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>.ReadOnly  brushesTouchedByBrushCache;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>>.ReadOnly  brushesTouchedByBrushCache;
         [NoAlias, ReadOnly] public NativeArray<CompactNodeID>.ReadOnly                              brushes;
         [NoAlias, ReadOnly] public int                                                              brushCount;
         [NoAlias, ReadOnly] public NativeArray<int>.ReadOnly                                        nodeIDValueToNodeOrderArray;
@@ -49,7 +48,7 @@ namespace Chisel.Core
 
                 var brushTouchedByBrush = brushesTouchedByBrushCache[nodeOrder];
                 if (!brushTouchedByBrush.IsCreated ||
-                    brushTouchedByBrush == BlobAssetReference<BrushesTouchedByBrush>.Null)
+                    brushTouchedByBrush == ChiselBlobAssetReference<BrushesTouchedByBrush>.Null)
                     continue;
 
                 ref var brushIntersections = ref brushTouchedByBrush.Value.brushIntersections;

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using Chisel.Core;
 using Unity.Mathematics;
+using ChiselAABB = Chisel.Core.ChiselAABB;
 
 namespace Chisel.Components
 {
@@ -108,7 +109,7 @@ namespace Chisel.Components
             set { if (definition.settings.plateauHeight == value) return; definition.settings.plateauHeight = value; OnValidateState(); }
         }
 
-        public MinMaxAABB Bounds
+        public ChiselAABB Bounds
         {
             get { return definition.settings.bounds; }
             set
