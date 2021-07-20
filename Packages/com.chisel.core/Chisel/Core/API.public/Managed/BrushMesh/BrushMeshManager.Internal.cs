@@ -320,7 +320,7 @@ namespace Chisel.Core
         }
 
         
-        public unsafe static BrushMesh ConvertToBrushMesh(ChiselBlobAssetReference<BrushMeshBlob> brushMeshBlobRef, Allocator allocator = Allocator.Persistent)
+        public unsafe static BrushMesh ConvertToBrushMesh(ChiselBlobAssetReference<BrushMeshBlob> brushMeshBlobRef)
         {
             if (!brushMeshBlobRef.IsCreated)
                 return null;

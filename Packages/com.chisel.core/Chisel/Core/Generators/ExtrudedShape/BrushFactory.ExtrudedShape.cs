@@ -67,10 +67,10 @@ namespace Chisel.Core
         }
 
         [BurstCompile]
-        public static unsafe bool GenerateExtrudedShape(NativeList<ChiselBlobAssetReference<BrushMeshBlob>>   brushMeshes, 
-                                                        in UnsafeList<SegmentVertex>                    polygonVerticesArray, 
-                                                        in UnsafeList<int>                              polygonVerticesSegments,
-                                                        in UnsafeList<float4x4>                         pathMatrices,
+        public static unsafe bool GenerateExtrudedShape(NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes, 
+                                                        in UnsafeList<SegmentVertex>    polygonVerticesArray, 
+                                                        in UnsafeList<int>              polygonVerticesSegments,
+                                                        in UnsafeList<float4x4>         pathMatrices,
                                                         in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
                                                         Allocator allocator)
         {
@@ -110,7 +110,7 @@ namespace Chisel.Core
 
                     var polygonVertex4      = new float4(polygonVerticesArray[range.start].position, 0, 1);
                     var distanceToBottom    = math.mul(math.inverse(matrix0), math.mul(matrix1, polygonVertex4)).z;
-
+                     
                     if (distanceToBottom < 0) { var m = matrix0; matrix0 = matrix1; matrix1 = m; }
 
                     if (brushMeshIndex >= brushMeshes.Length)
@@ -120,31 +120,23 @@ namespace Chisel.Core
                     }
                     brushMeshes[brushMeshIndex] = ChiselBlobAssetReference<BrushMeshBlob>.Null;
 
-                    using (var builder = new ChiselBlobBuilder(Allocator.Temp))
+                    using var builder = new ChiselBlobBuilder(Allocator.Temp);
+                    ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
+                    
+                    if (!GetExtrudedVertices(polygonVerticesArray, range, matrix0, matrix1, in builder, ref root, out var localVertices, out var segmentIndices, Allocator.Temp))
+                        continue;
+
+                    using (segmentIndices)
                     {
-                        ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
-                        ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges;
-                        ChiselBlobBuilderArray<BrushMeshBlob.Polygon> polygons;
-
-                        if (!GetExtrudedVertices(polygonVerticesArray, range, matrix0, matrix1, in builder, ref root, out var localVertices, out var segmentIndices, Allocator.Temp))
-                            continue;
-
-                        try
-                        {
-                            CreateExtrudedSubMesh(range.Length, (int*)segmentIndices.GetUnsafePtr(), segmentIndices.Length, 0, 1, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out polygons, out halfEdges);
-                        }
-                        finally
-                        {
-                            segmentIndices.Dispose();
-                        }
+                        CreateExtrudedSubMesh(range.Length, (int*)segmentIndices.GetUnsafePtr(), segmentIndices.Length, 0, 1, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out var polygons, out var halfEdges);
 
                         if (!Validate(in localVertices, in halfEdges, in polygons, logErrors: true))
                             return false;
 
-                        var localPlanes             = builder.Allocate(ref root.localPlanes, polygons.Length);
+                        var localPlanes = builder.Allocate(ref root.localPlanes, polygons.Length);
                         root.localPlaneCount = polygons.Length;
                         // TODO: calculate corner planes
-                        var halfEdgePolygonIndices  = builder.Allocate(ref root.halfEdgePolygonIndices, halfEdges.Length);
+                        var halfEdgePolygonIndices = builder.Allocate(ref root.halfEdgePolygonIndices, halfEdges.Length);
                         CalculatePlanes(ref localPlanes, in polygons, in halfEdges, in localVertices);
                         UpdateHalfEdgePolygonIndices(ref halfEdgePolygonIndices, in polygons);
                         root.localBounds = CalculateBounds(in localVertices);

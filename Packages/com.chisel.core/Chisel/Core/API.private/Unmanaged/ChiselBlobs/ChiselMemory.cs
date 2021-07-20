@@ -4,6 +4,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 
+// Note: Based on Unity.Entities.Memory
 namespace Chisel.Core.Memory
 {
     [BurstCompatible]

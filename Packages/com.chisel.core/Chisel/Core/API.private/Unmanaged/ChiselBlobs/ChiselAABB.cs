@@ -8,6 +8,7 @@ using Unity.Jobs;
 using Unity.Burst;
 using System.Runtime.CompilerServices;
 
+// Note: Based on Unity.Entities.MinMaxAABB
 namespace Chisel.Core
 {
     [System.Serializable]

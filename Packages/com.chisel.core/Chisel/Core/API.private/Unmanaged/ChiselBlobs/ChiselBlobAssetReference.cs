@@ -9,6 +9,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using UnityEngine;
 
+// Note: Based on Unity.Entities.BlobAssetReference
 namespace Chisel.Core
 {
     readonly unsafe struct ChiselBlobAssetPtr : IEquatable<ChiselBlobAssetPtr>
@@ -512,7 +513,7 @@ namespace Chisel.Core
     /// <see cref="ChiselBlobBuilder"/> instance to set the array elements.</remarks>
     /// <typeparam name="T">The data type of the elements in the array. Must be a struct or other value type.</typeparam>
     /// <seealso cref="ChiselBlobBuilder"/>
-    unsafe public struct ChiselBlobArray<T> where T : struct
+    unsafe public struct ChiselBlobArray<T> where T : unmanaged
     {
         internal int m_OffsetPtr;
         internal int m_Length;

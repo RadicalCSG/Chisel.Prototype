@@ -7,7 +7,7 @@ namespace Chisel.Core
     internal static class BlobArrayExtensions
     {
         public static bool Contains<T>(ref ChiselBlobArray<T> array, T value)
-            where T : struct
+            where T : unmanaged
         {
             for (int i = 0; i < array.Length; i++)
             {

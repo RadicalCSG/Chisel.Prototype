@@ -608,7 +608,7 @@ namespace Chisel.Core
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Contains<T>(ref this ChiselBlobArray<T> array, T value)
-            where T : struct, IEquatable<T>
+            where T : unmanaged, IEquatable<T>
         {
             for (int i = 0; i < array.Length; i++)
             {
