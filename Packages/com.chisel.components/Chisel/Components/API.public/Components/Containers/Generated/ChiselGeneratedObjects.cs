@@ -674,8 +674,7 @@ namespace Chisel.Components
             for (int i = 0; i < debugHelpers.Length; i++)
             {
                 var showState    = (helperStateFlags & kGeneratedDebugShowFlags[i]) != DrawModeFlags.None;
-                if (debugHelpers[i].meshRenderer != null)
-                    debugHelpers[i].meshRenderer.forceRenderingOff = shouldHideMesh || !showState;
+                debugHelpers[i].visible = !shouldHideMesh && showState;
             }
 
             if (ignoreBrushVisibility || !needVisibilityMeshUpdate)

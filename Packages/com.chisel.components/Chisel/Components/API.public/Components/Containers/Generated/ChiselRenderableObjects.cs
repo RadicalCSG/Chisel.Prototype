@@ -37,6 +37,8 @@ namespace Chisel.Components
         public Mesh             sharedMesh;
 #if UNITY_EDITOR
         public Mesh             partialMesh;
+        [NonSerialized]
+        internal bool           visible;
 #endif
         public MeshFilter       meshFilter;
         public MeshRenderer     meshRenderer;
@@ -59,7 +61,8 @@ namespace Chisel.Components
 
             var renderObjects = new ChiselRenderObjects
             {
-                invalid             = false,            
+                invalid             = false,     
+                visible             = !debugHelperRenderer,       
                 query               = query,
                 container           = renderContainer,
                 meshFilter          = meshFilter,
@@ -184,7 +187,7 @@ namespace Chisel.Components
         {
 #if UNITY_EDITOR
             Profiler.BeginSample("CheckIfFullMeshNeedsToBeHidden");
-            // If we need to render partial meshes (where some brushes are hidden) then we should show the full mesh
+            // If we need to render partial meshes (where some brushes are hidden) then we shouldn't show the full mesh
             ChiselGeneratedComponentManager.CheckIfFullMeshNeedsToBeHidden(model, this);
             Profiler.EndSample();
             if (meshIsModified)
@@ -257,7 +260,7 @@ namespace Chisel.Components
             Profiler.EndSample();
         }
 
-        public void Clear(ChiselModel model, GameObjectState state)
+        public void Clear(ChiselModel model, GameObjectState gameObjectState)
         {
             bool meshIsModified = false;
             {
@@ -285,13 +288,13 @@ namespace Chisel.Components
                 Profiler.EndSample();
 
                 Profiler.BeginSample("Enable");
-                var expectedEnabled = sharedMesh.vertexCount > 0;
+                var expectedEnabled = sharedMesh.vertexCount > 0 && !debugHelperRenderer;
                 if (meshRenderer.enabled != expectedEnabled)
                     meshRenderer.enabled = expectedEnabled;
                 Profiler.EndSample();
             }
             Profiler.BeginSample("UpdateSettings");
-            UpdateSettings(model, state, meshIsModified);
+            UpdateSettings(model, gameObjectState, meshIsModified);
             Profiler.EndSample();
         }
 
@@ -370,11 +373,11 @@ namespace Chisel.Components
                     objectUpdates[u] = objectUpdate;
                 }
 
-                var expectedEnabled = vertexBufferContents.triangleBrushIndices[contentsIndex].Length > 0;
+                var gameObjectState = gameObjectStates[objectUpdate.model];
+                var expectedEnabled = vertexBufferContents.triangleBrushIndices[contentsIndex].Length > 0 && !instance.debugHelperRenderer;
                 if (instance.meshRenderer.enabled != expectedEnabled)
                     instance.meshRenderer.enabled = expectedEnabled;
 
-                var gameObjectState = gameObjectStates[objectUpdate.model];
                 instance.UpdateSettings(objectUpdate.model, gameObjectState, objectUpdate.meshIsModified);
             }
             Profiler.EndSample();
