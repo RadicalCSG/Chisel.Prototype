@@ -516,7 +516,9 @@ namespace Chisel.Core
     unsafe public struct ChiselBlobArray<T> where T : unmanaged
     {
         internal int m_OffsetPtr;
+        #pragma warning disable 0649
         internal int m_Length;
+        #pragma warning restore 0649
 
         /// <summary>
         /// The number of elements in the array.
