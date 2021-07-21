@@ -50,22 +50,27 @@ namespace Chisel.Editors
 
         static Styles styles;
 
+        static readonly int kToggleHashCode = $"{nameof(ChiselCompositeGUI)}.Toggle".GetHashCode();
         static bool Toggle(ref Rect toggleRect, bool selected, GUIContent[] content, GUIStyle style)
         {
             var selectedContent = selected ? content[1] : content[0];
 
             EditorGUI.BeginChangeCheck();
-            var result = GUI.Toggle(toggleRect, selected, selectedContent, style);
+            var toggleID = EditorGUIUtility.GetControlID(kToggleLabelHashCode, FocusType.Keyboard, toggleRect);
+            var result = GUI.Toggle(toggleRect, toggleID, selected, selectedContent, style);
             toggleRect.x += toggleRect.width;
 
             return EditorGUI.EndChangeCheck() && result;
         }
+
+        static readonly int kToggleLabelHashCode = $"{nameof(ChiselCompositeGUI)}.ToggleLabel".GetHashCode();
         static bool ToggleLabel(ref Rect toggleRect, bool selected, GUIContent[] content, GUIStyle style)
         {
             var selectedContent = selected ? content[1] : content[0];
 
             EditorGUI.BeginChangeCheck();
-            var result = GUI.Toggle(toggleRect, selected, GUIContent.none, style);
+            var toggleID = EditorGUIUtility.GetControlID(kToggleLabelHashCode, FocusType.Keyboard, toggleRect);
+            var result = GUI.Toggle(toggleRect, toggleID, selected, GUIContent.none, style);
             if (Event.current.type == EventType.Repaint)
                 styles.leftButtonLabel.Draw(toggleRect, selectedContent, false, selected, false, false);
             toggleRect.x += toggleRect.width;
@@ -73,6 +78,7 @@ namespace Chisel.Editors
             return EditorGUI.EndChangeCheck() && result;
         }
 
+        static readonly int kOperationHashCode = $"{nameof(ChiselCompositeGUI)}.Operation".GetHashCode();
         public static void ChooseGeneratorOperation(ref CSGOperationType? operation)
         {
             if (styles == null)
@@ -83,7 +89,8 @@ namespace Chisel.Editors
             rect.yMax -= kBottomPadding;
             EditorGUI.BeginChangeCheck();
             rect.yMin+=2;
-            EditorGUI.PrefixLabel(rect, EditorGUIUtility.TrTextContent("Operation"));
+            var toggleFlagsLabelID = EditorGUIUtility.GetControlID(kOperationHashCode, FocusType.Keyboard, rect);
+            EditorGUI.PrefixLabel(rect, toggleFlagsLabelID, EditorGUIUtility.TrTextContent("Operation"));
             rect.yMin-=2;
             var result = ChiselCompositeGUI.ShowOperationChoicesInternal(rect, operation);
             if (EditorGUI.EndChangeCheck()) { operation = result; }

@@ -13,6 +13,8 @@ namespace Chisel.Editors
     [CustomPropertyDrawer(typeof(ToggleFlagsAttribute))]
     public sealed class ToggleFlagsPropertyDrawer : PropertyDrawer
     {
+        static readonly int kToggleFlagsHashCode = nameof(ToggleFlagsPropertyDrawer).GetHashCode();
+
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             return Styles.kButtonSize;// base.GetPropertyHeight(property, label);
@@ -69,28 +71,28 @@ namespace Chisel.Editors
                 {
                     padding     = new RectOffset(kButtonPadding, kButtonPadding + kButtonMargin, kButtonPadding, kButtonPadding),
                     margin      = new RectOffset(0, 0, kButtonMargin + 2, 0),
-                    fixedWidth  = kButtonSize + kButtonMargin,
+                    fixedWidth  = kButtonSize + kButtonMargin - 1,
                     fixedHeight = kButtonSize,
                 };
                 toggleStyleLeft = new GUIStyle("AppCommandLeft")
                 {
                     padding     = new RectOffset(kButtonPadding, kButtonPadding + kButtonMargin, kButtonPadding, kButtonPadding),
                     margin      = new RectOffset(0, 0, kButtonMargin + 2, 0),
-                    fixedWidth  = kButtonSize + kButtonMargin,
+                    fixedWidth  = kButtonSize + kButtonMargin - 1,
                     fixedHeight = kButtonSize,
                 };
                 toggleStyleMid = new GUIStyle("AppCommandMid")
                 {
                     padding     = new RectOffset(kButtonPadding, kButtonPadding + kButtonMargin, kButtonPadding, kButtonPadding),
                     margin      = new RectOffset(0, 0, kButtonMargin + 2, 0),
-                    fixedWidth  = kButtonSize + kButtonMargin,
+                    fixedWidth  = kButtonSize + kButtonMargin - 1,
                     fixedHeight = kButtonSize,
                 };
                 toggleStyleRight = new GUIStyle("AppCommandMid")
                 {
                     padding     = new RectOffset(kButtonPadding, kButtonPadding + kButtonMargin, kButtonPadding, kButtonPadding),
                     margin      = new RectOffset(0, 0, kButtonMargin + 2, 0),
-                    fixedWidth  = kButtonSize + kButtonMargin,
+                    fixedWidth  = kButtonSize + kButtonMargin - 1,
                     fixedHeight = kButtonSize,
                 };
             }
@@ -148,13 +150,18 @@ namespace Chisel.Editors
             }
             return toggleItems.ToArray();
         }
-        
+
+        static readonly int kToggleButtonHashCode = $"{nameof(ToggleFlagsPropertyDrawer)}.ToggleButton".GetHashCode();
         public static int ToggleButton(Rect position, int current, int flag, GUIContent[] iconsOn, GUIContent[] iconsOff, GUIStyle style)
         {
             if (iconsOn == null)
                 return current;
             var enabled = (current & flag) == flag;
-            if (GUI.Button(position, enabled ? iconsOn[0] : iconsOff[0], style))
+            var toggleID = EditorGUIUtility.GetControlID(kToggleButtonHashCode, FocusType.Keyboard, position);
+            EditorGUI.BeginChangeCheck();
+            GUI.Toggle(position, toggleID, false, enabled ? iconsOn[0] : iconsOff[0], style);
+            if (EditorGUI.EndChangeCheck())
+            //if (GUI.Button(position, toggleID, enabled ? iconsOn[0] : iconsOff[0], style))
             {
                 if (!enabled)
                     current |= flag;
@@ -168,14 +175,20 @@ namespace Chisel.Editors
         {
             if (property.propertyType != SerializedPropertyType.Enum)
             {
-                Debug.Assert(false);
+                EditorGUI.BeginProperty(position, label, property);
+                EditorGUI.EndProperty();
+                Debug.Assert(false, "ToggleFlagsAttribute needs to be used on an enum");
                 return;
             }
 
+            EditorGUI.BeginProperty(position, label, property);
             var toggleFlags = attribute as ToggleFlagsAttribute;
             EditorGUILayout.BeginHorizontal();
             if (toggleFlags.ShowPrefix)
-                position = EditorGUI.PrefixLabel(position, label);
+            {
+                var toggleFlagsLabelID = EditorGUIUtility.GetControlID(kToggleFlagsHashCode, FocusType.Keyboard, position);
+                position = EditorGUI.PrefixLabel(position, toggleFlagsLabelID, label);
+            }
 
             var includeFlags = toggleFlags.IncludeFlags;
             var excludeFlags = toggleFlags.ExcludeFlags;
@@ -213,6 +226,7 @@ namespace Chisel.Editors
             }
             property.intValue = enumValue;
             EditorGUILayout.EndHorizontal();
+            EditorGUI.EndProperty();
         }
     }
 }
