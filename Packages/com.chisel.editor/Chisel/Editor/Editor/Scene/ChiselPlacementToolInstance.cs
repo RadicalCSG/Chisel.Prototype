@@ -51,8 +51,8 @@ namespace Chisel.Editors
                 return placementToolDefinitionInternal;
             }
         }
-        protected CSGOperationType?                                     forceOperation  = null;
-        protected Type                                                  generatorType   = typeof(Generator);
+        protected CSGOperationType?                             forceOperation  = null;
+        protected Type                                          generatorType   = typeof(Generator);
         protected ChiselNodeGeneratorComponent<DefinitionType>  generatedComponent;
 
         static readonly string[] excludeProperties = new[] { "m_Script" };
@@ -121,20 +121,28 @@ namespace Chisel.Editors
             ShapeExtrusionHandle.Reset();
         }
 
-        public void Commit(GameObject newGameObject)
+        public void Commit(ChiselGeneratorComponent generatorComponent, bool createAsBrush)
         {
+            var newGameObject = generatorComponent.gameObject;
             if (!newGameObject)
             {
                 Cancel();
                 return;
             }
+
+            if (createAsBrush)
+            {
+                ConvertToBrushesButton.ConvertToBrushes(generatorComponent);
+                newGameObject.name = ChiselBrushComponent.kNodeTypeName;
+            }
+
             IsGenerating = false;
             UnityEditor.Selection.selectionChanged -= OnDelayedSelectionChanged;
             UnityEditor.Selection.selectionChanged += OnDelayedSelectionChanged;
             UnityEditor.Selection.activeGameObject = newGameObject;
             Undo.IncrementCurrentGroup();
             Reset();
-        }
+        } 
 
         // Unity bug workaround
         void OnDelayedSelectionChanged()
@@ -305,7 +313,7 @@ namespace Chisel.Editors
                             niceName     = niceName,
                             settingsName = settingsName,
                             defaultValue = defaultValue,
-                            fieldInfo        = field
+                            fieldInfo    = field
                         });
                     }
                 }

@@ -21,6 +21,7 @@ namespace Chisel.Core
     public abstract class ChiselBoundsPlacementTool<PlacementToolType> : ScriptableObject
         where PlacementToolType : IChiselNodeGenerator, new()
     {
+        public virtual bool CreateAsBrush { get; set; } = false;
         public abstract PlacementFlags PlacementFlags { get; }
         public virtual void OnCreate(ref PlacementToolType definition) { }
         public abstract void OnUpdate(ref PlacementToolType definition, Bounds bounds);
@@ -33,6 +34,7 @@ namespace Chisel.Core
     public abstract class ChiselShapePlacementTool<PlacementToolType> : ScriptableObject
         where PlacementToolType : IChiselNodeGenerator, new()
     {
+        public virtual bool CreateAsBrush { get; set; } = false;
         public virtual void OnCreate(ref PlacementToolType definition, Curve2D shape) { }
         public abstract void OnUpdate(ref PlacementToolType definition, float height);
         public abstract void OnPaint(IChiselHandleRenderer renderer, Curve2D shape, float height);
