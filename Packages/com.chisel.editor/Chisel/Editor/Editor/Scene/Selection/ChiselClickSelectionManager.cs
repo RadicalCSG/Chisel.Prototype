@@ -642,8 +642,8 @@ namespace Chisel.Editors
             int layers = camera.cullingMask;
             var pickposition = GUIClip.GUIClipUnclip(position);
             pickposition = EditorGUIUtility.PointsToPixels(pickposition);
-            pickposition.y = Screen.height - pickposition.y - camera.pixelRect.yMin;
-
+            pickposition.y = camera.pixelRect.height -pickposition.y - camera.pixelRect.yMin;
+            
             var gameObject = PickNodeOrGameObject(camera, pickposition, layers, ref ignore, ref filter, out var model, out var node, out intersection);
             if (!model)
                 return gameObject;

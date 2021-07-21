@@ -9,6 +9,7 @@ using Unity.Mathematics;
 using UnityEngine.Assertions;
 
 
+// Note: Based on Unity.Entities.BlobBuilder
 namespace Chisel.Core
 {
     /// <summary>
@@ -16,7 +17,7 @@ namespace Chisel.Core
     /// </summary>
     /// <remarks>Use this reference to initialize the data of a newly created <see cref="ChiselBlobArray{T}"/>.</remarks>
     /// <typeparam name="T">The data type of the elements in the array.</typeparam>
-    public unsafe ref struct ChiselBlobBuilderArray<T> where T : struct
+    public unsafe ref struct ChiselBlobBuilderArray<T> where T : unmanaged
     {
         private void* m_data;
         private int m_length;
@@ -171,7 +172,7 @@ namespace Chisel.Core
         /// <param name="data">An array  containing structs of type <typeparamref name="T"/>.</param>
         /// <typeparam name="T">The struct data type.</typeparam>
         /// <returns>A reference to the newly constructed array as a mutable BlobBuilderArray instance.</returns>
-        public ChiselBlobBuilderArray<T> Construct<T>(ref ChiselBlobArray<T> blobArray, params T[] data) where T : struct
+        public ChiselBlobBuilderArray<T> Construct<T>(ref ChiselBlobArray<T> blobArray, params T[] data) where T : unmanaged
         {
             var constructBlobArray = Allocate(ref blobArray, data.Length);
             for (int i = 0; i != data.Length; i++)
@@ -186,7 +187,7 @@ namespace Chisel.Core
         /// <param name="length">The number of elements to allocate.</param>
         /// <typeparam name="T">The struct data type.</typeparam>
         /// <returns>A reference to the newly allocated array as a mutable BlobBuilderArray instance.</returns>
-        public ChiselBlobBuilderArray<T> Allocate<T>(ref ChiselBlobArray<T> ptr, int length) where T : struct
+        public ChiselBlobBuilderArray<T> Allocate<T>(ref ChiselBlobArray<T> ptr, int length) where T : unmanaged
         {
             if (length <= 0)
                 return new ChiselBlobBuilderArray<T>(null, 0);

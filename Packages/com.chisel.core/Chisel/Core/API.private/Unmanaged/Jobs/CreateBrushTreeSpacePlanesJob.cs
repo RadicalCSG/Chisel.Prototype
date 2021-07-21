@@ -55,7 +55,8 @@ namespace Chisel.Core
             var brushMeshBlob   = brushMeshLookup[brushNodeOrder];
             if (!brushMeshBlob.IsCreated)
             {
-                Debug.LogError($"BrushMeshBlob invalid for brush with index {brushIndexOrder.compactNodeID}");
+                // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly, or the input values didn't produce a valid mesh (for example; 0 height cube)
+                //Debug.LogError($"BrushMeshBlob invalid for brush with index {brushIndexOrder.compactNodeID}");
                 brushTreeSpacePlanes[brushNodeOrder] = ChiselBlobAssetReference<BrushTreeSpacePlanes>.Null;
                 return;
             }

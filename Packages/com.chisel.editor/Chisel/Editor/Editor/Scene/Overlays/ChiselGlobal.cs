@@ -151,7 +151,7 @@ namespace Chisel.Editors
                 // We set the gameobject to not be active, this will prevent a lot of messages to 
                 // be send by Unity while we're still building the entire sub-hierarchy
                 topGameObject.SetActive(false);
-                var topComponent = ConvertTreeNodeToBrushes(topGameObject, in surfaceDefinition, topNode);
+                var topComponent = ConvertTreeNodeToBrushes(topGameObject, in surfaceDefinition, topNode, chiselNode.PivotOffset);
                 result = topComponent != null;
             }
             finally 
@@ -167,14 +167,15 @@ namespace Chisel.Editors
             return result;
         }
         
-        static ChiselNode ConvertTreeNodeToBrushes(GameObject parent, in ChiselSurfaceDefinition surfaceDefinition, CSGTreeNode node)
+        static ChiselNode ConvertTreeNodeToBrushes(GameObject parent, in ChiselSurfaceDefinition surfaceDefinition, CSGTreeNode node, Vector3 pivotOffset)
         {
             if (node.Type == CSGNodeType.Brush)
             {
                 var brushNode       = (CSGTreeBrush)node;
                 var brushComponent  = ChiselComponentFactory.AddComponent<ChiselBrushComponent>(parent);
-                brushComponent.transform.SetLocal(brushNode.LocalTransformation);
-                brushComponent.Operation                 = brushNode.Operation;
+                //brushComponent.transform.SetLocal(brushNode.LocalTransformation);
+                brushComponent.Operation = brushNode.Operation;
+                brushComponent.PivotOffset = pivotOffset;
 
                 ConvertBrush(brushNode, in surfaceDefinition, out var brushMesh, out var newSurfaceDefinition);
                 brushComponent.surfaceDefinition = newSurfaceDefinition;
@@ -183,7 +184,7 @@ namespace Chisel.Editors
             }
 
             if (node.Count == 1)
-                return ConvertTreeNodeToBrushes(parent, in surfaceDefinition, node[0]);
+                return ConvertTreeNodeToBrushes(parent, in surfaceDefinition, node[0], pivotOffset);
             
             var compositeComponent = ChiselComponentFactory.AddComponent<ChiselComposite>(parent);
             //compositeComponent.transform.SetLocal(node.LocalTransformation);

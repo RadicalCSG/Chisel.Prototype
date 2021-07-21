@@ -252,18 +252,18 @@ namespace Chisel.Core
                         polygonVerticesSegments = default;
                         return false;
                     }
+                }
 
-                    for (int i = 0; i < polygonVerticesSegments.Length; i++)
+                for (int i = 0; i < polygonVerticesSegments.Length; i++)
+                {
+                    var range = new Range
                     {
-                        var range = new Range
-                        {
-                            start   = i == 0 ? 0 : polygonVerticesSegments[i - 1],
-                            end     =              polygonVerticesSegments[i    ]
-                        };
+                        start   = i == 0 ? 0 : polygonVerticesSegments[i - 1],
+                        end     =              polygonVerticesSegments[i    ]
+                    };
 
-                        if (CalculateOrientation(polygonVerticesArray, range) < 0)
-                            External.BayazitDecomposerBursted.Reverse(polygonVerticesArray, range);
-                    }
+                    if (CalculateOrientation(polygonVerticesArray, range) < 0)
+                        External.BayazitDecomposerBursted.Reverse(polygonVerticesArray, range);
                 }
                 //Profiler.EndSample();
 

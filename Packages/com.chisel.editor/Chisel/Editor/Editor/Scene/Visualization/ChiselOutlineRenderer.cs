@@ -335,6 +335,7 @@ namespace Chisel.Editors
         void UpdateSurfaceSelection()
         {	
             surfaceOutlines.Clear();
+            ChiselSurfaceSelectionManager.Clean();
             var selection	= ChiselSurfaceSelectionManager.Selection;
             var hovered		= ChiselSurfaceSelectionManager.Hovered;
             if (selection.Count == 0 &&

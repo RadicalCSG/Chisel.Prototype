@@ -50,8 +50,8 @@ namespace Chisel.Core
                         // NOTE: Assignment is intended, this is not supposed to be a comparison
                         (brushMeshHash = compactHierarchy.GetBrushMeshID(brushCompactNodeID)) == 0)
                     {
-                        // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly
-                        Debug.LogError($"Brush with ID ({brushCompactNodeID}) has its brushMeshID set to ({brushMeshHash}), which is invalid.");
+                        // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly, or the input values didn't produce a valid mesh (for example; 0 height cube)
+                        //Debug.LogError($"Brush with ID ({brushCompactNodeID}) has its brushMeshID set to ({brushMeshHash}), which is invalid.");
                         allBrushMeshIDs[nodeOrder] = 0;
                     } else
                     {
