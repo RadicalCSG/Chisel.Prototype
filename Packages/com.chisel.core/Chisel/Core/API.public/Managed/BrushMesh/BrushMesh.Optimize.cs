@@ -205,6 +205,9 @@ namespace Chisel.Core
                     if (twin < e)
                         continue;
 
+                    if (twin >= halfEdgePolygonIndices.Length)
+                        return true;
+
                     // Find polygon of our twin edge
                     var twinPolygonIndex = halfEdgePolygonIndices[twin]; 
                     ref readonly var twinPolygon = ref polygons[twinPolygonIndex];

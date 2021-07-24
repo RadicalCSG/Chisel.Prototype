@@ -83,7 +83,7 @@ namespace Chisel.Editors
                     break;
                 }
                 
-                case ShapeExtrusionState.Commit:        { Commit(generatedComponent.gameObject); break; }
+                case ShapeExtrusionState.Commit:        { Commit(generatedComponent, PlacementToolDefinition.CreateAsBrush); break; }
                 case ShapeExtrusionState.Cancel:        { Cancel(); break; }
             }
 
@@ -198,7 +198,7 @@ namespace Chisel.Editors
                     break;
                 }
                 
-                case GeneratorModeState.Commit:     { if (generatedComponent) Commit(generatedComponent.gameObject); else Cancel(); break; }
+                case GeneratorModeState.Commit:     { if (generatedComponent) { Commit(generatedComponent, PlacementToolDefinition.CreateAsBrush); } else Cancel(); break; }
                 case GeneratorModeState.Cancel:     { Cancel(); break; }
             }
 
