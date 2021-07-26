@@ -572,6 +572,33 @@ namespace Chisel.Core
             return GetCompactNodeID(treeNode.nodeID, out _);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal IEnumerable<CompactNodeID> GetAllChildren(CompactHierarchy hierarchy, CompactNodeID compactNodeID)
+        {
+            yield return compactNodeID;
+            var childCount = hierarchy.ChildCount(compactNodeID);
+            if (childCount == 0)
+                yield break;
+
+            for (int i = 0; i < childCount; i++)
+            {
+                var childCompactNodeID = hierarchy.GetChildCompactNodeIDAt(compactNodeID, i);
+                foreach (var item in GetAllChildren(hierarchy, childCompactNodeID))
+                    yield return item;
+            }
+        }
+
+        // TODO: Optimize
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal IEnumerable<CompactNodeID> GetAllChildren(CompactNodeID compactNodeID)
+        {
+            if (!IsValidCompactNodeID(compactNodeID))
+                yield break;
+
+            foreach (var item in GetAllChildren(GetHierarchy(compactNodeID), compactNodeID))
+                yield return item;
+        }
+
 
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1917,6 +1944,8 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static CompactNodeID GetCompactNodeID(CSGTreeNode treeNode) { return instance.GetCompactNodeID(treeNode); }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<CompactNodeID> GetAllChildren(CompactNodeID compactNodeID) { return instance.GetAllChildren(compactNodeID); }
 
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

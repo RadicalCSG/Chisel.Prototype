@@ -439,12 +439,18 @@ namespace Chisel.Components
                 int baseVertex          = (int)srcMesh.GetBaseVertex(subMesh);
                 srcMesh.GetTriangles(sSrcTriangles, subMesh, applyBaseVertex: false);
                 sDstTriangles.Clear();
+                var prevBrushID = CompactNodeID.Invalid;
+                var isBrushVisible = true;
                 for (int i = 0; i < sSrcTriangles.Count; i += 3, n++)
                 {
                     if (n < triangleBrushes.Length)
                     { 
-                        var     brushID         = triangleBrushes[n];
-                        bool    isBrushVisible  = ChiselGeneratedComponentManager.IsBrushVisible(brushID);
+                        var brushID = triangleBrushes[n];
+                        if (prevBrushID != brushID)
+                        {
+                            isBrushVisible = ChiselGeneratedComponentManager.IsBrushVisible(brushID);
+                            prevBrushID = brushID;
+                        }
                         if (!isBrushVisible)
                             continue;
                     }

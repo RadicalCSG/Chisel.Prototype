@@ -261,15 +261,15 @@ namespace Chisel.Components
                 if (!node || !node.isActiveAndEnabled)
                     continue;
 
-                var brushGenerator = node as ChiselGeneratorComponent;
-                if (brushGenerator)
+                var generatorComponent = node as ChiselGeneratorComponent;
+                if (generatorComponent)
                 {
                     var treeNode = node.TopTreeNode;
                     if (!treeNode.Valid)
                         continue;
-                    var model = brushGenerator.hierarchyItem.Model;
+                    var model = generatorComponent.hierarchyItem.Model;
                     if (model == null)
-                        Debug.LogError($"{brushGenerator.hierarchyItem.Component} model {model} == null", brushGenerator.hierarchyItem.Component);
+                        Debug.LogError($"{generatorComponent.hierarchyItem.Component} model {model} == null", generatorComponent.hierarchyItem.Component);
                     if (model)
                     { 
                         var modelNode           = model.TopTreeNode;
@@ -277,8 +277,10 @@ namespace Chisel.Components
                         var modelCompactNodeID  = CompactHierarchyManager.GetCompactNodeID(modelNode);
                         if (!visibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState prevState))
                             prevState = VisibilityState.Unknown;
-                        var state = UpdateVisibility(sceneVisibilityManager, brushGenerator);
-                        visibilityStateLookup[compactNodeID] = state;
+                        var state = UpdateVisibility(sceneVisibilityManager, generatorComponent);
+
+                        foreach(var childCompactNodeID in CompactHierarchyManager.GetAllChildren(compactNodeID))
+                            visibilityStateLookup[childCompactNodeID] = state;
                         visibilityStateLookup[modelCompactNodeID] = state | prevState;
                     }
                 }
