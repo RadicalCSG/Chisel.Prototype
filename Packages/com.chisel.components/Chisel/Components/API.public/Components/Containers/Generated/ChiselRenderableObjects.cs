@@ -374,11 +374,32 @@ namespace Chisel.Components
                 }
 
                 var gameObjectState = gameObjectStates[objectUpdate.model];
-                var expectedEnabled = vertexBufferContents.triangleBrushIndices[contentsIndex].Length > 0 && !instance.debugHelperRenderer;
+                var expectedEnabled = !instance.debugHelperRenderer && vertexBufferContents.triangleBrushIndices[contentsIndex].Length > 0;
                 if (instance.meshRenderer.enabled != expectedEnabled)
                     instance.meshRenderer.enabled = expectedEnabled;
 
                 instance.UpdateSettings(objectUpdate.model, gameObjectState, objectUpdate.meshIsModified);
+            }
+            Profiler.EndSample();
+        }
+
+
+        public static void UpdateBounds(List<ChiselRenderObjectUpdate> objectUpdates)
+        {
+            Profiler.BeginSample("UpdateBounds");
+            for (int u = 0; u < objectUpdates.Count; u++)
+            {
+                var objectUpdate    = objectUpdates[u];
+                var instance        = objectUpdate.instance;
+                var sharedMesh      = instance.sharedMesh;
+
+                if (sharedMesh.subMeshCount > 0)
+                {
+                    var bounds = sharedMesh.GetSubMesh(0).bounds;
+                    for (int s = 1; s < sharedMesh.subMeshCount; s++)
+                        bounds.Encapsulate(sharedMesh.GetSubMesh(s).bounds);
+                    sharedMesh.bounds = bounds;
+                }
             }
             Profiler.EndSample();
         }

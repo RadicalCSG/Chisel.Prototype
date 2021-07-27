@@ -50,9 +50,12 @@ namespace Chisel.Editors
                 hoverSurfaces.Remove(surface);
 
             s_DestroyedSurfaces.Clear();
-            foreach (var surface in selectedSurfacesArray)
-                if (surface.node == null)
-                    s_DestroyedSurfaces.Add(surface);
+            if (selectedSurfacesArray != null)
+            {
+                foreach (var surface in selectedSurfacesArray)
+                    if (surface.node == null)
+                        s_DestroyedSurfaces.Add(surface);
+            }
             if (s_DestroyedSurfaces.Count > 0)
             {
                 var items = selectedSurfacesArray.ToList();

@@ -502,7 +502,7 @@ namespace Chisel.Components
                 var colliderMeshUpdate  = colliderMeshUpdates[i];
 
                 var surfaceParameter    = colliderMeshUpdate.objectIndex;
-                var colliderIndex       = colliderMeshUpdate.contentsIndex;
+                var colliderIndex       = colliderMeshUpdate.colliderIndex;
 
                 // TODO: optimize
                 for (int j = 0; j < colliders.Length; j++)
@@ -565,49 +565,73 @@ namespace Chisel.Components
                 // TODO: figure out why the maximum meshDataArray.Length does not match the maximum used meshes?
 
                 int meshDataArrayOffset = foundMeshes.Count;
-                for (int i = 0; foundMeshes.Count < meshDataArray.Length && i < renderables.Length; i++)
+                for (int i = 0; i < renderables.Length; i++)
                 {
                     if (usedRenderMeshes.Contains(i))
                         continue;
 
                     var instance = renderables[i];
-                    var sharedMesh = instance.sharedMesh;
-                    if (!sharedMesh || foundMeshes.Contains(sharedMesh))
-                        continue;
-                    foundMeshes.Add(sharedMesh);
-                    meshDataArray[meshDataArrayOffset].SetIndexBufferParams(0, IndexFormat.UInt32);
-                    meshDataArray[meshDataArrayOffset].SetVertexBufferParams(0, VertexBufferContents.s_RenderDescriptors);
-                    meshDataArrayOffset++;
+                    if (instance.meshRenderer &&
+                        instance.meshRenderer.enabled)
+                        instance.meshRenderer.enabled = false;
+                    if (foundMeshes.Count < meshDataArray.Length)
+                    {
+                        var sharedMesh = instance.sharedMesh;
+                        if (!sharedMesh || foundMeshes.Contains(sharedMesh))
+                            continue;
+
+                        foundMeshes.Add(sharedMesh);
+                        meshDataArray[meshDataArrayOffset].SetIndexBufferParams(0, IndexFormat.UInt32);
+                        meshDataArray[meshDataArrayOffset].SetVertexBufferParams(0, VertexBufferContents.s_RenderDescriptors);
+                        meshDataArrayOffset++;
+                    }
                 }
 
-                for (int i = 0; foundMeshes.Count < meshDataArray.Length && i < debugHelpers.Length; i++)
+                for (int i = 0; i < debugHelpers.Length; i++)
                 {
                     if (usedDebugHelpers.Contains(i))
                         continue;
 
                     var instance = debugHelpers[i];
-                    var sharedMesh = instance.sharedMesh;
-                    if (!sharedMesh || foundMeshes.Contains(sharedMesh))
-                        continue;
+                    if (instance.meshRenderer &&
+                        instance.meshRenderer.enabled)
+                        instance.meshRenderer.enabled = false;
+                    if (foundMeshes.Count < meshDataArray.Length)
+                    {
+                        var sharedMesh = instance.sharedMesh;
+                        if (!sharedMesh || foundMeshes.Contains(sharedMesh))
+                            continue;
 
-                    foundMeshes.Add(sharedMesh);
-                    meshDataArray[meshDataArrayOffset].SetIndexBufferParams(0, IndexFormat.UInt32);
-                    meshDataArray[meshDataArrayOffset].SetVertexBufferParams(0, VertexBufferContents.s_RenderDescriptors);
-                    meshDataArrayOffset++;
+                        foundMeshes.Add(sharedMesh);
+                        meshDataArray[meshDataArrayOffset].SetIndexBufferParams(0, IndexFormat.UInt32);
+                        meshDataArray[meshDataArrayOffset].SetVertexBufferParams(0, VertexBufferContents.s_RenderDescriptors);
+                        meshDataArrayOffset++;
+                    }
                 }
             }
-
-            Profiler.BeginSample("UpdateColliders");
-            ChiselColliderObjects.UpdateProperties(model, this.colliders);
-            Profiler.EndSample();
 
             Profiler.BeginSample("UpdateMeshRenderers");
             ChiselRenderObjects.UpdateProperties(model, this.meshRenderers);
             Profiler.EndSample();
 
+            // Updates the Unity Mesh-es that are used in our MeshRenderers and MeshColliders
+            // MeshUpdateFlags => Bounds are never updated no matter what flag you use
             Profiler.BeginSample("ApplyAndDisposeWritableMeshData");
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, foundMeshes,
                                                  UnityEngine.Rendering.MeshUpdateFlags.DontRecalculateBounds);
+            Profiler.EndSample();
+
+            // TODO: user meshDataArray data to determine if colliders are visible or not, then we can move this before the Apply
+            Profiler.BeginSample("UpdateColliders");
+            ChiselColliderObjects.UpdateProperties(model, this.colliders);
+            Profiler.EndSample();
+
+            // So we need to update the bounds ourselves
+            Profiler.BeginSample("Mesh.UpdateBounds");
+            ChiselRenderObjects.UpdateBounds(renderObjectUpdates);
+            // TODO: user meshDataArray data to determine the bounds and set it directly
+            for (int i = 0; i < colliders.Length; i++)
+                colliders[i].sharedMesh.RecalculateBounds();
             Profiler.EndSample();
 
             Profiler.BeginSample("Schedule Collider bake");
