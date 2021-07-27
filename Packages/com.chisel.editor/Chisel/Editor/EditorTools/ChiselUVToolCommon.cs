@@ -35,7 +35,12 @@ namespace Chisel.Editors
             return container;
         }
 
-        public void Update()
+        public void Load()
+        {
+            SurfaceDescription = SurfaceReference.SurfaceDescription;
+        }
+
+        public void Store()
         {
             SurfaceReference.SurfaceDescription = SurfaceDescription;
         }
@@ -111,7 +116,7 @@ namespace Chisel.Editors
         void UpdateSurfaceSelection()
         {
             DestroyOldSurfaces();
-            surfaces        = (from reference in ChiselSurfaceSelectionManager.Selection select ChiselSurfaceContainer.Create(reference)).ToArray();
+            surfaces = (from reference in ChiselSurfaceSelectionManager.Selection select ChiselSurfaceContainer.Create(reference)).ToArray();
             var undoableObjectList = (from surface in surfaces select (UnityEngine.Object)surface.SurfaceReference.node).ToList();                
             //undoableObjectList.AddRange(from surface in surfaces select (UnityEngine.Object)surface.SurfaceReference.brushContainerAsset);
             undoableObjects = undoableObjectList.ToArray();
@@ -140,6 +145,14 @@ namespace Chisel.Editors
             initialized = true;
         }
 
+        void UpdateAllSurfaces()
+        {
+            if (surfaces == null)
+                return;
+            foreach(var surface in surfaces)
+                surface.Load();
+        }
+
         bool initialized = false;
         SerializedObject serializedObject;
         SerializedProperty layerUsageProp;
@@ -156,6 +169,8 @@ namespace Chisel.Editors
         {
             if (!initialized)
                 UpdateSurfaceSelection();
+            else
+                UpdateAllSurfaces();
 
             if (PreviewTextureManager.Update())
                 sceneView.Repaint();
@@ -192,7 +207,7 @@ namespace Chisel.Editors
                 Undo.RegisterCompleteObjectUndo(undoableObjects, undoableObjects.Length > 1 ? "Modified materials" : "Modified material");
                 serializedObject.ApplyModifiedProperties();
                 foreach (var item in surfaces)
-                    item.Update();
+                    item.Store();
             }
         }
 
