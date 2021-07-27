@@ -1,4 +1,4 @@
-﻿using Chisel.Core;
+using Chisel.Core;
 using Chisel.Components;
 using System;
 using System.Collections.Generic;
@@ -31,7 +31,6 @@ namespace Chisel.Editors
             container.SurfaceReference      = surfaceReference;
             container.SurfaceDescription    = surfaceReference.SurfaceDescription;
             container.BrushMaterial         = surfaceReference.BrushMaterial;
-            //container.BrushSurface        = surfaceReference.BrushSurface;
             container.hideFlags             = HideFlags.DontSave;
             return container;
         }
@@ -39,10 +38,6 @@ namespace Chisel.Editors
         public void Update()
         {
             SurfaceReference.SurfaceDescription = SurfaceDescription;
-            //SurfaceReference.BrushSurface.surfaceDescription.smoothingGroup     = BrushSurface.surfaceDescription.smoothingGroup;
-            //SurfaceReference.BrushSurface.surfaceDescription.surfaceFlags       = BrushSurface.surfaceDescription.surfaceFlags;
-            //SurfaceReference.BrushSurface.surfaceDescription.UV0                = BrushSurface.surfaceDescription.UV0;
-            SurfaceReference.SetDirty();
         }
     }
 

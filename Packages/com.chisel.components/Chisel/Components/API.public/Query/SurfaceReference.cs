@@ -25,10 +25,6 @@ namespace Chisel.Components
             this.surfaceIndex           = surfaceIndex;
         }
 
-        public void SetDirty()
-        {
-            //brushContainerAsset.SetDirty();
-        }
 
         public ChiselBrushMaterial BrushMaterial
         {
@@ -57,6 +53,7 @@ namespace Chisel.Components
                 if (!node)
                     return;
                 node.SetSurfaceUV0(descriptionIndex, value);
+                node.SetDirty();
             }
         }
         public SurfaceDescription SurfaceDescription
@@ -73,6 +70,7 @@ namespace Chisel.Components
                 if (!node)
                     return;
                 node.SetSurfaceDescription(descriptionIndex, value);
+                node.SetDirty();
             }
         }
 
