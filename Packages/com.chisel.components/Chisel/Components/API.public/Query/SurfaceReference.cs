@@ -5,17 +5,17 @@ using Chisel.Core;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using Unity.Collections;
+using System.ComponentModel;
 
 namespace Chisel.Components
 {
     [Serializable]
     public sealed class SurfaceReference : IEquatable<SurfaceReference>, IEqualityComparer<SurfaceReference>
     {
-        public ChiselGeneratorComponent     node;
-        public CSGTreeBrush                 brush;
-
-        public int      descriptionIndex;
-        public int      surfaceIndex;
+        public ChiselGeneratorComponent node;
+        public CSGTreeBrush             brush;
+        public int                      descriptionIndex;
+        public int                      surfaceIndex;
 
         public SurfaceReference(ChiselNode node, int descriptionIndex, CSGTreeBrush brush, int surfaceIndex)
         {
@@ -34,6 +34,37 @@ namespace Chisel.Components
                     return null;
 
                 return node.GetBrushMaterial(descriptionIndex);
+            }
+        }
+
+
+        public Material RenderMaterial
+        {
+            get
+            {
+                if (!node)
+                    return null;
+
+                var brushMaterial = node.GetBrushMaterial(descriptionIndex);
+                if (brushMaterial == null)
+                    return null;
+
+                return brushMaterial.RenderMaterial;
+            }
+            set
+            {
+                if (!node)
+                    return;
+
+                var brushMaterial = node.GetBrushMaterial(descriptionIndex);
+                if (brushMaterial == null)
+                    return;
+
+                if (brushMaterial.RenderMaterial == value)
+                    return;
+
+                brushMaterial.RenderMaterial = value;
+                node.SetDirty();
             }
         }
 
@@ -211,6 +242,11 @@ namespace Chisel.Components
 
 
         #region Equals
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator ==(SurfaceReference left, SurfaceReference right) { return left.Equals(right); }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator !=(SurfaceReference left, SurfaceReference right) { return !left.Equals(right); }
+
         public bool Equals(SurfaceReference other)
         {
             return Equals(this, other);

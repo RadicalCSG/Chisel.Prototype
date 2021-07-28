@@ -21,8 +21,8 @@ namespace Chisel.Editors
         public const string kSurfaceDescriptionName = nameof(SurfaceDescription);
         public const string kBrushMaterialName      = nameof(BrushMaterial);
         
-        public SurfaceDescription       SurfaceDescription;
-        public ChiselBrushMaterial      BrushMaterial;
+        public SurfaceDescription               SurfaceDescription;
+        public ChiselBrushMaterial              BrushMaterial;
         [NonSerialized] public SurfaceReference SurfaceReference;
 
         public static ChiselSurfaceContainer Create(SurfaceReference surfaceReference)
@@ -1173,7 +1173,7 @@ namespace Chisel.Editors
                 ChiselIntersection intersection;
                 SurfaceReference surfaceReference;
                 s_TempSurfaces.Clear();
-                if (!ChiselClickSelectionManager.FindSurfaceReferences(s_TempSurfaces, mousePosition, false, out intersection, out surfaceReference))
+                if (!ChiselClickSelectionManager.FindSurfaceReferences(mousePosition, false, s_TempSurfaces, out intersection, out surfaceReference))
                 {
                     modified = (hoverSurfaces != null) || modified;
                     hoverIntersection = null;
