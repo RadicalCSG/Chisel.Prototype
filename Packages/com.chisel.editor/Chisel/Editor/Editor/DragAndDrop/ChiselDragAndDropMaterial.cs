@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
@@ -8,6 +8,7 @@ using Chisel.Components;
 
 namespace Chisel.Editors
 {
+    // TODO: register all changes in undo to ensure that even when something goes wrong, it's still undoable
     public sealed class ChiselDragAndDropMaterial : IChiselDragAndDropOperation
     {
         public ChiselDragAndDropMaterial(Material dragMaterial)
@@ -18,7 +19,7 @@ namespace Chisel.Editors
 
         Material			    dragMaterial			= null;
 
-        ChiselBrushMaterial[]	prevBrushMaterials		= null;
+        SurfaceReference[]      prevSurfaceReferences   = null;
         Material[]			    prevMaterials			= null;
 
         ChiselNode[]            prevNodes	            = null;
@@ -38,40 +39,47 @@ namespace Chisel.Editors
             return new ChiselDragAndDropMaterial(dragMaterial);
         }
 
-        void UndoPrevSurface()
+        void UndoPrevSurfaceReference()
         {
-            if (prevBrushMaterials == null)
+            if (prevSurfaceReferences == null)
                 return;
 
-            for (int i = 0; i < prevBrushMaterials.Length; i++)
-                prevBrushMaterials[i].RenderMaterial = prevMaterials[i];
+            for (int i = 0; i < prevSurfaceReferences.Length; i++)
+                prevSurfaceReferences[i].RenderMaterial = prevMaterials[i];
 
             prevMaterials = null;
-            prevBrushMaterials = null;
+            prevSurfaceReferences = null;
             prevNodes = null;
         }
 
-        void ApplyMaterialToSurface(ChiselNode[] nodes, ChiselBrushMaterial[] surface)
+
+        static HashSet<ChiselNode> s_TempNodes = new HashSet<ChiselNode>();
+
+        void ApplyMaterialToSurface(SurfaceReference[] surfaceReferences)
         {
-            if (surface == null)
+            if (surfaceReferences == null ||
+                surfaceReferences.Length == 0)
                 return;
 
-            if (prevBrushMaterials == null ||
-                prevBrushMaterials.Length != surface.Length)
+            if (prevSurfaceReferences == null ||
+                prevSurfaceReferences.Length != surfaceReferences.Length)
             {
-                prevMaterials       = new Material[surface.Length];
-                prevBrushMaterials  = new ChiselBrushMaterial[surface.Length];
+                prevMaterials           = new Material[surfaceReferences.Length];
+                prevSurfaceReferences   = new SurfaceReference[surfaceReferences.Length];
             }
-            for (int i = 0; i < surface.Length; i++)
-            { 
-                prevMaterials[i] = surface[i].RenderMaterial;
-                prevBrushMaterials[i]  = surface[i];
-                surface[i].RenderMaterial = dragMaterial;
+
+            s_TempNodes.Clear();
+            for (int i = 0; i < surfaceReferences.Length; i++)
+            {
+                s_TempNodes.Add(surfaceReferences[i].node);
+                prevMaterials[i]            = surfaceReferences[i].BrushMaterial.RenderMaterial;
+                prevSurfaceReferences[i]    = surfaceReferences[i];
+                surfaceReferences[i].RenderMaterial = dragMaterial;
             }
-            prevNodes = nodes;
+            prevNodes = s_TempNodes.ToArray();
         }
 
-        static bool Equals(ChiselBrushMaterial[] surfacesA, ChiselBrushMaterial[] surfacesB)
+        static bool Equals(SurfaceReference[] surfacesA, SurfaceReference[] surfacesB)
         {
             if (surfacesA == null)
             {
@@ -93,60 +101,60 @@ namespace Chisel.Editors
             return true;
         }
 
-        ChiselBrushMaterial[] AddSelectedSurfaces(ChiselBrushMaterial[] surfaces)
+        SurfaceReference[] AddSelectedSurfaces(SurfaceReference[] surfaceReferences)
         {
-            if (surfaces == null ||
-                surfaces.Length != 1)
-                return surfaces;
+            if (surfaceReferences == null ||
+                surfaceReferences.Length != 1)
+                return surfaceReferences;
 
             if (ChiselUVMoveTool.IsActive() ||
                 ChiselUVRotateTool.IsActive() ||
                 ChiselUVScaleTool.IsActive())
-                return surfaces;
+                return surfaceReferences;
 
             // TODO: implement the ability to query this from the edit mode
-            if (!ChiselSurfaceSelectionManager.IsSelected(surfaces[0]))
-                return surfaces;
+            if (!ChiselSurfaceSelectionManager.IsSelected(surfaceReferences[0]))
+                return surfaceReferences;
 
-            var surfaceHashSet = new HashSet<ChiselBrushMaterial>();
-            surfaceHashSet.AddRange(ChiselSurfaceSelectionManager.SelectedBrushMaterials);
-            surfaceHashSet.AddRange(surfaces);
+            var surfaceHashSet = new HashSet<SurfaceReference>();
+            surfaceHashSet.AddRange(ChiselSurfaceSelectionManager.Selection);
+            surfaceHashSet.AddRange(surfaceReferences);
             return surfaceHashSet.ToArray();
         }
 
-        static readonly List<ChiselNode>            s_TempNodes                 = new List<ChiselNode>();
-        static readonly List<ChiselBrushMaterial>   s_TempChiselBrushMaterials  = new List<ChiselBrushMaterial>();
+        static readonly List<SurfaceReference>      s_FoundSurfaceReferences    = new List<SurfaceReference>();
+
         public void UpdateDrag()
         {
             var selectAllSurfaces = UnityEngine.Event.current.shift;
-            s_TempChiselBrushMaterials.Clear();
-            s_TempNodes.Clear();
-            ChiselClickSelectionManager.FindBrushMaterials(Event.current.mousePosition, s_TempChiselBrushMaterials, s_TempNodes, selectAllSurfaces);
-            var surfaces = s_TempChiselBrushMaterials.ToArray();
-            s_TempChiselBrushMaterials.Clear();
-            if (!Equals(prevBrushMaterials, surfaces))
-            {
-                UndoPrevSurface();
+            
+            { 
+                s_FoundSurfaceReferences.Clear();
+                ChiselClickSelectionManager.FindSurfaceReferences(Event.current.mousePosition, selectAllSurfaces, s_FoundSurfaceReferences);
+                var surfaceReferences = s_FoundSurfaceReferences.ToArray();
+                s_FoundSurfaceReferences.Clear();
+                if (!Equals(prevSurfaceReferences, surfaceReferences))
+                {
+                    UndoPrevSurfaceReference();
 
-                // Handle situation where we're hovering over a selected surface, then apply to all selected surfaces
-                if (!selectAllSurfaces)
-                    surfaces = AddSelectedSurfaces(surfaces);
+                    // Handle situation where we're hovering over a selected surface, then apply to all selected surfaces
+                    if (!selectAllSurfaces)
+                        surfaceReferences = AddSelectedSurfaces(surfaceReferences);
 
-                ApplyMaterialToSurface(s_TempNodes.ToArray(), surfaces);
+                    ApplyMaterialToSurface(surfaceReferences);
+                }
             }
-            s_TempChiselBrushMaterials.Clear();
-            s_TempNodes.Clear();
         }
 
         public void PerformDrag()
         {
-            var surfaces = prevBrushMaterials;
-            var nodes = prevNodes;
-            UndoPrevSurface();
-            if (surfaces == null)
+            var surfaceReferences = prevSurfaceReferences;
+            var nodes             = prevNodes;
+            UndoPrevSurfaceReference();
+            if (nodes == null || nodes.Length == 0)
                 return;
             Undo.RecordObjects(nodes, "Drag & drop material");
-            ApplyMaterialToSurface(nodes, surfaces);
+            ApplyMaterialToSurface(surfaceReferences);
             Undo.CollapseUndoOperations(Undo.GetCurrentGroup());
             Undo.FlushUndoRecordObjects();
         }
@@ -154,7 +162,7 @@ namespace Chisel.Editors
         public void CancelDrag()
         {
             Undo.RevertAllInCurrentGroup();
-            UndoPrevSurface();
+            UndoPrevSurfaceReference();
         }
     }
 }

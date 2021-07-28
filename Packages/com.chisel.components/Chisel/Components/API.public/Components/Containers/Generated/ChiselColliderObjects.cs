@@ -183,7 +183,7 @@ namespace Chisel.Components
 
             bakingSettings.Dispose(allJobHandles);
             //*/
-            /*
+            //*
             // TODO: is there a way to defer forcing the collider to update?
             for (int i = 0; i < colliders.Length; i++)
             {
@@ -192,7 +192,7 @@ namespace Chisel.Components
                     continue;
 
                 meshCollider.sharedMesh = colliders[i].sharedMesh;
-            }*/
+            }//*/
         }
     }
 }

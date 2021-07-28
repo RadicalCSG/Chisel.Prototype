@@ -61,10 +61,10 @@ namespace Chisel.Core
 
     public struct GeneratedNode
     {
-        public int                                  parentIndex;    // -1 means root of generated node
-        public CSGOperationType                     operation;
-        public float4x4                             transformation;
-        public ChiselBlobAssetReference<BrushMeshBlob>    brushMesh;      // Note: ignored if type is not Brush
+        public int                                      parentIndex;    // -1 means root of generated node
+        public CSGOperationType                         operation;
+        public float4x4                                 transformation;
+        public ChiselBlobAssetReference<BrushMeshBlob>  brushMesh;      // Note: ignored if type is not Brush
 
 
         public static GeneratedNode GenerateBrush(ChiselBlobAssetReference<BrushMeshBlob> brushMesh, CSGOperationType operation = CSGOperationType.Additive, int parentIndex = -1)

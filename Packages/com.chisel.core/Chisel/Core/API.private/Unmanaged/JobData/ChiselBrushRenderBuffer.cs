@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Unity.Mathematics;
 
 namespace Chisel.Core
@@ -35,8 +35,8 @@ namespace Chisel.Core
 
     struct ChiselQuerySurfaces
     {
-        public CompactNodeID                    brushNodeID;
-        public ChiselBlobArray<ChiselQuerySurface>    surfaces;
+        public CompactNodeID                        brushNodeID;
+        public ChiselBlobArray<ChiselQuerySurface>  surfaces;
     }
 
     struct ChiselBrushRenderBuffer

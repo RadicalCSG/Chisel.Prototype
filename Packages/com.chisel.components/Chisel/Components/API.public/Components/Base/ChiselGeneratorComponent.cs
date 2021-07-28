@@ -376,8 +376,8 @@ namespace Chisel.Components
             DestroyChildTreeNodes();
         }
 
-        [HideInInspector, SerializeField] int prevMaterialHash;
-        [HideInInspector, SerializeField] int prevDefinitionHash;
+        [HideInInspector] int prevMaterialHash;
+        [HideInInspector] int prevDefinitionHash;
 
         public void ClearHashes()
         {

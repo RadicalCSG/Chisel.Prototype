@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -440,6 +440,7 @@ namespace Chisel.Core
     public struct ChiselMeshUpdate
     {
         public int contentsIndex;
+        public int colliderIndex;
         public int meshIndex;
         public int objectIndex;
     }
@@ -537,9 +538,9 @@ namespace Chisel.Core
 
             if (colliderMeshUpdates.Capacity < colliderCount)
                 colliderMeshUpdates.Capacity = colliderCount;
-            var colliderIndex = 0;
             if (meshDescriptions.IsCreated)
             {
+                var colliderIndex = 0;
                 for (int i = 0; i < subMeshSections.Length; i++)
                 {
                     var subMeshSection = subMeshSections[i];
@@ -551,10 +552,11 @@ namespace Chisel.Core
                     meshes.Add(meshDatas[meshIndex]);
                     colliderMeshUpdates.Add(new ChiselMeshUpdate
                     {
-                        contentsIndex   = colliderIndex,
+                        contentsIndex   = i,
+                        colliderIndex   = colliderIndex,
                         meshIndex       = meshIndex,
                         objectIndex     = surfaceParameter
-                    }); 
+                    });
                     colliderIndex++;
                     meshIndex++;
                 }

@@ -113,6 +113,10 @@ namespace Chisel.Core
                 Profiler.EndSample();
                 #endregion
 
+                //
+                // Schedule chain of jobs that will generate our surface meshes
+                //
+
                 #region Schedule Mesh Update Jobs
                 Profiler.BeginSample("CSG_RunMeshUpdateJobs");
 
@@ -165,6 +169,11 @@ namespace Chisel.Core
                 Profiler.EndSample();
                 #endregion
 
+                //
+                // Dispose temporaries that we don't need anymore
+                //
+
+                #region Dispose temporaries
                 for (int t = 0; t < treeUpdateLength; t++)
                 {
                     ref var treeUpdate = ref s_TreeUpdates[t];
@@ -179,6 +188,7 @@ namespace Chisel.Core
                     
                     treeUpdate.PreMeshUpdateDispose();
                 }
+                #endregion
 
                 JobHandle.ScheduleBatchedJobs();
 
@@ -581,6 +591,7 @@ namespace Chisel.Core
                 Temporaries.brushRenderBufferDisposeList       = new NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>(chiselLookupValues.brushRenderBufferCache.Length, allocator);
 
                 #endregion
+                
                 Profiler.EndSample();
             }
 
