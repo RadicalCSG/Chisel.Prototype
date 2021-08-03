@@ -168,8 +168,8 @@ namespace Chisel.Core
         {
             index = nodeIDLookup.CreateID(out var id, out var generation);
             //Debug.Log($"CreateNodeID index:{index} id:{id} generation:{generation}");
-            while (index >= nodes.Length)
-                nodes.Add(CompactNodeID.Invalid);
+            if (index >= nodes.Length)
+                nodes.Resize(index + 1, NativeArrayOptions.ClearMemory);
             return new NodeID(value: id, generation: generation);
         }
 
