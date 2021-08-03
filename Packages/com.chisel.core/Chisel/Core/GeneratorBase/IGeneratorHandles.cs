@@ -52,11 +52,12 @@ namespace Chisel.Core
             box.Max = bounds.max;
             return result;
         }
+
         public static bool DoTurnHandle(this IChiselHandles handles, ref ChiselAABB box, string undoMessage = null)
         {
             var bounds = new Bounds();
             bounds.SetMinMax(box.Min, box.Max);
-            var result = handles.DoTurnHandle(ref box, undoMessage);
+            var result = handles.DoTurnHandle(ref bounds, undoMessage);
             box.Min = bounds.min;
             box.Max = bounds.max;
             return result;
