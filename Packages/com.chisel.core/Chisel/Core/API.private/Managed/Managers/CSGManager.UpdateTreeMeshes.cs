@@ -12,6 +12,8 @@ namespace Chisel.Core
 {
     partial class CompactHierarchyManager
     {
+        const bool runInParallelDefault = true;
+
         #region Update / Rebuild
         internal static bool UpdateAllTreeMeshes(FinishMeshUpdate finishMeshUpdates, out JobHandle allTrees)
         {
@@ -108,7 +110,8 @@ namespace Chisel.Core
 
                 #region Schedule job to generate brushes (using generators)
                 Profiler.BeginSample("CSG_GeneratorJobPool");
-                var generatorPoolJobHandle = GeneratorJobPoolManager.ScheduleJobs();
+                var runInParallel = runInParallelDefault;
+                var generatorPoolJobHandle = GeneratorJobPoolManager.ScheduleJobs(runInParallel);
                 generatorPoolJobHandle.Complete();
                 Profiler.EndSample();
                 #endregion
@@ -595,7 +598,6 @@ namespace Chisel.Core
                 Profiler.EndSample();
             }
 
-            const bool runInParallelDefault = true;
             public void RunMeshInitJobs(ref CompactHierarchy compactHierarchy, JobHandle dependsOn)
             {
                 // TODO: Remove the need for this Complete
