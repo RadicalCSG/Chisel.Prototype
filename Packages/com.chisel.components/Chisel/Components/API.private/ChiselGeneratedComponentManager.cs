@@ -221,6 +221,8 @@ namespace Chisel.Components
         {
             foreach (var model in models)
             {
+                if (model == null)
+                    continue;
                 model.OnRenderModel(camera, helperStateFlags);
             }
         }

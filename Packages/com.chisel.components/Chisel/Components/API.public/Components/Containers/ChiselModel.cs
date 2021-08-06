@@ -391,9 +391,6 @@ namespace Chisel.Components
         // TODO: move to ChiselGeneratedComponentManager
         public void OnRenderModel(Camera camera, DrawModeFlags helperStateFlags)
         {
-            if (!gameObject)
-                return;
-
             // When we toggle visibility on brushes in the editor hierarchy, we want to render a different mesh
             // but still have the same lightmap, and keep lightmap support.
             // We do this by setting forceRenderingOff to true on all MeshRenderers.
