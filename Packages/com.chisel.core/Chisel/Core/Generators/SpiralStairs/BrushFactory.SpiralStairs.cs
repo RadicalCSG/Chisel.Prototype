@@ -22,26 +22,6 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        public static ChiselBlobAssetReference<BrushMeshBlob> CreateBrushBlob(BrushMesh brushMesh, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            // TODO: eventually remove when it's more battle tested
-            if (!brushMesh.Validate(logErrors: true))
-                return ChiselBlobAssetReference<BrushMeshBlob>.Null;
-            brushMesh.CalculatePlanes();
-            brushMesh.UpdateHalfEdgePolygonIndices();
-            return BrushMeshManager.ConvertToBrushMeshBlob(brushMesh, in surfaceDefinition, Allocator.Persistent);
-        }
-
-        public static ChiselBlobAssetReference<BrushMeshBlob> CreateBrushBlob(BrushMesh brushMesh, in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
-        {
-            // TODO: eventually remove when it's more battle tested
-            if (!brushMesh.Validate(logErrors: true))
-                return ChiselBlobAssetReference<BrushMeshBlob>.Null;
-            brushMesh.CalculatePlanes();
-            brushMesh.UpdateHalfEdgePolygonIndices();
-            return BrushMeshManager.ConvertToBrushMeshBlob(brushMesh, in surfaceDefinitionBlob, Allocator.Persistent);
-        }
-
         // TODO: create helper method to cut brushes, use that instead of intersection + subtraction brushes
         // TODO: create spiral sides support
         [BurstCompile]

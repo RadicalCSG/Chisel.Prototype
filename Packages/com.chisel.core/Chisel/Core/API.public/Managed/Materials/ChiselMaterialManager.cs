@@ -3,6 +3,7 @@ using System.Collections;
 using Chisel.Core;
 using System.Collections.Generic;
 using System;
+using System.Runtime.CompilerServices;
 
 namespace Chisel.Core
 {
@@ -12,6 +13,7 @@ namespace Chisel.Core
         static ChiselMaterialManager _instance;
         public static ChiselMaterialManager Instance
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 if (_instance)

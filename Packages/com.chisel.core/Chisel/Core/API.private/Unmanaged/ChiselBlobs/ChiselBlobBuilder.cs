@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Chisel.Core.Memory;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
@@ -108,10 +109,18 @@ namespace Chisel.Core
     unsafe public struct ChiselBlobBuilder : IDisposable
     {
         Allocator m_allocator;
-        NativeList<BlobAllocation> m_allocations;
-        NativeList<OffsetPtrPatch> m_patches;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<BlobAllocation> m_allocations;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<OffsetPtrPatch> m_patches;
         int m_currentChunkIndex;
         int m_chunkSize;
+
+        public bool IsCreated
+        {
+            get
+            {
+                return m_allocations.IsCreated && m_patches.IsCreated;
+            }
+        }
 
         struct BlobAllocation
         {
@@ -456,6 +465,16 @@ namespace Chisel.Core
         }
 
         /// <summary>
+        /// Resets this BlobBuilder instance
+        /// </summary>
+        public void Reset()
+        {
+            m_allocations.Clear();
+            m_patches.Clear();
+            m_currentChunkIndex = -1;
+        }
+
+        /// <summary>
         /// Disposes of this BlobBuilder instance and frees its temporary memory allocations.
         /// </summary>
         /// <remarks>Call `Dispose()` after calling <see cref="CreateBlobAssetReference{T}"/>.</remarks>
@@ -465,6 +484,8 @@ namespace Chisel.Core
                 ChiselMemory.Unmanaged.Free(m_allocations[i].p, m_allocator);
             m_allocations.Dispose();
             m_patches.Dispose();
+            m_allocations = default;
+            m_patches = default;
         }
     }
 }

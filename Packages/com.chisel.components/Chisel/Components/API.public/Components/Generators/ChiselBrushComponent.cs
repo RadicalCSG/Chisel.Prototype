@@ -59,36 +59,7 @@ namespace Chisel.Components
 
         protected override void UpdateGeneratorNodesInternal(in CSGTree tree, ref CSGTreeNode node)
         {
-            Profiler.BeginSample("ChiselBrushComponent");
-            try
-            {
-                var brush = (CSGTreeBrush)node;
-                if (!brush.Valid)
-                    return;
-
-                Profiler.BeginSample("BuildSurfaceDefinitionBlob");
-                var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp);
-                Profiler.EndSample();
-
-                if (!surfaceDefinitionBlob.IsCreated)
-                    return;
-
-                using (surfaceDefinitionBlob)
-                {
-                    Profiler.BeginSample("CreateBrushBlob");
-                    var brushMesh = BrushMeshFactory.CreateBrushBlob(definition.brushOutline, in surfaceDefinitionBlob);
-                    Profiler.EndSample();
-
-                    Profiler.BeginSample("Set");
-                    // TODO: deregister previous brushMesh (when different)
-                    if (brushMesh.IsCreated)
-                        brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
-                    else
-                        brush.BrushMesh = BrushMeshInstance.InvalidInstance;
-                    Profiler.EndSample();
-                }
-            }
-            finally { Profiler.EndSample(); }
+            ChiselNodeHierarchyManager.OnBrushMeshUpdate(this, ref node);
         }
     }
 }
