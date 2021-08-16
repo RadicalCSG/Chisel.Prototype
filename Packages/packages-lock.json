@@ -1,5 +1,15 @@
 {
   "dependencies": {
+    "com.aeternumgames.chisel.import.source": {
+      "version": "file:Chisel.Import.Source",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.mathematics": "1.1.0",
+        "com.chisel.core": "",
+        "com.chisel.components": ""
+      }
+    },
     "com.chisel.components": {
       "version": "file:com.chisel.components",
       "depth": 0,
@@ -24,7 +34,7 @@
       "dependencies": {
         "com.unity.burst": "1.6.0-pre.2",
         "com.unity.jobs": "0.8.0-preview.23",
-        "com.unity.collections": "0.15.0-preview.21",
+        "com.unity.collections": "0.17.0-preview.18",
         "com.unity.mathematics": "1.2.1"
       }
     },

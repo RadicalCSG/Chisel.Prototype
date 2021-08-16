@@ -19,9 +19,9 @@ namespace Chisel.Core
         public void Dispose()           { }
         
 
-        [SerializeField] LayerUsageFlags  layerUsage = LayerUsageFlags.RenderReceiveCastShadows | LayerUsageFlags.Collidable;
-        [SerializeField] Material         renderMaterial;
-        [SerializeField] PhysicMaterial   physicsMaterial;
+        [SerializeField] internal LayerUsageFlags   layerUsage = LayerUsageFlags.RenderReceiveCastShadows | LayerUsageFlags.Collidable;
+        [SerializeField] internal Material          renderMaterial;
+        [SerializeField] internal PhysicMaterial    physicsMaterial;
 
         public LayerUsageFlags	LayerUsage		            { get { return layerUsage;      } set { layerUsage      = value; } }
         public Material			RenderMaterial	            { get { return renderMaterial;  } set { renderMaterial  = value; } }
@@ -35,7 +35,7 @@ namespace Chisel.Core
             get
             {
                 var materialManager = ChiselMaterialManager.Instance;
-                return new SurfaceLayers()
+                return new SurfaceLayers
                 {
                     layerUsage      = layerUsage,
                     layerParameter1 = materialManager.GetID(renderMaterial),

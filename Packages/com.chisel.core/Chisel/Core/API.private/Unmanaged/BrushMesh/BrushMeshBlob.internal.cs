@@ -9,6 +9,12 @@ namespace Chisel.Core
 {
     public struct NativeChiselSurface
     {
+        public static readonly NativeChiselSurface Default = new NativeChiselSurface
+        {
+            layerDefinition     = SurfaceLayers.Empty,
+            surfaceDescription  = SurfaceDescription.Default
+        };
+
         public SurfaceLayers        layerDefinition;
         public SurfaceDescription   surfaceDescription;
     }    
@@ -50,14 +56,14 @@ namespace Chisel.Core
         }
 
 
-        public ChiselAABB		    localBounds;
+        public ChiselAABB		            localBounds;
 
-        public ChiselBlobArray<float3>	localVertices;
+        public ChiselBlobArray<float3>	    localVertices;
         public ChiselBlobArray<HalfEdge>	halfEdges;
-        public ChiselBlobArray<int>       halfEdgePolygonIndices;
-        public ChiselBlobArray<Polygon>	polygons;
-        public ChiselBlobArray<float4>    localPlanes;        // surface planes + edge planes (to reject vertices at sharp plane intersections)
-        public int                  localPlaneCount;    // number of surface planes
+        public ChiselBlobArray<int>         halfEdgePolygonIndices;
+        public ChiselBlobArray<Polygon>	    polygons;
+        public ChiselBlobArray<float4>      localPlanes;        // surface planes + edge planes (to reject vertices at sharp plane intersections)
+        public int                          localPlaneCount;    // number of surface planes
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override unsafe int GetHashCode()

@@ -260,11 +260,6 @@ namespace Chisel.Editors
             }
         }
 
-        internal void OnDisable()
-        {
-        }
-
-
         bool IsPrefabAsset
         {
             get

@@ -55,6 +55,11 @@ namespace Chisel.Components
 
         static readonly HashSet<ChiselNode> rebuildTreeNodes = new HashSet<ChiselNode>();
 
+        static readonly Dictionary<ChiselBrushComponent,int> rebuildBrushMeshes = new Dictionary<ChiselBrushComponent, int>();
+        static readonly List<CSGTreeBrush> rebuildTreeBrushes = new List<CSGTreeBrush>();
+        static readonly List<BrushMesh> rebuildTreeBrushOutlines = new List<BrushMesh>();
+        static readonly List<ChiselSurfaceDefinition> rebuildSurfaceDefinitions = new List<ChiselSurfaceDefinition>();
+
         static readonly HashSet<ChiselNode> updateTransformationNodes = new HashSet<ChiselNode>();
 
         static readonly HashSet<ChiselHierarchyItem> updateChildrenQueue = new HashSet<ChiselHierarchyItem>();
@@ -331,6 +336,38 @@ namespace Chisel.Components
         {
             node.UpdateBrushMeshInstances();
         }
+
+        public static void OnBrushMeshUpdate(ChiselBrushComponent component, ref CSGTreeNode node)
+        {
+            var brush = (CSGTreeBrush)node;
+            if (!brush.Valid)
+                return;
+
+            if (rebuildBrushMeshes.TryGetValue(component, out int index))
+            {
+                rebuildTreeBrushes[index] = brush;
+                rebuildTreeBrushOutlines[index] = component.definition.brushOutline;
+                rebuildSurfaceDefinitions[index] = component.surfaceDefinition;
+            } else
+            { 
+                rebuildBrushMeshes[component] = rebuildTreeBrushOutlines.Count;
+                rebuildTreeBrushes.Add(brush);
+                rebuildTreeBrushOutlines.Add(component.definition.brushOutline);
+                rebuildSurfaceDefinitions.Add(component.surfaceDefinition);
+            }
+            rebuildTreeNodes.Add(component);
+        }
+
+        static void UpdateBrushMeshes()
+        {
+            BrushMeshManager.ConvertBrushMeshesToBrushMeshInstances(rebuildTreeBrushes, rebuildTreeBrushOutlines, rebuildSurfaceDefinitions);
+
+            rebuildBrushMeshes.Clear();
+            rebuildTreeBrushes.Clear();
+            rebuildTreeBrushOutlines.Clear();
+            rebuildSurfaceDefinitions.Clear();
+        }
+
 
         public static void OnTransformChildrenChanged(ChiselNode component)
         {
@@ -899,7 +936,8 @@ namespace Chisel.Components
                 addToHierarchyQueue.Count == 0 &&
                 updateTransformationNodes.Count == 0 &&
                 destroyNodesList.Count == 0 &&
-                rebuildTreeNodes.Count == 0)
+                rebuildTreeNodes.Count == 0 &&
+                rebuildBrushMeshes.Count == 0)
                 return;
 
             TransformNodeLookupClear();
@@ -1435,6 +1473,7 @@ namespace Chisel.Components
 
                 // TODO: fix this hack and rewrite the whole update queue here
                 {
+                    Profiler.BeginSample("UpdateTrampoline.updateChildrenQueue2.RebuildTreeNodes");
                     for (int i = updateChildrenQueueList.Count - 1; i >= 0; i--)
                     {
                         var hierarchyItem = updateChildrenQueueList[i];
@@ -1455,7 +1494,9 @@ namespace Chisel.Components
                                 treeNodeLookup.Remove(node);
                         }
                     }
+                    Profiler.EndSample();
 
+                    Profiler.BeginSample("UpdateTrampoline.updateChildrenQueue2.AddChildrenOfHierarchyItem");
                     for (int i = updateChildrenQueueList.Count - 1; i >= 0; i--)
                     {
                         var hierarchyItem = updateChildrenQueueList[i];
@@ -1474,6 +1515,7 @@ namespace Chisel.Components
 
                         AddChildrenOfHierarchyItem(hierarchyItem, updateChildrenQueueList);
                     }
+                    Profiler.EndSample();
                 }
 
                 Profiler.BeginSample("UpdateTrampoline.updateChildrenQueue2.sort");
@@ -1565,6 +1607,8 @@ namespace Chisel.Components
             }
             Profiler.EndSample();
 
+            UpdateBrushMeshes();
+
             Profiler.BeginSample("UpdateTrampoline.End");
             __registerNodes		.Clear();
             __unregisterNodes	.Clear();
@@ -1602,15 +1646,15 @@ namespace Chisel.Components
                     continue;
 
                 var topNode = childComponent.TopTreeNode;
+                if (topNode.Valid)
+                    continue;
+                
+                topNode = childComponent.RebuildTreeNodes();
                 if (!topNode.Valid)
-                {
-                    topNode = childComponent.RebuildTreeNodes();
-                    if (!topNode.Valid)
-                        continue;
+                    continue;
 
-                    if (!updateNodes.Contains(childHierarchyItem))
-                        updateNodes.Add(childHierarchyItem);
-                }
+                if (!updateNodes.Contains(childHierarchyItem))
+                    updateNodes.Add(childHierarchyItem);
             }
         }
 
