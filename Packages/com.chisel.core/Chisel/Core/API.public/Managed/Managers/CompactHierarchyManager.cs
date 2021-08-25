@@ -844,7 +844,7 @@ namespace Chisel.Core
 
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool SetNodeLocalTransformation(NodeID nodeID, in float4x4 result)
+        internal bool SetNodeLocalTransformation(NodeID nodeID, in float4x4 transformation)
         {   
             if (!IsValidNodeID(nodeID, out var index))
                 return false;
@@ -855,12 +855,12 @@ namespace Chisel.Core
 
             ref var hierarchy = ref GetHierarchy(compactNodeID);
             ref var nodeRef = ref hierarchy.GetChildRef(compactNodeID);
-            if (math.any(nodeRef.transformation.c0 != result.c0) ||
-                math.any(nodeRef.transformation.c1 != result.c1) ||
-                math.any(nodeRef.transformation.c2 != result.c2) ||
-                math.any(nodeRef.transformation.c3 != result.c3))
+            if (math.any(nodeRef.transformation.c0 != transformation.c0) ||
+                math.any(nodeRef.transformation.c1 != transformation.c1) ||
+                math.any(nodeRef.transformation.c2 != transformation.c2) ||
+                math.any(nodeRef.transformation.c3 != transformation.c3))
             {
-                nodeRef.transformation = result;
+                nodeRef.transformation = transformation;
                 //nodeRef.bounds = BrushMeshManager.CalculateBounds(nodeRef.brushMeshHash, in nodeRef.transformation);
 
                 // TODO: not sure why this test doesn't work?

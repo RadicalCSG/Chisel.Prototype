@@ -51,7 +51,7 @@ namespace Chisel.Components
                         return model;
                     iterator = iterator.Parent;
                 } while (!Equals(iterator, null));
-                return null;
+                return sceneHierarchy?.DefaultModel;
             }
         }
 
