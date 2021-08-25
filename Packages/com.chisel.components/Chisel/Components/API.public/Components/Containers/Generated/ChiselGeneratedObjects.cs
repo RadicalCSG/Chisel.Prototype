@@ -412,7 +412,6 @@ namespace Chisel.Components
                 {
                     if (renderables[i] == null || renderables[i].invalid)
                         continue;
-
                     bool isRenderable = (renderables[i].query & LayerUsageFlags.Renderable) == LayerUsageFlags.Renderable;
                     var renderableContainer = renderables[i].container;
                     ChiselObjectUtility.UpdateContainerFlags(renderableContainer, gameObjectState, isRenderable: isRenderable);
@@ -574,6 +573,7 @@ namespace Chisel.Components
                     if (instance.meshRenderer &&
                         instance.meshRenderer.enabled)
                         instance.meshRenderer.enabled = false;
+
                     if (foundMeshes.Count < meshDataArray.Length)
                     {
                         var sharedMesh = instance.sharedMesh;
@@ -617,8 +617,14 @@ namespace Chisel.Components
             // Updates the Unity Mesh-es that are used in our MeshRenderers and MeshColliders
             // MeshUpdateFlags => Bounds are never updated no matter what flag you use
             Profiler.BeginSample("ApplyAndDisposeWritableMeshData");
-            Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, foundMeshes,
-                                                 UnityEngine.Rendering.MeshUpdateFlags.DontRecalculateBounds);
+            if (meshDataArray.Length > 0)
+            {
+                if (realMeshDataArraySize > 0) // possible that all meshes are empty
+                    Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, foundMeshes,
+                                                         UnityEngine.Rendering.MeshUpdateFlags.DontRecalculateBounds);
+                else
+                    meshDataArray.Dispose();
+            }
             Profiler.EndSample();
 
             // TODO: user meshDataArray data to determine if colliders are visible or not, then we can move this before the Apply
