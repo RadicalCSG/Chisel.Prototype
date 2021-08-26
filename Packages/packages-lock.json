@@ -1,15 +1,5 @@
 {
   "dependencies": {
-    "com.aeternumgames.chisel.import.source": {
-      "version": "file:Chisel.Import.Source",
-      "depth": 0,
-      "source": "embedded",
-      "dependencies": {
-        "com.unity.mathematics": "1.1.0",
-        "com.chisel.core": "",
-        "com.chisel.components": ""
-      }
-    },
     "com.chisel.components": {
       "version": "file:com.chisel.components",
       "depth": 0,
@@ -127,7 +117,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.performance.profile-analyzer": {
-      "version": "1.0.3",
+      "version": "1.1.0",
       "depth": 0,
       "source": "registry",
       "dependencies": {},

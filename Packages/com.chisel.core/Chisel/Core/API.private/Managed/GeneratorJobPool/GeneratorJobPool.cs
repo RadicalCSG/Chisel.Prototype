@@ -742,8 +742,8 @@ namespace Chisel.Core
                     continue;
 
                 generatorRootNodeIDs.RemoveAt(i);
-                surfaceDefinitions.RemoveAt(i);
-                generators.RemoveAt(i);
+                surfaceDefinitions  .RemoveAt(i);
+                generators          .RemoveAt(i);
             }
 
             if (generatorRootNodeIDs.Length == 0)
@@ -862,8 +862,15 @@ namespace Chisel.Core
                 index                = index,
                 totalCounts          = totalCounts
             };
+            // TODO: make this work in parallel (create new linear stairs => errors)
+#if true
+            dependsOn.Complete();
+            updateHierarchyJob.Execute();
+            return generators.Dispose((JobHandle)default);
+#else
             var updateHierarchyJobHandle = updateHierarchyJob.Schedule(runInParallel, dependsOn);
             return generators.Dispose(updateHierarchyJobHandle);
+#endif
         }
 
         
@@ -888,8 +895,8 @@ namespace Chisel.Core
             [NoAlias, ReadOnly] public NativeList<GeneratedNode>        generatedNodes;
 
             // Write
-            [NoAlias, WriteOnly] public NativeList<GeneratedNodeDefinition>.ParallelWriter              generatedNodeDefinitions;
-            [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>.ParallelWriter    brushMeshBlobs;
+            [NoAlias, WriteOnly] public NativeList<GeneratedNodeDefinition>.ParallelWriter                  generatedNodeDefinitions;
+            [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>.ParallelWriter  brushMeshBlobs;
 
             public void Execute()
             {

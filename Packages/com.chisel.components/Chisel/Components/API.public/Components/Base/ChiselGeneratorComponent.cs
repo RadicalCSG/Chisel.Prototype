@@ -389,10 +389,10 @@ namespace Chisel.Components
         {
             if (!Node.Valid)
             {
-                var model = this.hierarchyItem?.Model;
+                var model = this.hierarchyItem.Model;
                 if (model == null)
                 {
-                    Debug.LogError("Model not yet initialized");
+                    ClearHashes();
                     return;
                 }
 

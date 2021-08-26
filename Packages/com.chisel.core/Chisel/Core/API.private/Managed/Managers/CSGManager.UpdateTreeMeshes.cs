@@ -235,7 +235,8 @@ namespace Chisel.Core
                             compactHierarchy.ClearStatusFlag(treeUpdate.treeCompactNodeID, NodeStatusFlags.TreeNeedsUpdate);
                             compactHierarchy.ClearAllStatusFlags(treeUpdate.treeCompactNodeID);
 
-                            if (treeUpdate.updateCount == 0)
+                            if (treeUpdate.updateCount == 0 &&
+                                treeUpdate.brushCount != 0)
                                 continue;
 
                             if (finishMeshUpdates != null)
