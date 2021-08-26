@@ -221,6 +221,8 @@ namespace Chisel.Components
         {
             foreach (var model in models)
             {
+                if (model == null)
+                    continue;
                 model.OnRenderModel(camera, helperStateFlags);
             }
         }
@@ -261,16 +263,15 @@ namespace Chisel.Components
                 if (!node || !node.isActiveAndEnabled)
                     continue;
 
-                var brushGenerator = node as ChiselGeneratorComponent;
-                if (brushGenerator)
+                var generatorComponent = node as ChiselGeneratorComponent;
+                if (generatorComponent)
                 {
                     var treeNode = node.TopTreeNode;
-                    if (!CompactHierarchyManager.IsValidNodeID(treeNode))
+                    if (!treeNode.Valid)
                         continue;
-
-                    var model               = brushGenerator.hierarchyItem.Model;
+                    var model = generatorComponent.hierarchyItem.Model;
                     if (model == null)
-                        Debug.LogError($"{brushGenerator.hierarchyItem.Component} model {model} == null", brushGenerator.hierarchyItem.Component);
+                        Debug.LogError($"{generatorComponent.hierarchyItem.Component} model {model} == null", generatorComponent.hierarchyItem.Component);
                     if (model)
                     { 
                         var modelNode           = model.TopTreeNode;
@@ -278,8 +279,10 @@ namespace Chisel.Components
                         var modelCompactNodeID  = CompactHierarchyManager.GetCompactNodeID(modelNode);
                         if (!visibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState prevState))
                             prevState = VisibilityState.Unknown;
-                        var state = UpdateVisibility(sceneVisibilityManager, brushGenerator);
-                        visibilityStateLookup[compactNodeID] = state;
+                        var state = UpdateVisibility(sceneVisibilityManager, generatorComponent);
+
+                        foreach(var childCompactNodeID in CompactHierarchyManager.GetAllChildren(compactNodeID))
+                            visibilityStateLookup[childCompactNodeID] = state;
                         visibilityStateLookup[modelCompactNodeID] = state | prevState;
                     }
                 }
@@ -289,13 +292,15 @@ namespace Chisel.Components
             {
                 if (!model || !model.isActiveAndEnabled || model.generated == null)
                     continue;
-                var modelNode           = model.TopTreeNode;
+                var modelNode = model.TopTreeNode;
+                if (!modelNode.Valid)
+                    continue;
                 var modelCompactNodeID  = CompactHierarchyManager.GetCompactNodeID(modelNode);
                 if (!visibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState state))
                 {
                     visibilityStateLookup[modelCompactNodeID] = VisibilityState.AllVisible;
                     model.generated.visibilityState = VisibilityState.AllVisible;
-                    continue;
+                    continue; 
                 }
                 if (state == VisibilityState.Mixed ||
                     state != model.generated.visibilityState)
@@ -573,6 +578,7 @@ namespace Chisel.Components
             public Dictionary<UnityEngine.Object, HideFlags>	    hideFlags;
 #if UNITY_EDITOR
             public Dictionary<Renderer, bool>	                    rendererOff;
+            public Dictionary<Renderer, bool>	                    rendererDisabled;
             public Dictionary<UnityEngine.GameObject, bool>	        hierarchyHidden;
             public Dictionary<UnityEngine.GameObject, bool>	        hierarchyDisabled;
 #endif
@@ -601,6 +607,7 @@ namespace Chisel.Components
                 hideFlags           = new Dictionary<UnityEngine.Object, HideFlags>(),
 #if UNITY_EDITOR
                 rendererOff         = new Dictionary<Renderer, bool>(),
+                rendererDisabled    = new Dictionary<Renderer, bool>(),
                 hierarchyHidden     = new Dictionary<UnityEngine.GameObject, bool>(),
                 hierarchyDisabled   = new Dictionary<UnityEngine.GameObject, bool>(),
 #endif
@@ -644,10 +651,11 @@ namespace Chisel.Components
                             continue;
                         state.generatedComponents[debugHelper.container] = model;
 #if UNITY_EDITOR
-                        if (debugHelper.meshRenderer.forceRenderingOff)
+                        if (debugHelper.visible)
                         {
-                            state.rendererOff[debugHelper.meshRenderer] = true;
+                            state.rendererDisabled[debugHelper.meshRenderer] = true;
                             debugHelper.meshRenderer.forceRenderingOff = false;
+                            debugHelper.meshRenderer.enabled = true;
                         }
 #endif
                     }
@@ -703,6 +711,10 @@ namespace Chisel.Components
             foreach (var pair in state.rendererOff)
             {
                 pair.Key.forceRenderingOff = pair.Value;
+            }
+            foreach (var pair in state.rendererDisabled)
+            {
+                pair.Key.enabled = false;
             }
             s_IgnoreVisibility = false;
             EndDrawModeForCamera();

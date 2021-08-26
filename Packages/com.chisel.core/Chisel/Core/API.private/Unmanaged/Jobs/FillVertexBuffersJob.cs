@@ -1,8 +1,7 @@
-﻿using System;
+using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -35,7 +34,7 @@ namespace Chisel.Core
         public IndexOrder                                   brushIndexOrder; //<- TODO: if we use NodeOrder maybe this could be explicit based on the order in array?
         public int                                          brushSurfaceOffset;
         public int                                          brushSurfaceCount;
-        public BlobAssetReference<ChiselBrushRenderBuffer>  brushRenderBuffer;
+        public ChiselBlobAssetReference<ChiselBrushRenderBuffer>  brushRenderBuffer;
     }
 
     [BurstCompile(CompileSynchronously = true)]
@@ -66,7 +65,7 @@ namespace Chisel.Core
         // Read
         [NoAlias, ReadOnly] public int meshQueryLength;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                   allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>>  brushRenderBufferCache;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>  brushRenderBufferCache;
 
         // Write
         [NoAlias, WriteOnly] public NativeList<BrushData>.ParallelWriter brushRenderData;
@@ -109,7 +108,7 @@ namespace Chisel.Core
 
         public uint             surfaceHash;
         public uint             geometryHash;
-        public BlobAssetReference<ChiselBrushRenderBuffer> brushRenderBuffer;
+        public ChiselBlobAssetReference<ChiselBrushRenderBuffer> brushRenderBuffer;
     }
 
     [BurstCompile(CompileSynchronously = true)]
@@ -441,6 +440,7 @@ namespace Chisel.Core
     public struct ChiselMeshUpdate
     {
         public int contentsIndex;
+        public int colliderIndex;
         public int meshIndex;
         public int objectIndex;
     }
@@ -538,9 +538,9 @@ namespace Chisel.Core
 
             if (colliderMeshUpdates.Capacity < colliderCount)
                 colliderMeshUpdates.Capacity = colliderCount;
-            var colliderIndex = 0;
             if (meshDescriptions.IsCreated)
             {
+                var colliderIndex = 0;
                 for (int i = 0; i < subMeshSections.Length; i++)
                 {
                     var subMeshSection = subMeshSections[i];
@@ -552,10 +552,11 @@ namespace Chisel.Core
                     meshes.Add(meshDatas[meshIndex]);
                     colliderMeshUpdates.Add(new ChiselMeshUpdate
                     {
-                        contentsIndex   = colliderIndex,
+                        contentsIndex   = i,
+                        colliderIndex   = colliderIndex,
                         meshIndex       = meshIndex,
                         objectIndex     = surfaceParameter
-                    }); 
+                    });
                     colliderIndex++;
                     meshIndex++;
                 }
@@ -669,7 +670,7 @@ namespace Chisel.Core
                     indexVertexOffset += sourceVertexCount;
                 }
                 
-                var srcBounds   = new MinMaxAABB { Min = min, Max = max };
+                var srcBounds   = new ChiselAABB { Min = min, Max = max };
                 var center      = (Vector3)((srcBounds.Max + srcBounds.Min) * 0.5f);
                 var size        = (Vector3)(srcBounds.Max - srcBounds.Min);
                 var dstBounds   = new Bounds(center, size);
@@ -784,7 +785,7 @@ namespace Chisel.Core
 
 
                 
-            var srcBounds   = new MinMaxAABB { Min = min, Max = max };
+            var srcBounds   = new ChiselAABB { Min = min, Max = max };
             var center      = (Vector3)((srcBounds.Max + srcBounds.Min) * 0.5f);
             var size        = (Vector3)(srcBounds.Max - srcBounds.Min);
             

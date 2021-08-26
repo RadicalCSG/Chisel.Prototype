@@ -4,7 +4,6 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Entities;
 using Debug = UnityEngine.Debug;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 
@@ -15,9 +14,9 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly             allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>.ReadOnly brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>.ReadOnly brushMeshLookup;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>             transformationCache;
-        [NoAlias, ReadOnly] public NativeArray<MinMaxAABB>                      brushTreeSpaceBounds;
+        [NoAlias, ReadOnly] public NativeArray<ChiselAABB>                      brushTreeSpaceBounds;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly             rebuildTreeBrushIndexOrders;
 
         // Read (Re-alloc) / Write
@@ -183,9 +182,9 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly         allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>.ReadOnly brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>.ReadOnly brushMeshLookup;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>         transformationCache;
-        [NoAlias, ReadOnly] public NativeArray<MinMaxAABB>                  brushTreeSpaceBounds;
+        [NoAlias, ReadOnly] public NativeArray<ChiselAABB>                  brushTreeSpaceBounds;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  brushesThatNeedIndirectUpdate;
 
         // Read (Re-alloc) / Write
@@ -253,25 +252,25 @@ namespace Chisel.Core
 
         // Read/Write
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeList<BlobAssetReference<BasePolygonsBlob>>               basePolygonCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>               basePolygonCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>     treeSpaceVerticesCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>     treeSpaceVerticesCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeList<BlobAssetReference<BrushesTouchedByBrush>>          brushesTouchedByBrushCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>          brushesTouchedByBrushCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeList<BlobAssetReference<RoutingTable>>                   routingTableCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<RoutingTable>>                   routingTableCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeList<BlobAssetReference<BrushTreeSpacePlanes>>           brushTreeSpacePlaneCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>           brushTreeSpacePlaneCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>        brushRenderBufferCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>        brushRenderBufferCache;
 
         // Write
-        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BasePolygonsBlob>>.ParallelWriter             basePolygonDisposeList;
-        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>.ParallelWriter   treeSpaceVerticesDisposeList;
-        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushesTouchedByBrush>>.ParallelWriter        brushesTouchedByBrushDisposeList;
-        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<RoutingTable>>.ParallelWriter                 routingTableDisposeList;
-        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushTreeSpacePlanes>>.ParallelWriter         brushTreeSpacePlaneDisposeList;
-        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>.ParallelWriter      brushRenderBufferDisposeList;
+        [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>.ParallelWriter             basePolygonDisposeList;
+        [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>.ParallelWriter   treeSpaceVerticesDisposeList;
+        [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>.ParallelWriter        brushesTouchedByBrushDisposeList;
+        [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<RoutingTable>>.ParallelWriter                 routingTableDisposeList;
+        [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>.ParallelWriter         brushTreeSpacePlaneDisposeList;
+        [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>.ParallelWriter      brushRenderBufferDisposeList;
 
         public void Execute(int index)
         {
@@ -338,17 +337,17 @@ namespace Chisel.Core
 
         // Read Write
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<BlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
+        [NoAlias] public NativeArray<ChiselBlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
+        [NoAlias] public NativeArray<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
+        [NoAlias] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<BlobAssetReference<RoutingTable>>                 routingTableCache;
+        [NoAlias] public NativeArray<ChiselBlobAssetReference<RoutingTable>>                 routingTableCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
+        [NoAlias] public NativeArray<ChiselBlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
+        [NoAlias] public NativeArray<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
 
         public void Execute(int index)
         {
@@ -410,9 +409,9 @@ namespace Chisel.Core
 
         // Read Write
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<BlobAssetReference<BasePolygonsBlob>>      basePolygonCache;
+        [NoAlias] public NativeArray<ChiselBlobAssetReference<BasePolygonsBlob>>      basePolygonCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushCache;
+        [NoAlias] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushCache;
 
         public void Execute(int index)
         {
@@ -484,7 +483,7 @@ namespace Chisel.Core
             }
         }
 
-        public static void TransformOtherIntoBrushSpace(ref float4x4 treeToBrushSpaceMatrix, ref float4x4 brushToTreeSpaceMatrix, ref BlobArray<float4> srcPlanes, NativeArray<float4> dstPlanes)
+        public static void TransformOtherIntoBrushSpace(ref float4x4 treeToBrushSpaceMatrix, ref float4x4 brushToTreeSpaceMatrix, ref ChiselBlobArray<float4> srcPlanes, NativeArray<float4> dstPlanes)
         {
             var brush1ToBrush0LocalLocalSpace = math.transpose(math.mul(treeToBrushSpaceMatrix, brushToTreeSpaceMatrix));
             for (int plane_index = 0; plane_index < srcPlanes.Length; plane_index++)
@@ -553,7 +552,7 @@ namespace Chisel.Core
             return IntersectionType.Intersection;//*/
         }
 
-        static int WhichSide([NoAlias,ReadOnly] ref BlobArray<float3> vertices, float4 plane, double epsilon)
+        static int WhichSide([NoAlias,ReadOnly] ref ChiselBlobArray<float3> vertices, float4 plane, double epsilon)
         {
             {
                 var t = math.dot(plane, new float4(vertices[0], 1));
@@ -581,8 +580,8 @@ namespace Chisel.Core
         
 
         public static IntersectionType FindIntersection(int brush0NodeOrder, int brush1NodeOrder,
-                                                        [NoAlias] ref NativeArray<BlobAssetReference<BrushMeshBlob>>.ReadOnly brushMeshLookup,
-                                                        [NoAlias] ref NativeArray<MinMaxAABB>          brushTreeSpaceBounds,
+                                                        [NoAlias] ref NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>.ReadOnly brushMeshLookup,
+                                                        [NoAlias] ref NativeArray<ChiselAABB>          brushTreeSpaceBounds,
                                                         [NoAlias] ref NativeArray<NodeTransformations> transformations,
                                                         [NoAlias] ref NativeArray<float4>              transformedPlanes0,
                                                         [NoAlias] ref NativeArray<float4>              transformedPlanes1)

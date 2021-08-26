@@ -2,7 +2,6 @@
 using Debug = UnityEngine.Debug;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine.Profiling;
 using UnitySceneExtensions;
@@ -29,7 +28,7 @@ namespace Chisel.Core
         }
 
         public bool closed;
-        public BlobArray<Point> controlPoints;
+        public ChiselBlobArray<Point> controlPoints;
 
         static Point Convert(CurveControlPoint2D srcPoint)
         {
@@ -253,18 +252,18 @@ namespace Chisel.Core
                         polygonVerticesSegments = default;
                         return false;
                     }
+                }
 
-                    for (int i = 0; i < polygonVerticesSegments.Length; i++)
+                for (int i = 0; i < polygonVerticesSegments.Length; i++)
+                {
+                    var range = new Range
                     {
-                        var range = new Range
-                        {
-                            start   = i == 0 ? 0 : polygonVerticesSegments[i - 1],
-                            end     =              polygonVerticesSegments[i    ]
-                        };
+                        start   = i == 0 ? 0 : polygonVerticesSegments[i - 1],
+                        end     =              polygonVerticesSegments[i    ]
+                    };
 
-                        if (CalculateOrientation(polygonVerticesArray, range) < 0)
-                            External.BayazitDecomposerBursted.Reverse(polygonVerticesArray, range);
-                    }
+                    if (CalculateOrientation(polygonVerticesArray, range) < 0)
+                        External.BayazitDecomposerBursted.Reverse(polygonVerticesArray, range);
                 }
                 //Profiler.EndSample();
 
@@ -273,9 +272,9 @@ namespace Chisel.Core
             }
         }
 
-        public static BlobAssetReference<ChiselCurve2DBlob> Convert(Curve2D curve, Allocator allocator)
+        public static ChiselBlobAssetReference<ChiselCurve2DBlob> Convert(Curve2D curve, Allocator allocator)
         {
-            using (var builder = new BlobBuilder(Allocator.Temp))
+            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<ChiselCurve2DBlob>();
                 root.closed = curve.closed;

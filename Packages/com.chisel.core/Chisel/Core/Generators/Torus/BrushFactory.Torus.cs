@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using Debug = UnityEngine.Debug;
 using Unity.Mathematics;
 using Unity.Collections;
-using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
@@ -78,9 +77,9 @@ namespace Chisel.Core
         }
 
               
-        public static unsafe bool GenerateTorus(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, 
+        public static unsafe bool GenerateTorus(NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes, 
                                                 in NativeArray<float3> vertices, int verticalSegments, int horizontalSegments,
-                                                in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
                                                 Allocator allocator)
         {
             var segmentIndices = new NativeArray<int>(2 + verticalSegments, Allocator.Temp);
@@ -95,9 +94,9 @@ namespace Chisel.Core
                 for (int n1 = 1, n0 = 0; n1 < horizontalSegments + 1; n0 = n1, n1++)
                 {
 
-                    brushMeshes[n0] = BlobAssetReference<BrushMeshBlob>.Null;
+                    brushMeshes[n0] = ChiselBlobAssetReference<BrushMeshBlob>.Null;
 
-                    using (var builder = new BlobBuilder(Allocator.Temp))
+                    using (var builder = new ChiselBlobBuilder(Allocator.Temp))
                     {
                         ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
 
@@ -115,6 +114,8 @@ namespace Chisel.Core
                             return false;
 
                         var localPlanes = builder.Allocate(ref root.localPlanes, polygons.Length);
+                        root.localPlaneCount = polygons.Length;
+                        // TODO: calculate corner planes
                         var halfEdgePolygonIndices = builder.Allocate(ref root.halfEdgePolygonIndices, halfEdges.Length);
                         CalculatePlanes(ref localPlanes, in polygons, in halfEdges, in localVertices);
                         UpdateHalfEdgePolygonIndices(ref halfEdgePolygonIndices, in polygons);

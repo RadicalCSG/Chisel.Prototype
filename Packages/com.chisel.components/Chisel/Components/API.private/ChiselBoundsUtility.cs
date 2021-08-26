@@ -5,6 +5,7 @@ using Chisel.Core;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using Unity.Mathematics;
+using ChiselAABB = Chisel.Core.ChiselAABB;
 
 namespace Chisel.Components
 {
@@ -17,7 +18,7 @@ namespace Chisel.Components
                 return ChiselHierarchyItem.EmptyBounds;
 
             var modelMatrix		= ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
-            var minMax			= new MinMaxAABB { };
+            var minMax			= new ChiselAABB { };
             var boundsCount     = 0;
 
             s_FoundBrushes.Clear();
@@ -36,7 +37,7 @@ namespace Chisel.Components
                 {
                     var center = ((float4)transformation.GetColumn(3)).xyz;
                     var halfSize = size * 0.5f;
-                    childBounds = new MinMaxAABB { Min = center - halfSize, Max = center + halfSize };
+                    childBounds = new ChiselAABB { Min = center - halfSize, Max = center + halfSize };
                 }
                 if (magnitude != 0)
                 {
@@ -60,7 +61,7 @@ namespace Chisel.Components
                 return ChiselHierarchyItem.EmptyBounds;
 
             var modelMatrix		= ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
-            var minMax			= new MinMaxAABB { };
+            var minMax			= new ChiselAABB { };
             var boundsCount     = 0;
 
             s_FoundBrushes.Clear();
@@ -78,7 +79,7 @@ namespace Chisel.Components
                 {
                     var center = ((float4)transformation.GetColumn(3)).xyz;
                     var halfSize = size * 0.5f;
-                    childBounds = new MinMaxAABB { Min = center - halfSize, Max = center + halfSize };
+                    childBounds = new ChiselAABB { Min = center - halfSize, Max = center + halfSize };
                 }
                 if (magnitude != 0)
                 {

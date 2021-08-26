@@ -381,115 +381,6 @@ namespace Chisel.Editors
         }
 
 
-        static readonly List<ChiselBrushMaterial> s_TempBrushMaterials = new List<ChiselBrushMaterial>();
-
-        static ChiselBrushMaterial FindBrushMaterialBySurfaceIndex(CSGTreeNode node, CSGTreeBrush brush, int surfaceID)
-        {
-            if (!node.Valid)
-                return null;
-
-            if (surfaceID < 0)
-                return null;
-
-            s_TempBrushMaterials.Clear();
-            if (!GetAllMaterials(node, brush, s_TempBrushMaterials))
-                return null;
-
-            if (surfaceID >= s_TempBrushMaterials.Count)
-                return null;
-
-            var brushMaterial = s_TempBrushMaterials[surfaceID];
-            s_TempBrushMaterials.Clear();
-            return brushMaterial;
-        }
-
-        static bool GetAllMaterials(CSGTreeBrush brush, CSGTreeBrush findBrush, List<ChiselBrushMaterial> brushMaterials)
-        {
-            if (findBrush != brush)
-                return false;
-
-            var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(brush.BrushMesh.BrushMeshID);
-            if (!brushMeshBlob.IsCreated)
-                return true;
-
-            ref var brushMesh = ref brushMeshBlob.Value;
-            for (int i = 0; i < brushMesh.polygons.Length; i++)
-            {
-                var surface = brushMesh.polygons[i].surface;
-                var brushMaterial = new ChiselBrushMaterial
-                {
-                    LayerUsage = surface.layerDefinition.layerUsage,
-                    RenderMaterial = surface.layerDefinition.layerParameter1 == 0 ? default : ChiselMaterialManager.Instance.GetMaterial(surface.layerDefinition.layerParameter1),
-                    PhysicsMaterial = surface.layerDefinition.layerParameter2 == 0 ? default : ChiselMaterialManager.Instance.GetPhysicMaterial(surface.layerDefinition.layerParameter2)
-                };
-                brushMaterials.Add(brushMaterial);
-            }
-            return true;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool GetAllMaterials(CSGTreeNode node, CSGTreeBrush findBrush, List<ChiselBrushMaterial> brushMaterials)
-        {
-            switch (node.Type)
-            {
-                case CSGNodeType.Branch: return GetAllMaterials((CSGTreeBranch)node, findBrush, brushMaterials);
-                case CSGNodeType.Brush: return GetAllMaterials((CSGTreeBrush)node, findBrush, brushMaterials);
-                default: return false;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool GetAllBrushMaterials(CSGTreeNode node, CSGTreeBrush brush, List<ChiselBrushMaterial> brushMaterials)
-        {
-            if (!node.Valid)
-                return false;
-
-            GetAllMaterials(node, brush, brushMaterials);
-            return brushMaterials.Count > 0;
-        }
-
-        public static bool FindBrushMaterials(Vector2 position, List<ChiselBrushMaterial> outBrushMaterials, List<ChiselNode> nodes, bool selectAllSurfaces)
-        {
-            outBrushMaterials.Clear();
-            nodes.Clear();
-            try
-            {
-                ChiselIntersection intersection;
-                if (!PickFirstGameObject(position, out intersection))
-                    return false;
-
-                var chiselNode = intersection.treeNode;
-                if (!chiselNode)
-                    return false;
-
-                var brush = intersection.brushIntersection.brush;
-
-                if (selectAllSurfaces)
-                {
-                    nodes.Clear();
-                    nodes.Add(chiselNode);
-                    if (!GetAllBrushMaterials(chiselNode.TopTreeNode, brush, outBrushMaterials))
-                        return false;
-                    return true;
-                } else
-                {
-                    var surface = FindBrushMaterialBySurfaceIndex(chiselNode.TopTreeNode, brush, intersection.brushIntersection.surfaceIndex);
-                    if (surface == null)
-                        return false;
-                    nodes.Clear();
-                    nodes.Add(chiselNode);
-                    outBrushMaterials.Add(surface);
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                return false;
-            }
-        }
-        
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool FindSurfaceReference(ChiselNode chiselNode, CSGTreeNode node, CSGTreeBrush findBrush, int surfaceID, out SurfaceReference surfaceReference)
         {
@@ -547,7 +438,7 @@ namespace Chisel.Editors
             return null;
         }
         
-        public static bool FindSurfaceReferences(List<SurfaceReference> foundSurfaces, Vector2 position, bool selectAllSurfaces, out ChiselIntersection intersection, out SurfaceReference surfaceReference)
+        public static bool FindSurfaceReferences(Vector2 position, bool selectAllSurfaces, List<SurfaceReference> foundSurfaces, out ChiselIntersection intersection, out SurfaceReference surfaceReference)
         {
             intersection = ChiselIntersection.None;
             surfaceReference = null;
@@ -578,7 +469,12 @@ namespace Chisel.Editors
                 return false;
             }
         }
-        
+
+        public static bool FindSurfaceReferences(Vector2 position, bool selectAllSurfaces, List<SurfaceReference> foundSurfaces)
+        {
+            return FindSurfaceReferences(position, selectAllSurfaces, foundSurfaces, out _, out _);
+        }
+
         static GameObject PickNodeOrGameObject(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModel model, out ChiselNode node, out ChiselIntersection intersection)
         {
             TryNextSelection:
@@ -642,8 +538,8 @@ namespace Chisel.Editors
             int layers = camera.cullingMask;
             var pickposition = GUIClip.GUIClipUnclip(position);
             pickposition = EditorGUIUtility.PointsToPixels(pickposition);
-            pickposition.y = Screen.height - pickposition.y - camera.pixelRect.yMin;
-
+            pickposition.y = camera.pixelRect.height -pickposition.y - camera.pixelRect.yMin;
+            
             var gameObject = PickNodeOrGameObject(camera, pickposition, layers, ref ignore, ref filter, out var model, out var node, out intersection);
             if (!model)
                 return gameObject;

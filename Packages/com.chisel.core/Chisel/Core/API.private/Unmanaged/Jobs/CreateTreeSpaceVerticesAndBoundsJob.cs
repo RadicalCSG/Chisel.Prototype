@@ -2,7 +2,6 @@ using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
@@ -22,21 +21,21 @@ namespace Chisel.Core
         [NativeDisableUnsafePtrRestriction, NoAlias, ReadOnly] public IDManager*            hierarchyIDLookupPtr;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  rebuildTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>.ReadOnly  brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>.ReadOnly  brushMeshLookup;
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<MinMaxAABB>                                     brushTreeSpaceBounds;
+        [NoAlias, WriteOnly] public NativeArray<ChiselAABB>                                     brushTreeSpaceBounds;
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesCache;
+        [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesCache;
 
         // Read/Write
         [NativeDisableContainerSafetyRestriction, NoAlias, ReadOnly] public NativeArray<CompactHierarchy> hierarchyList;
 
-        unsafe static BlobAssetReference<BrushTreeSpaceVerticesBlob> Build(ref BlobArray<float3> localVertices, float4x4 nodeToTreeSpaceMatrix)
+        unsafe static ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob> Build(ref ChiselBlobArray<float3> localVertices, float4x4 nodeToTreeSpaceMatrix)
         {
             var totalSize   = localVertices.Length * sizeof(float3);
-            var builder     = new BlobBuilder(Allocator.Temp, math.max(4, totalSize));
+            var builder     = new ChiselBlobBuilder(Allocator.Temp, math.max(4, totalSize));
             ref var root    = ref builder.ConstructRoot<BrushTreeSpaceVerticesBlob>();
             var treeSpaceVertices = builder.Allocate(ref root.treeSpaceVertices, localVertices.Length);
             for (int i = 0; i < localVertices.Length; i++)
@@ -59,7 +58,7 @@ namespace Chisel.Core
             ref var compactHierarchy    = ref hierarchyListPtr[hierarchyIndex];
             
             var mesh            = brushMeshLookup[brushNodeOrder];
-            if (mesh == BlobAssetReference<BrushMeshBlob>.Null ||
+            if (mesh == ChiselBlobAssetReference<BrushMeshBlob>.Null ||
                 !mesh.IsCreated)
             {
                 compactHierarchy.UpdateBounds(compactNodeID, default);
@@ -81,7 +80,7 @@ namespace Chisel.Core
                 min = math.min(min, treeSpaceVertex); max = math.max(max, treeSpaceVertex);
             }
             
-            var bounds = new MinMaxAABB() { Min = min, Max = max };
+            var bounds = new ChiselAABB() { Min = min, Max = max };
             brushTreeSpaceBounds[brushNodeOrder] = bounds;
             treeSpaceVerticesCache[brushIndexOrder.nodeOrder] = brushTreeSpaceVerticesBlob;
             compactHierarchy.UpdateBounds(compactNodeID, bounds);

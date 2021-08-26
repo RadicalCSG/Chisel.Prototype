@@ -11,7 +11,6 @@ using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
 using Unity.Mathematics;
 using Unity.Collections;
-using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -19,15 +18,15 @@ namespace Chisel.Core
     public sealed partial class BrushMeshFactory
     {
         public static bool GenerateHemisphere(float3 diameterXYZ, float rotation, int horzSegments, int vertSegments, 
-                                              in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
-                                              out BlobAssetReference<BrushMeshBlob> brushMesh,
+                                              in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                              out ChiselBlobAssetReference<BrushMeshBlob> brushMesh,
                                               Allocator allocator)
         {
-            brushMesh = BlobAssetReference<BrushMeshBlob>.Null;
+            brushMesh = ChiselBlobAssetReference<BrushMeshBlob>.Null;
             if (math.any(diameterXYZ == float3.zero))
                 return false;
 
-            using (var builder = new BlobBuilder(Allocator.Temp))
+            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
                 var transform       = float4x4.TRS(float3.zero, quaternion.AxisAngle(new float3(0, 1, 0), math.radians(rotation)), new float3(1));
@@ -100,6 +99,8 @@ namespace Chisel.Core
                     return false;
                 
                 var localPlanes             = builder.Allocate(ref root.localPlanes, polygons.Length);
+                root.localPlaneCount = polygons.Length;
+                // TODO: calculate corner planes
                 var halfEdgePolygonIndices  = builder.Allocate(ref root.halfEdgePolygonIndices, halfEdges.Length);
                 CalculatePlanes(ref localPlanes, in polygons, in halfEdges, in localVertices);
                 UpdateHalfEdgePolygonIndices(ref halfEdgePolygonIndices, in polygons);

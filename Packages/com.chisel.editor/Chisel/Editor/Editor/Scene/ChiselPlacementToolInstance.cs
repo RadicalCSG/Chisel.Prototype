@@ -23,7 +23,7 @@ namespace Chisel.Editors
         where Generator                   : ChiselNodeGeneratorComponent<DefinitionType>
     {
         public override void OnActivate()   { EnsureInitialized(); base.OnActivate(); generatedComponent = null; forceOperation = null; LoadValues(PlacementToolDefinition); }
-        public override void OnDeactivate() { base.OnActivate(); generatedComponent = null; }
+        public override void OnDeactivate() { base.OnActivate(); generatedComponent = null; SaveValues(PlacementToolDefinition); }
 
 
         SerializedObject            serializedObject;
@@ -51,8 +51,8 @@ namespace Chisel.Editors
                 return placementToolDefinitionInternal;
             }
         }
-        protected CSGOperationType?                                     forceOperation  = null;
-        protected Type                                                  generatorType   = typeof(Generator);
+        protected CSGOperationType?                             forceOperation  = null;
+        protected Type                                          generatorType   = typeof(Generator);
         protected ChiselNodeGeneratorComponent<DefinitionType>  generatedComponent;
 
         static readonly string[] excludeProperties = new[] { "m_Script" };
@@ -121,20 +121,28 @@ namespace Chisel.Editors
             ShapeExtrusionHandle.Reset();
         }
 
-        public void Commit(GameObject newGameObject)
+        public void Commit(ChiselGeneratorComponent generatorComponent, bool createAsBrush)
         {
+            var newGameObject = generatorComponent.gameObject;
             if (!newGameObject)
             {
                 Cancel();
                 return;
             }
+
+            if (createAsBrush)
+            {
+                ConvertToBrushesButton.ConvertToBrushes(generatorComponent);
+                newGameObject.name = ChiselBrushComponent.kNodeTypeName;
+            }
+
             IsGenerating = false;
             UnityEditor.Selection.selectionChanged -= OnDelayedSelectionChanged;
             UnityEditor.Selection.selectionChanged += OnDelayedSelectionChanged;
             UnityEditor.Selection.activeGameObject = newGameObject;
             Undo.IncrementCurrentGroup();
             Reset();
-        }
+        } 
 
         // Unity bug workaround
         void OnDelayedSelectionChanged()
@@ -208,7 +216,7 @@ namespace Chisel.Editors
         protected void LoadValues<T>(T definition) where T : ScriptableObject
         {
             var reflectedValues = GetReflectedValues<T>();
-            foreach(var field in reflectedValues.reflectedFields)
+            foreach (var field in reflectedValues.reflectedFields)
             {
                 object value;
                 switch (field.defaultValue)
@@ -286,17 +294,29 @@ namespace Chisel.Editors
                 defaultSettings.hideFlags = HideFlags.DontSaveInEditor;
                 try
                 { 
-                    var fields = settingsType.GetFields();
+                    var fields = settingsType.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                     foreach (var field in fields)
                     {
-                        var name = field.Name;
-                        var niceName = EditorGUIUtility.TrTextContent(ObjectNames.NicifyVariableName(name));
+                        if (field.IsPublic)
+                        {
+                            var foundAttributes = field.GetCustomAttributes(typeof(NonSerializedAttribute), true);
+                            if (foundAttributes != null && foundAttributes.Length > 0)
+                                continue;
+                        } else
+                        {
+                            var foundAttributes = field.GetCustomAttributes(typeof(SerializeField), true);
+                            if (foundAttributes == null || foundAttributes.Length == 0)
+                                continue;
+                        }
+
+                        var name         = field.Name;
+                        var niceName     = EditorGUIUtility.TrTextContent(ObjectNames.NicifyVariableName(name));
                         var settingsName = $"{settingsTypeName}.{name}";
                         var defaultValue = field.GetValue(defaultSettings);
                         if (defaultValue == null)
                         {
                             if (field.FieldType.IsValueType)
-                                defaultValue = Activator.CreateInstance(field.FieldType);
+                                defaultValue = Activator.CreateInstance(field.FieldType); 
                         }
 
                         fieldList.Add(new DefinitionFieldReflection()
@@ -305,7 +325,7 @@ namespace Chisel.Editors
                             niceName     = niceName,
                             settingsName = settingsName,
                             defaultValue = defaultValue,
-                            fieldInfo        = field
+                            fieldInfo    = field
                         });
                     }
                 }

@@ -47,21 +47,12 @@ namespace Chisel.Editors
             ChiselUVToolCommon.Instance.OnDeactivate();
         }
 
-        #region In-scene Options GUI
-        public override string OptionsTitle => $"UV Options";
-        public override void OnInSceneOptionsGUI(SceneView sceneView)
-        {
-            ChiselUVToolCommon.Instance.OnSceneSettingsGUI(sceneView);
-        }
-
         static readonly int kSurfaceEditModeHash		= "SurfaceMoveEditMode".GetHashCode();
         static readonly int kSurfaceMoveHash			= "SurfaceMove".GetHashCode();
 
 
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            ChiselOptionsOverlay.AdditionalSettings = OnInSceneOptionsGUI;
-
             var defaultID = GUIUtility.GetControlID(kSurfaceEditModeHash, FocusType.Keyboard, dragArea);
             HandleUtility.AddDefaultControl(defaultID);
 
@@ -88,7 +79,6 @@ namespace Chisel.Editors
                 Event.current.type != EventType.Repaint)
                 SceneView.RepaintAll();
         }
-        #endregion
 
         #region Surface Move Tool
         static void TranslateSurfacesInWorldSpace(Vector3 translation)

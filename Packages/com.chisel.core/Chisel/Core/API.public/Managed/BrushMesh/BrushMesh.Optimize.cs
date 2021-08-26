@@ -2,7 +2,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using System;
 using Unity.Mathematics;
-using Unity.Entities.UniversalDelegates;
 using UnityEngine.Profiling;
 
 namespace Chisel.Core
@@ -205,6 +204,9 @@ namespace Chisel.Core
                     // Only need to check half the half-edges
                     if (twin < e)
                         continue;
+
+                    if (twin >= halfEdgePolygonIndices.Length)
+                        return true;
 
                     // Find polygon of our twin edge
                     var twinPolygonIndex = halfEdgePolygonIndices[twin]; 

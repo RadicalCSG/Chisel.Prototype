@@ -3,9 +3,7 @@ using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
 using Unity.Mathematics;
-using Unity.Entities.UniversalDelegates;
 using UnityEngine.Profiling;
-using Unity.Entities;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
@@ -29,12 +27,12 @@ namespace Chisel.Core
         [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CreateBox(float3 min, float3 max, 
-                                     in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
-                                     out BlobAssetReference<BrushMeshBlob> brushMesh,
+                                     in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
+                                     out ChiselBlobAssetReference<BrushMeshBlob> brushMesh,
                                      Allocator allocator)
         {
-            brushMesh = BlobAssetReference<BrushMeshBlob>.Null;
-            if (surfaceDefinition == BlobAssetReference<NativeChiselSurfaceDefinition>.Null)
+            brushMesh = ChiselBlobAssetReference<BrushMeshBlob>.Null;
+            if (surfaceDefinition == ChiselBlobAssetReference<NativeChiselSurfaceDefinition>.Null)
                 return false;
 
             ref var surfaces = ref surfaceDefinition.Value.surfaces;
@@ -57,7 +55,7 @@ namespace Chisel.Core
             var vertex6 = new float3(max.x, max.y, min.z);
             var vertex7 = new float3(max.x, max.y, max.z);
 
-            using (var builder = new BlobBuilder(Allocator.Temp))
+            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
             {
                 const int kTotalVertices    = 8;
                 const int kTotalHalfEdges   = 24;
@@ -69,7 +67,9 @@ namespace Chisel.Core
                 var halfEdgePolygonIndices  = builder.Allocate(ref root.halfEdgePolygonIndices, kTotalHalfEdges);
                 var polygons                = builder.Allocate(ref root.polygons,               kTotalPolygons);
                 var localPlanes             = builder.Allocate(ref root.localPlanes,            kTotalPolygons);
-                
+                root.localPlaneCount = polygons.Length;
+                // TODO: calculate corner planes
+
                 const int vertIndex0 = 0;
                 const int vertIndex1 = 1;
                 const int vertIndex2 = 2;
@@ -217,7 +217,7 @@ namespace Chisel.Core
                 localPlanes[polygon4] = new float4( 0f,  1f,  0f, -max.y);
                 localPlanes[polygon5] = new float4( 0f,  0f,  1f, -max.z);
                 
-                root.localBounds = new MinMaxAABB { Min = min, Max = max };
+                root.localBounds = new ChiselAABB { Min = min, Max = max };
                 brushMesh = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
                 return true;
             }
@@ -226,7 +226,7 @@ namespace Chisel.Core
         
         [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static BlobAssetReference<BrushMeshBlob> CreateBox(float3 vertex0,
+        public static ChiselBlobAssetReference<BrushMeshBlob> CreateBox(float3 vertex0,
                                                                   float3 vertex1,
                                                                   float3 vertex2,
                                                                   float3 vertex3,
@@ -234,17 +234,17 @@ namespace Chisel.Core
                                                                   float3 vertex5,
                                                                   float3 vertex6,
                                                                   float3 vertex7,
-                                                                  in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
+                                                                  in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
                                                                   Allocator allocator)
         {
-            if (surfaceDefinition == BlobAssetReference<NativeChiselSurfaceDefinition>.Null)
-                return BlobAssetReference<BrushMeshBlob>.Null;
+            if (surfaceDefinition == ChiselBlobAssetReference<NativeChiselSurfaceDefinition>.Null)
+                return ChiselBlobAssetReference<BrushMeshBlob>.Null;
 
             ref var surfaces = ref surfaceDefinition.Value.surfaces;
             if (surfaces.Length < 6)
-                return BlobAssetReference<BrushMeshBlob>.Null;
+                return ChiselBlobAssetReference<BrushMeshBlob>.Null;
 
-            using (var builder = new BlobBuilder(Allocator.Temp))
+            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
                 var localVertices           = builder.Allocate(ref root.localVertices,           8);
@@ -252,7 +252,9 @@ namespace Chisel.Core
                 var halfEdgePolygonIndices  = builder.Allocate(ref root.halfEdgePolygonIndices, 24);
                 var polygons                = builder.Allocate(ref root.polygons,                6);
                 var localPlanes             = builder.Allocate(ref root.localPlanes,             6);
-                
+                root.localPlaneCount = polygons.Length;
+                // TODO: calculate corner planes
+
                 const int vertIndex0 = 0;
                 const int vertIndex1 = 1;
                 const int vertIndex2 = 2;

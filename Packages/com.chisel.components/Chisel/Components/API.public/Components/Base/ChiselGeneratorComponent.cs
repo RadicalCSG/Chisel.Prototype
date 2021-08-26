@@ -5,7 +5,6 @@ using Chisel.Core;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -32,16 +31,30 @@ namespace Chisel.Components
         }
 
         static readonly GeneratorBrushJobPool<Generator> s_JobPool = new GeneratorBrushJobPool<Generator>();
+        protected override bool EnsureTopNodeCreatedInternal(in CSGTree tree, ref CSGTreeNode node, int userID)
+        {
+            OnValidateDefinition();
 
-        protected override void UpdateGeneratorInternal(in CSGTree tree, ref CSGTreeNode node, int userID)
+            var brush = (CSGTreeBrush)node;
+            node = GenerateTopNode(in tree, brush, userID, operation);
+            return true;
+        }
+
+        protected override int GetDefinitionHash()
+        {
+            return definition.GetHashCode();
+        }
+
+        protected override void UpdateGeneratorNodesInternal(in CSGTree tree, ref CSGTreeNode node)
         {
             var brush = (CSGTreeBrush)node;
-            OnValidateDefinition();
+            if (!brush.Valid)
+                return;
+
             var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.TempJob);
             if (!surfaceDefinitionBlob.IsCreated)
                 return;
 
-            node = brush = GenerateTopNode(in tree, brush, userID, operation);
             var settings = definition.GetBrushGenerator();
             s_JobPool.ScheduleUpdate(brush, settings, surfaceDefinitionBlob);
         }
@@ -65,16 +78,30 @@ namespace Chisel.Components
         }
 
         static readonly GeneratorBranchJobPool<Generator> s_JobPool = new GeneratorBranchJobPool<Generator>();
+        protected override bool EnsureTopNodeCreatedInternal(in CSGTree tree, ref CSGTreeNode node, int userID)
+        {
+            OnValidateDefinition();
 
-        protected override void UpdateGeneratorInternal(in CSGTree tree, ref CSGTreeNode node, int userID)
+            var branch = (CSGTreeBranch)node;
+            node = GenerateTopNode(in tree, branch, userID, operation);
+            return true;
+        }
+
+        protected override int GetDefinitionHash()
+        {
+            return definition.GetHashCode();
+        }
+
+        protected override void UpdateGeneratorNodesInternal(in CSGTree tree, ref CSGTreeNode node)
         {
             var branch = (CSGTreeBranch)node;
-            OnValidateDefinition();
+            if (!branch.Valid)
+                return;
+
             var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.TempJob);
             if (!surfaceDefinitionBlob.IsCreated)
                 return;
 
-            node = branch = GenerateTopNode(in tree, branch, userID, operation);
             var settings = definition.GetBranchGenerator();
             s_JobPool.ScheduleUpdate(branch, settings, surfaceDefinitionBlob);
         }
@@ -129,8 +156,13 @@ namespace Chisel.Components
         }
     }
 
+    public interface IChiselHasOperation
+    {
+        CSGOperationType Operation { get; set; }
+    }
+
     [DisallowMultipleComponent]
-    public abstract class ChiselGeneratorComponent : ChiselNode
+    public abstract class ChiselGeneratorComponent : ChiselNode, IChiselHasOperation
     {
         // This ensures names remain identical, or a compile error occurs.
         public const string kOperationFieldName = nameof(operation);
@@ -344,30 +376,83 @@ namespace Chisel.Components
             DestroyChildTreeNodes();
         }
 
+        [HideInInspector] int prevMaterialHash;
+        [HideInInspector] int prevDefinitionHash;
+
+        public void ClearHashes()
+        {
+            prevMaterialHash = 0;
+            prevDefinitionHash = 0;
+        }
+
+        public override void UpdateGeneratorNodes()
+        {
+            if (!Node.Valid)
+            {
+                var model = this.hierarchyItem?.Model;
+                if (model == null)
+                {
+                    Debug.LogError("Model not yet initialized");
+                    return;
+                }
+
+                var treeRoot = model.Node;
+                var instanceID = GetInstanceID();
+                Profiler.BeginSample("EnsureTopNodeCreated");
+                try
+                {
+                    if (EnsureTopNodeCreatedInternal(in treeRoot, ref Node, userID: instanceID))
+                        ClearHashes();
+                }
+                finally { Profiler.EndSample(); }
+
+                if (!Node.Valid)
+                    return;
+            }
+
+            UpdateMeshesWhenModified();
+
+            if (ValidNodes)
+            {
+                Profiler.BeginSample("UpdateBrushMeshInstances");
+                try { UpdateBrushMeshInstances(); }
+                finally { Profiler.EndSample(); }
+
+                if (Node.Operation != operation)
+                    Node.Operation = operation;
+            }
+        }
+
         internal override CSGTreeNode RebuildTreeNodes()
         {
             if (Node.Valid)
                 Debug.LogWarning(this.GetType().Name + " already has a treeNode, but trying to create a new one?", this);
 
-            Profiler.BeginSample("UpdateGenerator");
-            try
-            {
-                var treeRoot = this.hierarchyItem.Model.Node;
-                var instanceID = GetInstanceID();
-                UpdateGeneratorInternal(in treeRoot, ref Node, userID: instanceID);
-            }
-            finally { Profiler.EndSample(); }
+            ClearHashes();
+            UpdateGeneratorNodes();
 
             if (!ValidNodes)
                 return default;
-
-            Profiler.BeginSample("UpdateBrushMeshInstances");
-            try { UpdateBrushMeshInstances(); }
-            finally { Profiler.EndSample(); }
-            
-            if (Node.Operation != operation)
-                Node.Operation = operation;
             return Node;
+        }
+
+        void UpdateMeshesWhenModified()
+        {
+            var currMaterialHash    = SurfaceDefinition?.GetHashCode() ?? 0;
+            var currDefinitionHash  = GetDefinitionHash();
+            if (prevMaterialHash != currMaterialHash || prevDefinitionHash != currDefinitionHash)
+            {
+                prevMaterialHash    = currMaterialHash;
+                prevDefinitionHash  = currDefinitionHash;
+
+                Profiler.BeginSample("UpdateGeneratorNodes");
+                try
+                {
+                    var treeRoot = this.hierarchyItem.Model.Node;
+                    UpdateGeneratorNodesInternal(in treeRoot, ref Node);
+                }
+                finally { Profiler.EndSample(); }
+            }
         }
 
         public override void SetDirty()
@@ -376,6 +461,7 @@ namespace Chisel.Components
                 return;
 
             TopTreeNode.SetDirty();
+            UpdateMeshesWhenModified();
         }
 
 
@@ -401,6 +487,9 @@ namespace Chisel.Components
             SetDirty();
         }
 
-        protected abstract void UpdateGeneratorInternal(in CSGTree tree, ref CSGTreeNode node, int userID);
+        protected abstract int GetDefinitionHash();
+
+        protected abstract bool EnsureTopNodeCreatedInternal(in CSGTree tree, ref CSGTreeNode node, int userID);
+        protected abstract void UpdateGeneratorNodesInternal(in CSGTree tree, ref CSGTreeNode node);
     }
 }

@@ -4,8 +4,6 @@
     "references": [
         "Unity.Burst",
         "Unity.Collections",
-        "Unity.Entities",
-        "Unity.Entities.Hybrid",
         "Unity.Mathematics",
         "Unity.Mathematics.Extensions",
         "Unity.Jobs",

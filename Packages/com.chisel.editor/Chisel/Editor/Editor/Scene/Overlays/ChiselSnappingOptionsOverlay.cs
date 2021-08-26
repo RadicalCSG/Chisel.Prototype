@@ -10,16 +10,21 @@ using UnitySceneExtensions;
 using Snapping = UnitySceneExtensions.Snapping;
 using UnityEditor.EditorTools;
 using System.Reflection;
+using UnityEditor.Overlays;
+using UnityEditor.Toolbars;
+using UnityEngine.UIElements;
 
 namespace Chisel.Editors
 {
     // TODO: add tooltips
-    public static class ChiselSnappingOptionsOverlay
+    [Overlay(typeof(SceneView), ChiselSnappingOptionsOverlay.kOverlayTitle)]
+    public class ChiselSnappingOptionsOverlay : IMGUIOverlay
     {
-        const int kPrimaryOrder = 99;
-
-        const string kOverlayTitle = "Snapping";
-        static readonly ChiselOverlay kOverlay = new ChiselOverlay(kOverlayTitle, DisplayControls, kPrimaryOrder);
+        const string kOverlayTitle = "Chisel Snap Values";
+        
+        // TODO: CLEAN THIS UP
+        public const int kMinWidth = ((242 + 32) - ((32 + 2) * ChiselPlacementToolsSelectionWindow.kToolsWide)) + (ChiselPlacementToolsSelectionWindow.kButtonSize * ChiselPlacementToolsSelectionWindow.kToolsWide);
+        public static readonly GUILayoutOption kMinWidthLayout = GUILayout.MinWidth(kMinWidth);
 
 
         static readonly GUIContent kDoubleRotateSnap  = new GUIContent(string.Empty, "Double the rotation snap angle");
@@ -32,20 +37,13 @@ namespace Chisel.Editors
         static readonly GUIContent kHalfGridSize      = new GUIContent(string.Empty, "Half the grid size");
 
 
-        const float             kSmallButtonWidth       = 30;
-        static GUILayoutOption  kSmallButtonWidthOption = GUILayout.Width(kSmallButtonWidth);
+        const float kSmallButtonWidth = 30;
         
         const int kButtonSize = 32 + (kButtonPadding * 2);
         const int kButtonMargin = 1;
         const int kButtonPadding = 2;
-        const int kSmallButtonPadding = 0;            
-        static GUILayoutOption  kToggleWidth            = GUILayout.Width(kButtonSize);
         class Styles
         {
-            public GUIStyle toggleStyle;
-            public GUIStyle toggleStyleLeft;
-            public GUIStyle toggleStyleMid;
-            public GUIStyle toggleStyleRight;
             public GUIStyle smallToggleStyle;
 
             public GUIStyle plus;
@@ -103,35 +101,6 @@ namespace Chisel.Editors
 
             public Styles()
             {
-                toggleStyle = new GUIStyle("AppCommand")
-                {
-                    padding = new RectOffset(kButtonPadding, kButtonPadding + kButtonMargin, kButtonPadding, kButtonPadding),
-                    margin = new RectOffset(0, 0, kButtonMargin + 2, 0),
-                    fixedWidth = kButtonSize + kButtonMargin,
-                    fixedHeight = kButtonSize,
-                };
-                toggleStyleLeft = new GUIStyle("AppCommandLeft")
-                {
-                    padding = new RectOffset(kButtonPadding, kButtonPadding + kButtonMargin, kButtonPadding, kButtonPadding),
-                    margin = new RectOffset(0, 0, kButtonMargin + 2, 0),
-                    fixedWidth = kButtonSize + kButtonMargin,
-                    fixedHeight = kButtonSize,
-                };
-                toggleStyleMid = new GUIStyle("AppCommandMid")
-                {
-                    padding = new RectOffset(kButtonPadding, kButtonPadding + kButtonMargin, kButtonPadding, kButtonPadding),
-                    margin = new RectOffset(0, 0, kButtonMargin + 2, 0),
-                    fixedWidth = kButtonSize + kButtonMargin,
-                    fixedHeight = kButtonSize,
-                };
-                toggleStyleRight = new GUIStyle("AppCommandMid")
-                {
-                    padding = new RectOffset(kButtonPadding, kButtonPadding + kButtonMargin, kButtonPadding, kButtonPadding),
-                    margin = new RectOffset(0, 0, kButtonMargin + 2, 0),
-                    fixedWidth = kButtonSize + kButtonMargin,
-                    fixedHeight = kButtonSize,
-                };
-
                 smallToggleStyle = new GUIStyle("AppCommand")
                 {
                     padding = new RectOffset(kButtonPadding + kButtonMargin, kButtonPadding, 0, 0),
@@ -154,11 +123,9 @@ namespace Chisel.Editors
                 rotateIcons         = ChiselEditorResources.GetIconContent("rotateTool", "Enable/Disable rotate snapping");
                 scaleIcons          = ChiselEditorResources.GetIconContent("scaleTool", "Enable/Disable scale snapping");
 
-                //ChiselEditorResources.debug = true;
                 var plusIcons   = ChiselEditorResources.LoadIconImages("ol_plus");
                 var minusIcons  = ChiselEditorResources.LoadIconImages("ol_minus");
-                //ChiselEditorResources.debug = false;
-
+                
 
                 plus = new GUIStyle();
                 plus.margin         = new RectOffset(0, 0, 2, 0);
@@ -265,40 +232,9 @@ namespace Chisel.Editors
             return value;
         }
 
-        public static bool SmallToggleButton(bool value, GUIContent content)
-        {
-            var style = styles.smallToggleStyle;
-            var rect = EditorGUILayout.GetControlRect(false, style.fixedHeight, style, kSmallButtonWidthOption);
-            return SmallToggleButton(rect, value, content);
-        }
-
-        public static bool SmallToggleButton(bool value, GUIContent[] content)
-        {
-            var style = styles.smallToggleStyle;
-            var rect = EditorGUILayout.GetControlRect(false, style.fixedHeight, style, kSmallButtonWidthOption);
-            return SmallToggleButton(rect, value, content);
-        }
-
-        public static bool SmallToggleButton(Rect rect, bool value, GUIContent content)
-        {
-            return GUI.Toggle(rect, value, content, styles.smallToggleStyle);
-        }
-
         public static bool SmallToggleButton(Rect rect, bool value, GUIContent[] content)
         {
             return GUI.Toggle(rect, value, value ? content[1] : content[0], styles.smallToggleStyle);
-        }
-
-        public static bool ToggleButton(bool value, SnapSettings active, SnapSettings flag, GUIContent content, GUIStyle style, GUILayoutOption option)
-        {
-            var rect = EditorGUILayout.GetControlRect(false, style.fixedHeight, style, option);
-            return ToggleButton(rect, value, active, flag, content, style);
-        }
-
-        public static bool ToggleButton(bool value, SnapSettings active, SnapSettings flag, GUIContent[] content, GUIStyle style, GUILayoutOption option)
-        {
-            var rect = EditorGUILayout.GetControlRect(false, style.fixedHeight, style, option);
-            return ToggleButton(rect, value, active, flag, content, style);
         }
 
         public static bool ToggleButton(Rect rect, bool value, SnapSettings active, SnapSettings flag, GUIContent content, GUIStyle style)
@@ -328,8 +264,9 @@ namespace Chisel.Editors
         }
 
 
-        static void DisplayControls(SceneView sceneView)
+        public override void OnGUI()
         {
+            var groupRect = EditorGUILayout.GetControlRect(false, 0, kMinWidthLayout);
             if (styles == null)
                 styles = new Styles();
             EditorGUI.BeginChangeCheck();
@@ -338,28 +275,7 @@ namespace Chisel.Editors
                 // TODO: add units (EditorGUI.s_UnitString?)
                 //ChiselEditorSettings.ShowGrid = GUILayout.Toggle(ChiselEditorSettings.ShowGrid, "Show Grid", EditorStyles.miniButton, kShowGridButtonWidthOption);
 
-                var usedSnappingModes = CurrentSnapSettings();
-
-                {
-                    var buttonRect = EditorGUILayout.GetControlRect(false, styles.toggleStyleLeft.fixedHeight, styles.toggleStyleLeft, kToggleWidth);
-                    buttonRect.x++;
-                    Snapping.BoundsSnappingEnabled      = ToggleButton(buttonRect, Snapping.BoundsSnappingEnabled,   usedSnappingModes, SnapSettings.GeometryBoundsToGrid,  styles.boundsSnapIcons,   styles.toggleStyleLeft);
-                    buttonRect.x += buttonRect.width;
-                    Snapping.PivotSnappingEnabled       = ToggleButton(buttonRect, Snapping.PivotSnappingEnabled,    usedSnappingModes, SnapSettings.GeometryPivotToGrid,   styles.pivotSnapIcons,    styles.toggleStyleMid);
-                    buttonRect.x += buttonRect.width;
-                    Snapping.EdgeSnappingEnabled        = ToggleButton(buttonRect, Snapping.EdgeSnappingEnabled,     usedSnappingModes, SnapSettings.GeometryEdge,          styles.edgeSnapIcons,     styles.toggleStyleMid);
-                    buttonRect.x += buttonRect.width;
-                    Snapping.VertexSnappingEnabled      = ToggleButton(buttonRect, Snapping.VertexSnappingEnabled,   usedSnappingModes, SnapSettings.GeometryVertex,        styles.vertexSnapIcons,   styles.toggleStyleMid);
-                    buttonRect.x += buttonRect.width;
-                    Snapping.SurfaceSnappingEnabled     = ToggleButton(buttonRect, Snapping.SurfaceSnappingEnabled,  usedSnappingModes, SnapSettings.GeometrySurface,       styles.surfaceSnapIcons,  styles.toggleStyleMid);
-
-                    buttonRect.x += buttonRect.width;
-                    Snapping.UVGridSnappingEnabled      = ToggleButton(buttonRect, Snapping.UVGridSnappingEnabled,   usedSnappingModes, SnapSettings.UVGeometryGrid,        styles.uvGridSnapIcons,   styles.toggleStyleMid);
-                    buttonRect.x += buttonRect.width;
-                    Snapping.UVEdgeSnappingEnabled      = ToggleButton(buttonRect, Snapping.UVEdgeSnappingEnabled,   usedSnappingModes, SnapSettings.UVGeometryEdges,       styles.uvEdgeSnapIcons,   styles.toggleStyleMid);
-                    buttonRect.x += buttonRect.width;
-                    Snapping.UVVertexSnappingEnabled    = ToggleButton(buttonRect, Snapping.UVVertexSnappingEnabled, usedSnappingModes, SnapSettings.UVGeometryVertices,    styles.uvVertexSnapIcons, styles.toggleStyleRight);
-                }
+                var usedSnappingModes = ChiselSnappingToggleUtility.CurrentSnapSettings();
                 
                 EditorGUILayout.GetControlRect(false, 1);
                 
@@ -412,32 +328,6 @@ namespace Chisel.Editors
             if (EditorGUI.EndChangeCheck())
                 ChiselEditorSettings.Save();
         }
-
-        static SnapSettings CurrentSnapSettings()
-        {
-            switch (Tools.current)
-            {
-                case Tool.Move:         return SnapSettings.AllGeometry;
-                case Tool.Transform:    return SnapSettings.AllGeometry;
-                case Tool.Rotate:       return SnapSettings.None;
-                case Tool.Rect:         return SnapSettings.None;
-                case Tool.Scale:        return SnapSettings.None;
-                case Tool.Custom:       return Snapping.SnapMask;
-            }
-            return SnapSettings.None;
-        }
-
-        static bool IsValidTool()
-        {
-            if (Tools.current == Tool.None)
-                return false;
-            return true;
-        }
-
-        public static void Show()
-        {
-            if (IsValidTool())
-                kOverlay.Show();
-        }
     }
+
 }

@@ -43,17 +43,12 @@ namespace Chisel.Editors
             // Fetch the objects from the GameObject script to display in the inspector
             operationProp   = serializedObject.FindProperty(ChiselComposite.kOperationFieldName);
             passThroughProp = serializedObject.FindProperty(ChiselComposite.kPassThroughFieldName);
-
-            ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
-            ChiselEditGeneratorTool.CurrentEditorName = "Operation";
         }
 
         internal void OnDisable()
         {
             operationProp = null;
             passThroughProp = null;
-            ChiselEditGeneratorTool.OnEditSettingsGUI = null;
-            ChiselEditGeneratorTool.CurrentEditorName = null;
         }
         
         protected override void OnEditSettingsGUI(SceneView sceneView)
@@ -98,7 +93,7 @@ namespace Chisel.Editors
                             ChiselNodeHierarchyManager.UpdateAvailability(composite);
                         }
                     }
-                    OnShapeChanged();
+                    OnShapeChanged(target as ChiselComposite);
                 }
                 bool hasNoChildren = false;
                 foreach (var target in serializedObject.targetObjects)

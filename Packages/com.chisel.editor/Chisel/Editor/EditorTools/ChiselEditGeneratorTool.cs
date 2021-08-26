@@ -32,17 +32,6 @@ namespace Chisel.Editors
         public static void ActivateTool() { ToolManager.SetActiveTool<ChiselEditGeneratorTool>(); }
         #endregion
 
-        #region In-scene Options GUI
-        public static ChiselOverlay.WindowFunction OnEditSettingsGUI; 
-        public static string CurrentEditorName;
-
-        public override string OptionsTitle => CurrentEditorName == null ? "Options" : $"{CurrentEditorName} Options";
-        public override void OnInSceneOptionsGUI(SceneView sceneView)
-        {
-            OnEditSettingsGUI?.Invoke(sceneView);
-        }
-        #endregion
-
         public override void OnActivate()
         {
             base.OnActivate();
@@ -81,9 +70,6 @@ namespace Chisel.Editors
                     break;
                 }
             }
-
-            // NOTE: Actual work is done by Editor classes
-            ChiselOptionsOverlay.AdditionalSettings = OnEditSettingsGUI;
         }
     }
 }

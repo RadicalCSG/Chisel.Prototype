@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Unity.Jobs;
-using Unity.Entities;
 using Unity.Collections;
 using Profiler = UnityEngine.Profiling.Profiler;
 using Debug = UnityEngine.Debug;

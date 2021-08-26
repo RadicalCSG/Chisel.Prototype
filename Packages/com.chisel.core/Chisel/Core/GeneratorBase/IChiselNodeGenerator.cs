@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
-using Unity.Entities;
 using Unity.Mathematics;
 using System.Runtime.CompilerServices;
 
@@ -23,7 +22,7 @@ namespace Chisel.Core
 
     public interface IBrushGenerator
     {
-        BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator);
+        ChiselBlobAssetReference<BrushMeshBlob> GenerateMesh(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator);
         void Reset();
         int RequiredSurfaceCount { get; }
         void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition);
@@ -62,18 +61,18 @@ namespace Chisel.Core
 
     public struct GeneratedNode
     {
-        public int                                  parentIndex;    // -1 means root of generated node
-        public CSGOperationType                     operation;
-        public float4x4                             transformation;
-        public BlobAssetReference<BrushMeshBlob>    brushMesh;      // Note: ignored if type is not Brush
+        public int                                      parentIndex;    // -1 means root of generated node
+        public CSGOperationType                         operation;
+        public float4x4                                 transformation;
+        public ChiselBlobAssetReference<BrushMeshBlob>  brushMesh;      // Note: ignored if type is not Brush
 
 
-        public static GeneratedNode GenerateBrush(BlobAssetReference<BrushMeshBlob> brushMesh, CSGOperationType operation = CSGOperationType.Additive, int parentIndex = -1)
+        public static GeneratedNode GenerateBrush(ChiselBlobAssetReference<BrushMeshBlob> brushMesh, CSGOperationType operation = CSGOperationType.Additive, int parentIndex = -1)
         {
             return GenerateBrush(brushMesh, float4x4.identity, operation, parentIndex);
         }
 
-        public static GeneratedNode GenerateBrush(BlobAssetReference<BrushMeshBlob> brushMesh, float4x4 transformation, CSGOperationType operation = CSGOperationType.Additive, int parentIndex = -1)
+        public static GeneratedNode GenerateBrush(ChiselBlobAssetReference<BrushMeshBlob> brushMesh, float4x4 transformation, CSGOperationType operation = CSGOperationType.Additive, int parentIndex = -1)
         {
             return new GeneratedNode
             {
@@ -96,7 +95,7 @@ namespace Chisel.Core
                 parentIndex     = parentIndex,
                 transformation  = transformation,
                 operation       = operation,
-                brushMesh       = BlobAssetReference<BrushMeshBlob>.Null
+                brushMesh       = ChiselBlobAssetReference<BrushMeshBlob>.Null
             };
         }
     }
@@ -104,7 +103,7 @@ namespace Chisel.Core
     public interface IBranchGenerator
     {
         int PrepareAndCountRequiredBrushMeshes();
-        bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator);
+        bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator);
         void Dispose();
 
         void Reset();

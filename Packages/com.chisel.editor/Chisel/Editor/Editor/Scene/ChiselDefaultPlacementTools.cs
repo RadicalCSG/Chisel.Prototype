@@ -78,11 +78,12 @@ namespace Chisel.Editors
                                                     CSGOperationType.Additive);
                         PlacementToolDefinition.OnUpdate(ref generatedComponent.definition, height);
                         generatedComponent.OnValidate();
+                        generatedComponent.ClearHashes(); // TODO: remove need for this
                     }
                     break;
                 }
                 
-                case ShapeExtrusionState.Commit:        { Commit(generatedComponent.gameObject); break; }
+                case ShapeExtrusionState.Commit:        { Commit(generatedComponent, PlacementToolDefinition.CreateAsBrush); break; }
                 case ShapeExtrusionState.Cancel:        { Cancel(); break; }
             }
 
@@ -188,13 +189,16 @@ namespace Chisel.Editors
                                                     CSGOperationType.Additive);
                         PlacementToolDefinition.OnUpdate(ref generatedComponent.definition, bounds);
                         generatedComponent.OnValidate();
+
                         if ((generatoreModeFlags & PlacementFlags.GenerateFromCenterY) == PlacementFlags.GenerateFromCenterY)
                             generatedComponent.transform.localPosition = componentPosition - ((upAxis * height) * 0.5f);
+
+                        generatedComponent.ClearHashes(); // TODO: remove need for this
                     }
                     break;
                 }
                 
-                case GeneratorModeState.Commit:     { if (generatedComponent) Commit(generatedComponent.gameObject); else Cancel(); break; }
+                case GeneratorModeState.Commit:     { if (generatedComponent) { Commit(generatedComponent, PlacementToolDefinition.CreateAsBrush); } else Cancel(); break; }
                 case GeneratorModeState.Cancel:     { Cancel(); break; }
             }
 

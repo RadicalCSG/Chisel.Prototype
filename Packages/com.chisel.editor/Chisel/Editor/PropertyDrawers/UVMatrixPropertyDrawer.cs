@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using System;
@@ -63,8 +63,8 @@ namespace Chisel.Editors
             var state       = (UVMatrixState)EditorGUIUtility.GetStateObject(typeof(UVMatrixState), translationID);
             if (!state.initialized || state.uvMatrix.U != uvMatrix.U || state.uvMatrix.V != uvMatrix.V)
             {
-                uvMatrix.Decompose(out state.translation, out state.rotation, out state.scale);
                 state.uvMatrix = uvMatrix;
+                uvMatrix.Decompose(out state.translation, out state.rotation, out state.scale);
                 state.initialized = true;
             }
 

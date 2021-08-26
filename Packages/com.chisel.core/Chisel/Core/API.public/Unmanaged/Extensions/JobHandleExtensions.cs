@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using Unity.Entities;
 using Unity.Jobs;
 
 namespace Chisel.Core

@@ -18,6 +18,7 @@ namespace Chisel.Editors
         {
             float totalHeight = 0;
             int startingDepth = iterator.depth;
+            EditorGUIUtility.wideMode = true;
             if (iterator.NextVisible(true))
             {
                 do

@@ -2,7 +2,6 @@ using System;
 using Debug = UnityEngine.Debug;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Jobs;
 using Unity.Burst;
@@ -54,7 +53,7 @@ namespace Chisel.Core
 
         #region Generate
         [BurstCompile]
-        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public ChiselBlobAssetReference<BrushMeshBlob> GenerateMesh(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.GenerateStadium(width, height, length,
                                                   topLength, topSides,

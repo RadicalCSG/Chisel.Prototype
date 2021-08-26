@@ -12,7 +12,7 @@ namespace Chisel.Core
         public override void OnUpdate(ref ChiselLinearStairsDefinition definition, Bounds bounds)
         {
             definition.Reset();
-            definition.settings.bounds = new Unity.Mathematics.MinMaxAABB { Min = bounds.min, Max = bounds.max };
+            definition.settings.bounds = new ChiselAABB { Min = bounds.min, Max = bounds.max };
         }
 
         public override void OnPaint(IChiselHandleRenderer renderer, Bounds bounds)

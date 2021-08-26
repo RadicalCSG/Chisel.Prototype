@@ -307,7 +307,7 @@ namespace Chisel.Components
 #if UNITY_EDITOR
         MaterialPropertyBlock materialPropertyBlock;
         // TODO: move to ChiselGeneratedComponentManager
-        static void RenderChiselRenderObjects(ChiselRenderObjects[] renderables, MaterialPropertyBlock materialPropertyBlock, Matrix4x4 matrix, int layer, Camera camera)
+        static void RenderChiselRenderPartialObjects(ChiselRenderObjects[] renderables, MaterialPropertyBlock materialPropertyBlock, Matrix4x4 matrix, int layer, Camera camera)
         {
             foreach (var renderable in renderables)
             {
@@ -319,8 +319,59 @@ namespace Chisel.Components
                     continue;
 
                 var meshRenderer = renderable.meshRenderer;
-                if (!meshRenderer || !meshRenderer.enabled || !meshRenderer.forceRenderingOff)
+                if (!meshRenderer) 
                     continue;
+
+                if (renderable.debugHelperRenderer)
+                {
+                    if (!renderable.visible)
+                        continue;
+                } else
+                {
+                    if (!meshRenderer.enabled || !meshRenderer.forceRenderingOff)
+                        continue;
+                }
+
+                meshRenderer.GetPropertyBlock(materialPropertyBlock);
+
+                var castShadows             = (ShadowCastingMode)meshRenderer.shadowCastingMode;
+                var receiveShadows          = (bool)meshRenderer.receiveShadows;
+                var probeAnchor             = (Transform)meshRenderer.probeAnchor;
+                var lightProbeUsage         = (LightProbeUsage)meshRenderer.lightProbeUsage;
+                var lightProbeProxyVolume   = meshRenderer.lightProbeProxyVolumeOverride == null ? null : meshRenderer.lightProbeProxyVolumeOverride.GetComponent<LightProbeProxyVolume>();
+                
+                for (int submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++)
+                {
+                    Graphics.DrawMesh(mesh, matrix, renderable.renderMaterials[submeshIndex], layer, camera, submeshIndex, materialPropertyBlock, castShadows, receiveShadows, probeAnchor, lightProbeUsage, lightProbeProxyVolume);
+                }
+            }
+        }
+        
+        // TODO: move to ChiselGeneratedComponentManager
+        static void RenderChiselRenderObjects(ChiselRenderObjects[] renderables, MaterialPropertyBlock materialPropertyBlock, Matrix4x4 matrix, int layer, Camera camera)
+        {
+            foreach (var renderable in renderables)
+            {
+                if (renderable == null)
+                    continue;
+
+                var mesh = (Mesh)renderable.sharedMesh;
+                if (mesh == null || mesh.vertexCount == 0)
+                    continue;
+
+                var meshRenderer = renderable.meshRenderer;
+                if (!meshRenderer) 
+                    continue;
+
+                if (renderable.debugHelperRenderer)
+                {
+                    if (!renderable.visible)
+                        continue;
+                } else
+                {
+                    if (!meshRenderer.enabled || !meshRenderer.forceRenderingOff)
+                        continue;
+                }
 
                 meshRenderer.GetPropertyBlock(materialPropertyBlock);
 
@@ -340,9 +391,6 @@ namespace Chisel.Components
         // TODO: move to ChiselGeneratedComponentManager
         public void OnRenderModel(Camera camera, DrawModeFlags helperStateFlags)
         {
-            if (VisibilityState != VisibilityState.Mixed)
-                return;
-
             // When we toggle visibility on brushes in the editor hierarchy, we want to render a different mesh
             // but still have the same lightmap, and keep lightmap support.
             // We do this by setting forceRenderingOff to true on all MeshRenderers.
@@ -354,10 +402,18 @@ namespace Chisel.Components
 
             var layer   = gameObject.layer; 
             var matrix  = transform.localToWorldMatrix;
-            if ((helperStateFlags & DrawModeFlags.HideRenderables) == DrawModeFlags.None)
-                RenderChiselRenderObjects(generated.renderables, materialPropertyBlock, matrix, layer, camera);
+            if (VisibilityState != VisibilityState.Mixed)
+            {
+                if ((helperStateFlags & ~DrawModeFlags.HideRenderables) != DrawModeFlags.None)
+                    RenderChiselRenderObjects(generated.debugHelpers, materialPropertyBlock, matrix, layer, camera);
+                return;
+            }
+
             if ((helperStateFlags & ~DrawModeFlags.HideRenderables) != DrawModeFlags.None)
-                RenderChiselRenderObjects(generated.debugHelpers, materialPropertyBlock, matrix, layer, camera);
+                RenderChiselRenderPartialObjects(generated.debugHelpers, materialPropertyBlock, matrix, layer, camera);
+
+            if ((helperStateFlags & DrawModeFlags.HideRenderables) == DrawModeFlags.None)
+                RenderChiselRenderPartialObjects(generated.renderables, materialPropertyBlock, matrix, layer, camera);
         }
 
         public VisibilityState VisibilityState { get { return generated.visibilityState; } }

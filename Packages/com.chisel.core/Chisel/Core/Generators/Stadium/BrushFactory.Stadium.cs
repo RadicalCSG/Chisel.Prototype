@@ -10,7 +10,6 @@ using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
 using Unity.Mathematics;
-using Unity.Entities;
 using Unity.Collections;
 using Unity.Burst;
 
@@ -23,12 +22,12 @@ namespace Chisel.Core
         public static unsafe bool GenerateStadium(float width, float height, float length,
                                                   float topLength,     int topSides,
                                                   float bottomLength,  int bottomSides, 
-                                                  in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
-                                                  out BlobAssetReference<BrushMeshBlob> brushMesh,
+                                                  in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                  out ChiselBlobAssetReference<BrushMeshBlob> brushMesh,
                                                   Allocator allocator)
         {
-            brushMesh = BlobAssetReference<BrushMeshBlob>.Null;
-            using (var builder = new BlobBuilder(Allocator.Temp))
+            brushMesh = ChiselBlobAssetReference<BrushMeshBlob>.Null;
+            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
                 ref var surfaceDefinition = ref surfaceDefinitionBlob.Value;
@@ -51,6 +50,8 @@ namespace Chisel.Core
                     return false;
 
                 var localPlanes = builder.Allocate(ref root.localPlanes, polygons.Length);
+                root.localPlaneCount = polygons.Length;
+                // TODO: calculate corner planes
                 var halfEdgePolygonIndices = builder.Allocate(ref root.halfEdgePolygonIndices, halfEdges.Length);
                 CalculatePlanes(ref localPlanes, in polygons, in halfEdges, in localVertices);
                 UpdateHalfEdgePolygonIndices(ref halfEdgePolygonIndices, in polygons);
@@ -64,9 +65,9 @@ namespace Chisel.Core
         public static bool GenerateStadiumVertices(float diameter, float height, float length,
                                                    float topLength, int topSides,
                                                    float bottomLength, int bottomSides, 
-                                                   in BlobBuilder               builder,
+                                                   in ChiselBlobBuilder               builder,
                                                    ref BrushMeshBlob            root,
-                                                   out BlobBuilderArray<float3> vertices)
+                                                   out ChiselBlobBuilderArray<float3> vertices)
         {
             var haveRoundedTop      = (topLength    > 0) && (topSides    > 1);
             var haveRoundedBottom   = (bottomLength > 0) && (bottomSides > 1);

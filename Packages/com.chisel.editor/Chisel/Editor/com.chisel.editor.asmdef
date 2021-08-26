@@ -8,18 +8,15 @@
         "com.scene.handle.extensions.runtime",
         "Unity.Mathematics",
         "Unity.Mathematics.Extensions",
-        "Unity.Collections",
-        "Unity.Entities"
+        "Unity.Collections"
     ],
     "includePlatforms": [
         "Editor"
     ],
     "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": true,
-    "precompiledReferences": [
-        "Newtonsoft.Json.dll"
-    ],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],

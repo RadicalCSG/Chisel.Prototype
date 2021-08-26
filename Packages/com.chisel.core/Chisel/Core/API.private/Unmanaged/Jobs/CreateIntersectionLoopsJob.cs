@@ -1,7 +1,6 @@
 using System;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Collections.LowLevel.Unsafe;
@@ -20,8 +19,8 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeList<BrushPair2> uniqueBrushPairs;
 
         // Read
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>        brushTreeSpacePlaneCache;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesCache;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpacePlanes>>        brushTreeSpacePlaneCache;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesCache;
         [NoAlias, ReadOnly] public NativeStream.Reader                                          intersectingBrushesStream;
 
         // Write

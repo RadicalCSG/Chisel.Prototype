@@ -30,6 +30,41 @@ namespace Chisel.Editors
         {
             selectedSurfacesArray = selectedSurfaces.ToArray();
         }
+
+        // Hack to ensure we don't have objects that have been removed
+        static List<SurfaceReference> s_DestroyedSurfaces = new List<SurfaceReference>();
+        internal void Clean()
+        {
+            s_DestroyedSurfaces.Clear();
+            foreach (var surface in selectedSurfaces)
+                if (surface.node == null)
+                    s_DestroyedSurfaces.Add(surface);
+            foreach (var surface in s_DestroyedSurfaces)
+                selectedSurfaces.Remove(surface);
+
+            s_DestroyedSurfaces.Clear();
+            foreach (var surface in hoverSurfaces)
+                if (surface.node == null)
+                    s_DestroyedSurfaces.Add(surface);
+            foreach (var surface in s_DestroyedSurfaces)
+                hoverSurfaces.Remove(surface);
+
+            s_DestroyedSurfaces.Clear();
+            if (selectedSurfacesArray != null)
+            {
+                foreach (var surface in selectedSurfacesArray)
+                    if (surface.node == null)
+                        s_DestroyedSurfaces.Add(surface);
+            }
+            if (s_DestroyedSurfaces.Count > 0)
+            {
+                var items = selectedSurfacesArray.ToList();
+                foreach (var surface in s_DestroyedSurfaces)
+                    items.Remove(surface);
+                selectedSurfacesArray = items.ToArray();
+            }
+            s_DestroyedSurfaces.Clear();
+        }
     }
     
     public class ChiselSurfaceSelectionManager : SingletonManager<ChiselSurfaceSelection, ChiselSurfaceSelectionManager>
@@ -67,11 +102,15 @@ namespace Chisel.Editors
         {
             get
             {
-                var selectedSurfaces	= Data.selectedSurfaces;
+                var selectedSurfaces    = Data.selectedSurfaces;
                 var uniqueNodes			= new HashSet<ChiselNode>();
 
                 foreach (var selectedSurface in selectedSurfaces)
+                {
+                    if (selectedSurface.node == null)
+                        continue;
                     uniqueNodes.Add(selectedSurface.node);
+                }
                 return uniqueNodes;
             }
         }
@@ -85,7 +124,7 @@ namespace Chisel.Editors
 
                 foreach (var selectedSurface in selectedSurfaces)
                 {
-                    if (!selectedSurface.node)
+                    if (selectedSurface.node == null)
                         continue;
                     uniqueNodes.Add(selectedSurface.node.gameObject);
                 }
@@ -101,7 +140,11 @@ namespace Chisel.Editors
                 var uniqueBrushMaterials = new HashSet<ChiselBrushMaterial>();
 
                 foreach (var selectedSurface in selectedSurfaces)
+                {
+                    if (selectedSurface.node == null)
+                        continue;
                     uniqueBrushMaterials.Add(selectedSurface.BrushMaterial);
+                }
                 return uniqueBrushMaterials;
             }
         }
@@ -117,6 +160,9 @@ namespace Chisel.Editors
             var selectedSurfaces = Data.selectedSurfaces;
             foreach(var selectedSurface in selectedSurfaces)
             {
+                if (selectedSurface.node == null)
+                    continue;
+
                 if (selectedSurface.BrushMaterial == brushMaterial)
                     return true;
             }
@@ -358,7 +404,7 @@ namespace Chisel.Editors
                     continue;
 
                 var chiselNode = gameObject.GetComponent<ChiselNode>();
-                if (!chiselNode)
+                if (chiselNode == null || !(chiselNode is ChiselGeneratorComponent))
                     continue;
 
                 s_TempSurfaces.Clear();
@@ -412,7 +458,12 @@ namespace Chisel.Editors
             return modified;
         }
 
-        
+        // Hack to ensure we don't have objects that have been removed
+        internal static void Clean()
+        {
+            Data.Clean();
+        }
+
         public static bool SetHovering(SelectionType selectionType, HashSet<SurfaceReference> surfaces)
         {
             bool modified;

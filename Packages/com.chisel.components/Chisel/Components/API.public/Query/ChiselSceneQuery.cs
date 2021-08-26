@@ -106,8 +106,6 @@ namespace Chisel.Components
 #endif
 
 
-        static Dictionary<CSGTreeNode, ChiselIntersection> __foundIntersections = new Dictionary<CSGTreeNode, ChiselIntersection>(); // to avoid allocations
-
         static ChiselIntersection Convert(CSGTreeBrushIntersection intersection)
         {
             var node                    = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(intersection.brush.UserID);

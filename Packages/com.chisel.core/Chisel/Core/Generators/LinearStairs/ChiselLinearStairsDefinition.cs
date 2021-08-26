@@ -2,7 +2,6 @@ using System;
 using Debug = UnityEngine.Debug;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Jobs;
 using Unity.Burst;
@@ -62,7 +61,7 @@ namespace Chisel.Core
 
         // TODO: add all spiral stairs improvements to linear stairs
 
-        public MinMaxAABB bounds;
+        public ChiselAABB bounds;
 
         [DistanceValue] public float	stepHeight;
         [DistanceValue] public float	stepDepth;
@@ -163,9 +162,9 @@ namespace Chisel.Core
         }
 
         [BurstCompile()]
-        public bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
+        public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            using (var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp))
+            using (var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp))
             {
                 generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
                 var description = new BrushMeshFactory.LineairStairsData(bounds,
