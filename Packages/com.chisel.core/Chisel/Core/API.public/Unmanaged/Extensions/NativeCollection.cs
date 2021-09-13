@@ -154,6 +154,11 @@ namespace Chisel.Core
             return default;
         }
 
+        public static void DisposeDeep<T>(this NativeList<T> list) where T : unmanaged, IDisposable 
+        {
+            DisposeDeep(true, list, default).Complete();
+        }
+
         public static JobHandle DisposeDeep<T>(this NativeList<T> list, JobHandle dependencies) where T : unmanaged, IDisposable { return DisposeDeep(true, list, dependencies); }
 
         public static JobHandle DisposeDeep<T>(bool runInParallel, NativeReference<T> reference, JobHandle dependencies)
@@ -165,7 +170,7 @@ namespace Chisel.Core
             if (runInParallel)
                 return reference.Dispose(currentHandle);
 
-            currentHandle.Complete();
+            currentHandle.Complete();// TODO: get rid of this
             reference.Dispose();
             return default;
         }
