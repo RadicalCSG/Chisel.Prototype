@@ -124,7 +124,7 @@ namespace Chisel.Core
                 visibleOuterLines.SetCapacity(halfEdges.Length * 2);
 
             surfaceVisibleOuterLineRanges.Resize(polygons.Length, NativeArrayOptions.ClearMemory);
-            UnityEngine.Debug.Assert(vertices.length == localVertices.Length);
+            UnityEngine.Debug.Assert(vertices.Length == localVertices.Length);
             for (int p = 0; p < polygons.Length; p++)
             {
                 var firstEdge = polygons[p].firstEdge;

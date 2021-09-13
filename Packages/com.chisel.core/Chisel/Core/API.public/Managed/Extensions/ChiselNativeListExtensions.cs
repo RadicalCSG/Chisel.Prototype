@@ -20,13 +20,13 @@ namespace Chisel.Core
         public static T[] ToArray<T>(ref this UnsafeList<T> input) 
             where T : unmanaged
         {
-            var array = new T[input.length];
-            if (input.length == 0)
+            var array = new T[input.Length];
+            if (input.Length == 0)
                 return array;
             fixed(T* dstPtr = &array[0])
             {
                 var srcPtr = input.Ptr;
-                UnsafeUtility.MemCpy(dstPtr, srcPtr, input.length * UnsafeUtility.SizeOf<T>());
+                UnsafeUtility.MemCpy(dstPtr, srcPtr, input.Length * UnsafeUtility.SizeOf<T>());
             }
             return array;
         }
@@ -176,7 +176,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddRange<T>(this NativeList<T> list, T[] elements) where T : struct
+        public static void AddRange<T>(this NativeList<T> list, T[] elements) where T : unmanaged
         {
             if (elements.Length == 0)
                 return;
@@ -186,7 +186,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddRangeNoResize<T>(this NativeList<T> list, T[] elements) where T : struct
+        public static void AddRangeNoResize<T>(this NativeList<T> list, T[] elements) where T : unmanaged
         {
             if (elements.Length == 0)
                 return;
@@ -196,7 +196,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddRangeNoResize<T>(this NativeList<T> list, List<T> elements) where T : struct
+        public static void AddRangeNoResize<T>(this NativeList<T> list, List<T> elements) where T : unmanaged
         {
             if (elements.Count == 0)
                 return;
@@ -620,7 +620,7 @@ namespace Chisel.Core
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Contains<T>(this NativeList<T> array, T value)
-            where T : struct, IEquatable<T>
+            where T : unmanaged, IEquatable<T>
         {
             for (int i = 0; i < array.Length; i++)
             {

@@ -360,7 +360,7 @@ namespace Chisel.Core
                         sections[sectionIndex - 1] = previousSection;
 
                         // ... and we remove the two entries we don't need anymore
-                        sections.RemoveRangeWithBeginEnd(sectionIndex, sectionIndex + 2);
+                        sections.RemoveRange(sectionIndex, 2);
                     }
                 }
             } else

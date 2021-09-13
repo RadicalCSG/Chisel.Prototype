@@ -23,8 +23,8 @@
       "source": "embedded",
       "dependencies": {
         "com.unity.burst": "1.6.0-pre.2",
-        "com.unity.jobs": "0.8.0-preview.23",
-        "com.unity.collections": "0.17.0-preview.18",
+        "com.unity.jobs": "0.8.0-workaround",
+        "com.unity.collections": "1.0.0-pre.5",
         "com.unity.mathematics": "1.2.1"
       }
     },
@@ -61,11 +61,12 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.collections": {
-      "version": "0.17.0-preview.18",
+      "version": "1.0.0-pre.5",
       "depth": 0,
       "source": "registry",
       "dependencies": {
-        "com.unity.burst": "1.5.3"
+        "com.unity.burst": "1.5.4",
+        "com.unity.test-framework": "1.1.22"
       },
       "url": "https://packages.unity.com"
     },
@@ -86,14 +87,13 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.jobs": {
-      "version": "0.8.0-preview.23",
+      "version": "file:com.unity.jobs@0.8.0-workaround",
       "depth": 0,
-      "source": "registry",
+      "source": "embedded",
       "dependencies": {
-        "com.unity.collections": "0.15.0-preview.21",
+        "com.unity.collections": "1.0.0-pre.5",
         "com.unity.mathematics": "1.2.1"
-      },
-      "url": "https://packages.unity.com"
+      }
     },
     "com.unity.mathematics": {
       "version": "1.2.1",
@@ -124,7 +124,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.test-framework": {
-      "version": "1.1.26",
+      "version": "1.1.29",
       "depth": 1,
       "source": "registry",
       "dependencies": {

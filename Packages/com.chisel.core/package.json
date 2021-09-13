@@ -13,8 +13,8 @@
   "version": "0.0.1-preview",
     "dependencies": {
         "com.unity.burst": "1.6.0-pre.2",
-        "com.unity.jobs": "0.8.0-preview.23",
-        "com.unity.collections": "0.17.0-preview.18",
+        "com.unity.jobs": "0.8.0-workaround",
+        "com.unity.collections": "1.0.0-pre.5",
         "com.unity.mathematics": "1.2.1"
     },
   "type": "library"
