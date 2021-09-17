@@ -29,7 +29,7 @@ namespace Chisel.Core
         // Read
         [NoAlias, ReadOnly] public NativeArray<BrushPair2>                                  uniqueBrushPairs;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>.ReadOnly  brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>     brushMeshLookup;
 
         // Write
         [NoAlias, WriteOnly] public NativeStream.Writer                                     intersectingBrushesStream;
