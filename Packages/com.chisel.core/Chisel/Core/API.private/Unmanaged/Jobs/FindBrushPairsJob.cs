@@ -18,7 +18,7 @@ namespace Chisel.Core
 
         // Read (Re-allocate) / Write
         [NativeDisableUnsafePtrRestriction]
-        [NoAlias, WriteOnly] public UnsafeList* uniqueBrushPairs;
+        [NoAlias, WriteOnly] public UnsafeList<BrushPair2>* uniqueBrushPairs;
 
 
         // Per thread scratch memory

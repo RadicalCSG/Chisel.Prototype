@@ -22,7 +22,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  allUpdateBrushIndexOrders;
         [NoAlias, ReadOnly] public int                                                      maxNodeOrder;
         [NoAlias, ReadOnly] public NativeArray<float3>                                      outputSurfaceVertices;        
-        [NoAlias, ReadOnly] public NativeArray<int2>.ReadOnly                               outputSurfacesRange;
+        [NoAlias, ReadOnly] public NativeArray<int2>                                        outputSurfacesRange;
         [NoAlias, ReadOnly] public NativeArray<BrushIntersectionLoop>                       outputSurfaces;
         [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BasePolygonsBlob>>        basePolygonCache;
         [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlaneCache;

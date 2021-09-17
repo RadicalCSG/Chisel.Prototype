@@ -362,7 +362,7 @@ namespace Chisel.Core
         public void Dispose()
         {
             GeneratorJobPoolManager.Unregister(this);
-            if (surfaceDefinitions.IsCreated) surfaceDefinitions.Dispose();
+            if (surfaceDefinitions.IsCreated) surfaceDefinitions.DisposeDeep();
             if (brushMeshes       .IsCreated) brushMeshes       .Dispose();
             if (generators        .IsCreated) generators        .Dispose();
             if (generatorNodes    .IsCreated) generatorNodes    .Dispose();
@@ -396,6 +396,10 @@ namespace Chisel.Core
             var index = generatorNodes.IndexOf(nodeID);
             if (index != -1)
             {
+                // TODO: get rid of this
+                if (surfaceDefinitions[index].IsCreated)
+                    surfaceDefinitions[index].Dispose();
+
                 surfaceDefinitions[index] = surfaceDefinition;
                 generators        [index] = settings;
                 generatorNodes    [index] = nodeID;
@@ -443,6 +447,8 @@ namespace Chisel.Core
                     CompactHierarchyManager.GetTypeOfNode(nodeID) == CSGNodeType.Brush)
                     continue;
 
+                if (surfaceDefinitions[i].IsCreated)
+                    surfaceDefinitions[i].Dispose();
                 surfaceDefinitions.RemoveAt(i);
                 generators        .RemoveAt(i);
                 generatorNodes    .RemoveAt(i);
@@ -602,7 +608,7 @@ namespace Chisel.Core
             GeneratorJobPoolManager.Unregister(this);
             if (generatorRootNodeIDs.IsCreated) generatorRootNodeIDs.Dispose();
             if (generatorNodeRanges .IsCreated) generatorNodeRanges .Dispose();
-            if (surfaceDefinitions  .IsCreated) surfaceDefinitions  .Dispose();
+            if (surfaceDefinitions  .IsCreated) surfaceDefinitions  .DisposeDeep();
             if (generatedNodes      .IsCreated) generatedNodes      .Dispose();
             if (generators          .IsCreated) generators          .Dispose();
             
@@ -625,6 +631,10 @@ namespace Chisel.Core
             var index = generatorRootNodeIDs.IndexOf(nodeID);
             if (index != -1)
             {
+                // TODO: get rid of this
+                if (surfaceDefinitions[index].IsCreated)
+                    surfaceDefinitions[index].Dispose();
+
                 generatorRootNodeIDs[index] = nodeID;
                 surfaceDefinitions  [index] = surfaceDefinition;
                 generators          [index] = settings;
@@ -740,6 +750,9 @@ namespace Chisel.Core
                     CompactHierarchyManager.IsValidNodeID(nodeID) &&
                     CompactHierarchyManager.GetTypeOfNode(nodeID) == CSGNodeType.Branch)
                     continue;
+
+                if (surfaceDefinitions[i].IsCreated)
+                    surfaceDefinitions[i].Dispose();
 
                 generatorRootNodeIDs.RemoveAt(i);
                 surfaceDefinitions  .RemoveAt(i);

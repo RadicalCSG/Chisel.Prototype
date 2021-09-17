@@ -41,9 +41,9 @@ namespace Chisel.Core
                 return false;
             }
 
-            if (range.end > shapeVertices.length)
+            if (range.end > shapeVertices.Length)
             {
-                Debug.LogError($"range.end {range.end} > shapeVertices.length {shapeVertices.length}");
+                Debug.LogError($"range.end {range.end} > shapeVertices.length {shapeVertices.Length}");
                 return false;
             }
 
@@ -53,7 +53,7 @@ namespace Chisel.Core
 
             for (int s = range.start, v = 0; s < range.end; s++, v++)
             {
-                Debug.Assert(s < shapeVertices.length);
+                Debug.Assert(s < shapeVertices.Length);
                 var srcPoint   = shapeVertices[s].position;
                 var srcSegment = shapeVertices[s].segmentIndex;
                 var srcPoint3  = new float3(srcPoint.x, srcPoint.y, 0);

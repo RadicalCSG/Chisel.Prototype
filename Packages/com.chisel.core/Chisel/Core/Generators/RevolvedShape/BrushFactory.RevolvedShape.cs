@@ -79,7 +79,7 @@ namespace Chisel.Core
                         polygon.Add(point_b);
                     }
 
-                    polygonVerticesList.RemoveRangeWithBeginEnd(start, end);
+                    polygonVerticesList.RemoveRange(start, (end - start));
                     polygonVerticesSegments.RemoveAt(r);
                     var delta = end - start;
                     for (; r < polygonVerticesSegments.Length; r++)

@@ -21,7 +21,7 @@ namespace Chisel.Core
         [NativeDisableUnsafePtrRestriction, NoAlias, ReadOnly] public IDManager*            hierarchyIDLookupPtr;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  rebuildTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>.ReadOnly  brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>     brushMeshLookup;
 
         // Write
         [NativeDisableParallelForRestriction]

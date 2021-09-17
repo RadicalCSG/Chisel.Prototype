@@ -200,7 +200,7 @@ namespace Chisel.Core
         /// <returns>Parallel writer instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static ParallelWriterExt<T> AsParallelWriterExt<T>(this NativeList<T> list)
-            where T : struct
+            where T : unmanaged
         {
             var m_ListData = list.GetUnsafeList();
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -217,7 +217,7 @@ namespace Chisel.Core
         [NativeContainer]
         [NativeContainerIsAtomicWriteOnly]
         public unsafe struct ParallelWriterExt<T>
-            where T:struct
+            where T : unmanaged
         {
             /// <summary>
             ///
@@ -229,13 +229,13 @@ namespace Chisel.Core
             ///
             /// </summary>
             [NativeDisableUnsafePtrRestriction]
-            public UnsafeList* ListData;
+            public UnsafeList<T>* ListData;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             internal AtomicSafetyHandle m_Safety;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal unsafe ParallelWriterExt(void* ptr, UnsafeList* listData, ref AtomicSafetyHandle safety)
+            internal unsafe ParallelWriterExt(void* ptr, UnsafeList<T>* listData, ref AtomicSafetyHandle safety)
             {
                 Ptr = ptr;
                 ListData = listData;
@@ -243,7 +243,7 @@ namespace Chisel.Core
             }
 
 #else
-            internal unsafe ParallelWriterExt(void* ptr, UnsafeList* listData)
+            internal unsafe ParallelWriterExt(void* ptr, UnsafeList<T>* listData)
             {
                 Ptr = ptr;
                 ListData = listData;
@@ -292,7 +292,7 @@ namespace Chisel.Core
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                 AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 #endif
-                var idx = Interlocked.Increment(ref ListData->Length) - 1;
+                var idx = Interlocked.Increment(ref ListData->m_length) - 1;
                 CheckSufficientCapacity(ListData->Capacity, idx + 1);
 
                 UnsafeUtility.WriteArrayElement(Ptr, idx, value);
@@ -305,7 +305,7 @@ namespace Chisel.Core
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                 AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 #endif
-                var idx = Interlocked.Add(ref ListData->Length, length) - length;
+                var idx = Interlocked.Add(ref ListData->m_length, length) - length;
                 CheckSufficientCapacity(ListData->Capacity, idx + length);
 
                 void* dst = (byte*)Ptr + idx * sizeOf;
@@ -337,7 +337,7 @@ namespace Chisel.Core
             /// If the list has reached its current capacity, internal array won't be resized, and exception will be thrown.
             /// </remarks>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int AddRangeNoResize(UnsafeList list)
+            public int AddRangeNoResize(UnsafeList<T> list)
             {
                 return AddRangeNoResize(UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), list.Ptr, list.Length);
             }

@@ -450,7 +450,7 @@ namespace Chisel.Core
         {
             Debug.Assert(IsCreated);
             var index = HierarchyIndexOfInternal(compactNodeID);
-            if (index < 0 || index >= brushOutlines.length)
+            if (index < 0 || index >= brushOutlines.Length)
                 throw new ArgumentException(nameof(compactNodeID));
 
             if (brushOutlines.Ptr[index].IsCreated)
@@ -463,7 +463,7 @@ namespace Chisel.Core
         {
             Debug.Assert(IsCreated);
             var index = HierarchyIndexOfInternal(compactNodeID);
-            if (index < 0 || index >= brushOutlines.length)
+            if (index < 0 || index >= brushOutlines.Length)
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
 
             if (!brushOutlines.Ptr[index].IsCreated)
@@ -477,7 +477,7 @@ namespace Chisel.Core
         {
             Debug.Assert(IsCreated);
             var index = HierarchyIndexOfInternal(compactNodeID);
-            if (index < 0 || index >= brushOutlines.length)
+            if (index < 0 || index >= brushOutlines.Length)
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
 
             if (!brushOutlines.Ptr[index].IsCreated)
@@ -490,7 +490,7 @@ namespace Chisel.Core
         {
             Debug.Assert(IsCreated);
             var index = HierarchyIndexOfInternal(compactNodeID);
-            if (index < 0 || index >= compactNodes.length)
+            if (index < 0 || index >= compactNodes.Length)
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
 
             return compactNodes[index].nodeInformation.brushMeshHash;

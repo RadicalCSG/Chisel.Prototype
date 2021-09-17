@@ -12,7 +12,7 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Run<T, U>(this T jobData, NativeList<U> list)
             where T : struct, IJobParallelForDefer
-            where U : struct
+            where U : unmanaged
         {
             for (int index = 0; index < list.Length; index++)
                 jobData.Execute(index); 
@@ -21,7 +21,7 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static JobHandle Schedule<T, U>(this T jobData, bool runInParallel, NativeList<U> list, int innerloopBatchCount, JobHandle dependsOn = default)
             where T : struct, IJobParallelForDefer
-            where U : struct
+            where U : unmanaged
         {
             CheckDependencies(runInParallel, dependsOn);
             if (runInParallel)
@@ -60,7 +60,7 @@ namespace Chisel.Core
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NativeArray<T> AsJobArray<T>(this NativeList<T> list, bool runInParallel)
-            where T : struct
+            where T : unmanaged
         {
             if (runInParallel)
                 return list.AsDeferredJobArray();
@@ -99,7 +99,7 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static JobHandle Schedule<T, U>(this T jobData, bool runInParallel, NativeList<U> list, int innerloopBatchCount, ReadJobHandles readDependencies, WriteJobHandles writeDependencies)
             where T : struct, IJobParallelForDefer
-            where U : struct
+            where U : unmanaged
         {
             var dependencies = JobHandleExtensions.CombineDependencies(readDependencies.Handles, writeDependencies.Handles);
             CheckDependencies(runInParallel, dependencies);

@@ -20,20 +20,21 @@ namespace Chisel.Core
         [NativeDisableUnsafePtrRestriction]
         [NoAlias, ReadOnly] public CompactHierarchy*                                                compactHierarchyPtr;
         [NoAlias, ReadOnly] public NativeReference<bool>                                            needRemappingRef;
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly                                 rebuildTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>>.ReadOnly  brushesTouchedByBrushCache;
-        [NoAlias, ReadOnly] public NativeArray<CompactNodeID>.ReadOnly                              brushes;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                          rebuildTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>>     brushesTouchedByBrushCache;
+        [NoAlias, ReadOnly] public NativeArray<CompactNodeID>                                       brushes;
         [NoAlias, ReadOnly] public int                                                              brushCount;
-        [NoAlias, ReadOnly] public NativeArray<int>.ReadOnly                                        nodeIDValueToNodeOrderArray;
+        [NoAlias, ReadOnly] public NativeArray<int>                                                 nodeIDValueToNodeOrderArray;
         [NoAlias, ReadOnly] public NativeReference<int>                                             nodeIDValueToNodeOrderOffsetRef;
 
         // Write
-        [NoAlias, WriteOnly] public NativeHashSet<IndexOrder>                               brushesThatNeedIndirectUpdateHashMap;
+        [NoAlias, WriteOnly] public NativeHashSet<IndexOrder>   brushesThatNeedIndirectUpdateHashMap;
 
         public void Execute()
         {
             ref var compactHierarchy = ref UnsafeUtility.AsRef<CompactHierarchy>(compactHierarchyPtr);
-            if (rebuildTreeBrushIndexOrders.Length == brushCount && !needRemappingRef.Value)
+            if (rebuildTreeBrushIndexOrders.Length == 0 &&
+                rebuildTreeBrushIndexOrders.Length == brushCount && !needRemappingRef.Value)
                 return;
 
             var nodeIDValueToNodeOrderOffset = nodeIDValueToNodeOrderOffsetRef.Value;

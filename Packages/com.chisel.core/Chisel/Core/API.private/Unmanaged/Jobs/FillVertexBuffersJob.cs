@@ -115,8 +115,8 @@ namespace Chisel.Core
     struct PrepareSubSectionsJob : IJobParallelFor
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<MeshQuery>.ReadOnly  meshQueries;
-        [NoAlias, ReadOnly] public NativeArray<BrushData>           brushRenderData;
+        [NoAlias, ReadOnly] public NativeArray<MeshQuery>   meshQueries;
+        [NoAlias, ReadOnly] public NativeArray<BrushData>   brushRenderData;
 
         // Read, Write
         [NativeDisableParallelForRestriction]
@@ -182,7 +182,7 @@ namespace Chisel.Core
     struct SortSurfacesParallelJob : IJob
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<MeshQuery>.ReadOnly  meshQueries;
+        [NoAlias, ReadOnly] public NativeArray<MeshQuery>           meshQueries;
         [NoAlias, ReadOnly] public NativeListArray<SubMeshSurface>  subMeshSurfaces;
 
         // Write
