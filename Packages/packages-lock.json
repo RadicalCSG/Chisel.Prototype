@@ -22,8 +22,8 @@
       "depth": 0,
       "source": "embedded",
       "dependencies": {
-        "com.unity.burst": "1.6.0-pre.2",
-        "com.unity.jobs": "0.8.0-workaround",
+        "com.unity.burst": "1.6.0",
+        "com.unity.jobs": "0.11.0-preview.6",
         "com.unity.collections": "1.0.0-pre.5",
         "com.unity.mathematics": "1.2.1"
       }
@@ -52,7 +52,7 @@
       "dependencies": {}
     },
     "com.unity.burst": {
-      "version": "1.6.0-pre.2",
+      "version": "1.6.0",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -87,13 +87,14 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.jobs": {
-      "version": "file:com.unity.jobs@0.8.0-workaround",
+      "version": "0.11.0-preview.6",
       "depth": 0,
-      "source": "embedded",
+      "source": "registry",
       "dependencies": {
         "com.unity.collections": "1.0.0-pre.5",
         "com.unity.mathematics": "1.2.1"
-      }
+      },
+      "url": "https://packages.unity.com"
     },
     "com.unity.mathematics": {
       "version": "1.2.1",
