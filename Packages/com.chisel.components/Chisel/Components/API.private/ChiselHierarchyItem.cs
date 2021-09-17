@@ -12,7 +12,20 @@ namespace Chisel.Components
     public sealed class ChiselSceneHierarchy
     {
         public Scene                                Scene;
-        public ChiselModel                          DefaultModel;	// TODO: create this, but only when necessary.
+        public ChiselModel                          DefaultModel;
+
+        public ChiselModel GetOrCreateDefaultModel()
+        {
+            if (!DefaultModel)
+            {
+                DefaultModel = null;
+                if (Scene.IsValid() &&
+                    Scene.isLoaded)
+                    DefaultModel = ChiselGeneratedComponentManager.CreateDefaultModel(this);
+            }
+            return DefaultModel;
+        }
+
         public readonly List<ChiselHierarchyItem>   RootItems	    = new List<ChiselHierarchyItem>();
     }
 
