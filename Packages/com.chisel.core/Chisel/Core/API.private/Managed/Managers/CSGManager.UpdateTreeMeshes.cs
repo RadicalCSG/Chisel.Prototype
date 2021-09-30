@@ -7,9 +7,19 @@ using Debug = UnityEngine.Debug;
 using Profiler = UnityEngine.Profiling.Profiler;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
+using System.Runtime.CompilerServices;
 
 namespace Chisel.Core
 {
+    struct ProfilerSample : IDisposable
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ProfilerSample(string name) { Profiler.BeginSample(name); }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Dispose() { Profiler.EndSample(); }
+    }
+
     partial class CompactHierarchyManager
     {
         const bool runInParallelDefault = true;
@@ -37,10 +47,12 @@ namespace Chisel.Core
             if (!needUpdate)
                 return false;
 
-            UnityEngine.Profiling.Profiler.BeginSample("UpdateTreeMeshes");
-            allTrees = ScheduleTreeMeshJobs(finishMeshUpdates, instance.updatedTrees);
-            UnityEngine.Profiling.Profiler.EndSample();
-            return true;
+
+            using (var profilerSample = new ProfilerSample("UpdateTreeMeshes"))
+            {
+                allTrees = TreeUpdate.ScheduleTreeMeshJobs(finishMeshUpdates, instance.updatedTrees);
+                return true;
+            }
         }
         #endregion
 
@@ -67,230 +79,15 @@ namespace Chisel.Core
         }
         #endregion
 
-        static TreeUpdate[] s_TreeUpdates;
-
-        internal unsafe static JobHandle ScheduleTreeMeshJobs(FinishMeshUpdate finishMeshUpdates, NativeList<CSGTree> trees)
-        {
-            var finalJobHandle = default(JobHandle);
-
-            // TODO: reorder nodes in backend every time a node is added/removed
-            //          this ensures 
-            //              everything is sequential in memory
-            //              we don't have gaps between nodes
-            //              order is always predictable
-
-            // TODO: ensure we only update exactly what we need, and nothing more
-
-            // TODO: figure out exactly what materials/physicMaterials we have per tree
-            //          => give each material a unique index per tree.
-            //          => cache this material index 
-            //          => have a lookup table for material <=> material index
-            //       have array of lists for indices, colliderVertices, renderVertices
-            //       our number of meshes is now 100% predictable
-            //       instead of storing indices, vertices etc. in blobs, store these in these lists, per query
-            //       at beginning of frame remove all invalidated pieces of these lists and pack them
-            //       when adding new geometry, add them at the end
-            //       then figure out if its worth it to keep these lists "in order"
-
-            // TODO: use parameter1Count/parameter2Count for submeshes etc. just pre-allocate blocks for all possible meshes/submeshes
-
-            #region Prepare Trees 
-            Profiler.BeginSample("CSG_TreeUpdate_Allocate");
-            if (s_TreeUpdates == null || s_TreeUpdates.Length < trees.Length)
-                s_TreeUpdates = new TreeUpdate[trees.Length];
-            Profiler.EndSample();
-            #endregion
-
-            var treeUpdateLength = 0;
-            try
-            {
-                //
-                // Schedule all the jobs that create new meshes based on our CSG trees
-                //
-
-                #region Schedule job to generate brushes (using generators)
-                Profiler.BeginSample("CSG_GeneratorJobPool");
-                var runInParallel = runInParallelDefault;
-                var generatorPoolJobHandle = GeneratorJobPoolManager.ScheduleJobs(runInParallel);
-                generatorPoolJobHandle.Complete();
-                Profiler.EndSample();
-                #endregion
-
-                //
-                // Schedule chain of jobs that will generate our surface meshes
-                //
-
-                #region Schedule Mesh Update Jobs
-                Profiler.BeginSample("CSG_RunMeshUpdateJobs");
-
-                Profiler.BeginSample("CSG_Init");
-                for (int t = 0; t < trees.Length; t++)
-                {
-                    ref var treeUpdate = ref s_TreeUpdates[t];
-                    treeUpdate.tree = trees[t];
-                    treeUpdate.treeCompactNodeID = CompactHierarchyManager.GetCompactNodeID(treeUpdate.tree);
-                    ref var compactHierarchy = ref CompactHierarchyManager.GetHierarchy(treeUpdate.treeCompactNodeID);
-                    
-                    // Skip invalid trees since they wouldn't work anyway
-                    if (!compactHierarchy.IsValidCompactNodeID(treeUpdate.treeCompactNodeID))
-                        continue;
-
-                    if (!compactHierarchy.IsNodeDirty(treeUpdate.treeCompactNodeID))
-                        continue;
-
-                    treeUpdate.RunMeshInitJobs(ref compactHierarchy, generatorPoolJobHandle);
-                    treeUpdateLength++;
-                }
-                Profiler.EndSample();
-
-                JobHandle.ScheduleBatchedJobs();
-
-                Profiler.BeginSample("CSG_Run");
-                for (int t = 0; t < treeUpdateLength; t++)
-                {
-                    ref var treeUpdate = ref s_TreeUpdates[t];
-                    ref var compactHierarchy = ref CompactHierarchyManager.GetHierarchy(treeUpdate.treeCompactNodeID);
-
-                    // Skip invalid trees since they wouldn't work anyway
-                    if (!compactHierarchy.IsValidCompactNodeID(treeUpdate.treeCompactNodeID))
-                        continue;
-
-                    if (!compactHierarchy.IsNodeDirty(treeUpdate.treeCompactNodeID))
-                        continue;
-
-                    // TODO: figure out if there's a way around this ....
-                    treeUpdate.JobHandles.rebuildTreeBrushIndexOrdersJobHandle.Complete();
-                    treeUpdate.updateCount = treeUpdate.Temporaries.rebuildTreeBrushIndexOrders.Length;
-
-                    if (treeUpdate.updateCount == 0) 
-                        continue;
-                    
-                    treeUpdate.RunMeshUpdateJobs(ref compactHierarchy);
-                }
-                Profiler.EndSample();
-
-                Profiler.EndSample();
-                #endregion
-
-                //
-                // Dispose temporaries that we don't need anymore
-                //
-
-                #region Dispose temporaries
-                for (int t = 0; t < treeUpdateLength; t++)
-                {
-                    ref var treeUpdate = ref s_TreeUpdates[t];
-                    ref var compactHierarchy = ref CompactHierarchyManager.GetHierarchy(treeUpdate.treeCompactNodeID);
-
-                    // Skip invalid trees since they wouldn't work anyway
-                    if (!compactHierarchy.IsValidCompactNodeID(treeUpdate.treeCompactNodeID))
-                        continue;
-
-                    if (!compactHierarchy.IsNodeDirty(treeUpdate.treeCompactNodeID))
-                        continue;
-                    
-                    treeUpdate.PreMeshUpdateDispose();
-                }
-                #endregion
-
-                JobHandle.ScheduleBatchedJobs();
-
-                //
-                // Wait for our scheduled mesh update jobs to finish, ensure our components are setup correctly, and upload our mesh data to the meshes
-                //
-
-                #region Finish Mesh Updates / Update Components (not jobified)
-                Profiler.BeginSample("FinishMeshUpdates");
-                try
-                {
-                    for (int t = 0; t < treeUpdateLength; t++)
-                    {
-                        ref var treeUpdate          = ref s_TreeUpdates[t];
-                        ref var compactHierarchy    = ref CompactHierarchyManager.GetHierarchy(treeUpdate.treeCompactNodeID);
-
-                        // Skip invalid trees since they wouldn't work anyway
-                        if (!compactHierarchy.IsValidCompactNodeID(treeUpdate.treeCompactNodeID))
-                            continue;
-
-                        if (!compactHierarchy.IsNodeDirty(treeUpdate.treeCompactNodeID))
-                            continue;
-
-                        var dependencies = JobHandleExtensions.CombineDependencies(treeUpdate.JobHandles.meshDatasJobHandle,
-                                                                                   treeUpdate.JobHandles.colliderMeshUpdatesJobHandle,
-                                                                                   treeUpdate.JobHandles.debugHelperMeshesJobHandle,
-                                                                                   treeUpdate.JobHandles.renderMeshesJobHandle,
-                                                                                   treeUpdate.JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle,
-                                                                                   treeUpdate.JobHandles.vertexBufferContents_meshesJobHandle);
-                        bool meshUpdated = false;
-                        try
-                        {
-                            for (int b = 0; b < treeUpdate.brushCount; b++)
-                            {
-                                var brushIndexOrder = treeUpdate.Temporaries.allTreeBrushIndexOrders[b];
-                                // TODO: get rid of these crazy legacy flags
-                                compactHierarchy.ClearAllStatusFlags(brushIndexOrder.compactNodeID);
-                            }
-
-                            // TODO: get rid of these crazy legacy flags
-                            compactHierarchy.ClearStatusFlag(treeUpdate.treeCompactNodeID, NodeStatusFlags.TreeNeedsUpdate);
-                            compactHierarchy.ClearAllStatusFlags(treeUpdate.treeCompactNodeID);
-
-                            if (treeUpdate.updateCount == 0 &&
-                                treeUpdate.brushCount != 0)
-                                continue;
-
-                            if (finishMeshUpdates != null)
-                            {
-                                meshUpdated = true;
-                                var usedMeshCount = finishMeshUpdates(treeUpdate.tree, ref treeUpdate.Temporaries.vertexBufferContents,
-                                                                        treeUpdate.Temporaries.meshDataArray,
-                                                                        treeUpdate.Temporaries.colliderMeshUpdates,
-                                                                        treeUpdate.Temporaries.debugHelperMeshes,
-                                                                        treeUpdate.Temporaries.renderMeshes,
-                                                                        dependencies);
-                            }
-                        }
-                        finally
-                        {
-                            compactHierarchy.ClearAllStatusFlags(treeUpdate.treeCompactNodeID);
-                            dependencies.Complete(); // Whatever happens, our jobs need to be completed at this point
-                            if (treeUpdate.updateCount > 0 && !meshUpdated)
-                                treeUpdate.Temporaries.meshDataArray.Dispose();
-                        }
-                    }
-                }
-                finally { Profiler.EndSample(); }
-                #endregion
-            }
-            finally
-            {
-                #region Free all temporaries
-                // TODO: most of these disposes can be scheduled before we complete and write to the meshes, 
-                // so that these disposes can happen at the same time as the mesh updates in finishMeshUpdates
-                Profiler.BeginSample("CSG_Deallocate");
-                {
-                    for (int t = 0; t < treeUpdateLength; t++)
-                    {
-                        ref var treeUpdate = ref s_TreeUpdates[t];
-                        treeUpdate.FreeTemporaries(ref finalJobHandle);
-                    }
-                    GeneratorJobPoolManager.Clear();
-                }
-                Profiler.EndSample();
-                #endregion
-            }
-
-            return finalJobHandle;
-        }
-
         internal unsafe struct TreeUpdate
         {
-            public CSGTree                      tree;
-            public CompactNodeID                treeCompactNodeID;
-            public int                          brushCount;
-            public int                          maxNodeOrder;
-            public int                          updateCount;
+            public CSGTree          tree;
+            public CompactNodeID    treeCompactNodeID;
+            public int              brushCount;
+            public int              maxNodeOrder;
+            public int              updateCount;
 
+            public JobHandle        lastJobHandle;
 
             #region All Native Collection Temporaries
             internal struct TemporariesStruct
@@ -360,7 +157,6 @@ namespace Chisel.Core
             }
             internal TemporariesStruct Temporaries;
             #endregion
-
 
             #region In Between JobHandles
             internal struct JobHandlesStruct
@@ -444,7 +240,221 @@ namespace Chisel.Core
             internal JobHandlesStruct JobHandles;
             #endregion
 
-            public JobHandle lastJobHandle;
+            static TreeUpdate[] s_TreeUpdates;
+            public static JobHandle ScheduleTreeMeshJobs(FinishMeshUpdate finishMeshUpdates, NativeList<CSGTree> trees)
+            {
+                // TODO: reorder nodes in backend every time a node is added/removed
+                //          this ensures 
+                //              everything is sequential in memory
+                //              we don't have gaps between nodes
+                //              order is always predictable
+
+                // TODO: ensure we only update exactly what we need, and nothing more
+
+                // TODO: figure out exactly what materials/physicMaterials we have per tree
+                //          => give each material a unique index per tree.
+                //          => cache this material index 
+                //          => have a lookup table for material <=> material index
+                //       have array of lists for indices, colliderVertices, renderVertices
+                //       our number of meshes is now 100% predictable
+                //       instead of storing indices, vertices etc. in blobs, store these in these lists, per query
+                //       at beginning of frame remove all invalidated pieces of these lists and pack them
+                //       when adding new geometry, add them at the end
+                //       then figure out if its worth it to keep these lists "in order"
+
+                // TODO: use parameter1Count/parameter2Count for submeshes etc. just pre-allocate blocks for all possible meshes/submeshes
+
+                var finalJobHandle          = default(JobHandle);
+
+
+                //
+                // Schedule all the jobs that create new meshes based on our CSG trees
+                //
+                #region Schedule Generator Jobs
+                var generatorPoolJobHandle = default(JobHandle);
+                using (var profilerSample = new ProfilerSample("CSG_ScheduleGeneratorJobPool"))
+                { 
+                    var runInParallel = runInParallelDefault;
+                    generatorPoolJobHandle = GeneratorJobPoolManager.ScheduleJobs(runInParallel);
+                    
+                    // TODO: Try to get rid of this Complete
+                    generatorPoolJobHandle.Complete();
+                    generatorPoolJobHandle = default;
+                }
+                #endregion
+
+                //
+                // Make a list of valid trees
+                //
+                #region Find all modified, valid trees
+                var treeUpdateLength = 0;
+                using (var profilerSample = new ProfilerSample("CSG_TreeUpdate_Allocate"))
+                {
+                    if (s_TreeUpdates == null || s_TreeUpdates.Length < trees.Length)
+                        s_TreeUpdates = new TreeUpdate[trees.Length];
+                    for (int t = 0; t < trees.Length; t++)
+                    {
+                        var tree = trees[t];
+                        var treeCompactNodeID = CompactHierarchyManager.GetCompactNodeID(tree);
+                        ref var compactHierarchy = ref CompactHierarchyManager.GetHierarchy(treeCompactNodeID);
+
+                        // Skip invalid trees since they wouldn't work anyway
+                        if (!compactHierarchy.IsValidCompactNodeID(treeCompactNodeID))
+                            continue;
+
+                        if (!compactHierarchy.IsNodeDirty(treeCompactNodeID))
+                            continue;
+
+                        ref var treeUpdate = ref s_TreeUpdates[treeUpdateLength];
+                        treeUpdate.tree = tree;
+                        treeUpdate.treeCompactNodeID = treeCompactNodeID;
+                        treeUpdateLength++;
+                    }
+                }
+                #endregion
+
+
+                // TODO: Try to get rid of this Complete
+                generatorPoolJobHandle.Complete(); // <-- Initialize has code that depends on the current state of the tree
+                generatorPoolJobHandle = default;
+
+
+                //
+                // Initialize our data structures
+                //
+                #region Find all modified, valid trees
+                using (var profilerSample = new ProfilerSample("CSG_TreeUpdate_Initialize"))
+                {
+                    for (int t = 0; t < treeUpdateLength; t++)
+                    {
+                        // Make sure that if we, somehow, run this while parts of the previous update is still running, we wait for the previous run to complete
+
+                        // TODO: STORE THIS ON THE TREE!!! THIS WILL BE FORGOTTEN
+                        s_TreeUpdates[t].lastJobHandle.Complete();
+                        s_TreeUpdates[t].lastJobHandle = default;
+
+                        s_TreeUpdates[t].Initialize();
+                    }
+                }
+                #endregion
+
+                try
+                {
+                    //
+                    // Preprocess the data we need to perform CSG
+                    //
+                    #region Schedule cache update jobs
+                    using (var profilerSample = new ProfilerSample("CSG_RunMeshInitJobs"))
+                    {
+                        for (int t = 0; t < treeUpdateLength; t++)
+                            s_TreeUpdates[t].RunMeshInitJobs(generatorPoolJobHandle);
+                    }
+                    #endregion
+
+                    //
+                    // Schedule chain of jobs that will generate our surface meshes
+                    //
+                    #region Schedule CSG jobs
+                    using (var profilerSample = new ProfilerSample("CSG_RunMeshUpdateJobs"))
+                    {
+                        for (int t = 0; t < treeUpdateLength; t++)
+                        {
+                            // TODO: figure out if there's a way around this ....
+                            s_TreeUpdates[t].JobHandles.rebuildTreeBrushIndexOrdersJobHandle.Complete();
+                            s_TreeUpdates[t].JobHandles.rebuildTreeBrushIndexOrdersJobHandle = default;
+                            s_TreeUpdates[t].updateCount = s_TreeUpdates[t].Temporaries.rebuildTreeBrushIndexOrders.Length;
+
+                            s_TreeUpdates[t].RunMeshUpdateJobs();
+                        }
+                    }
+                    #endregion
+
+                    //
+                    // Wait for our scheduled mesh update jobs to finish, ensure our components are setup correctly, and upload our mesh data to the meshes
+                    //
+
+                    for (int t = 0; t < treeUpdateLength; t++)
+                    {
+                        ref var treeUpdate          = ref s_TreeUpdates[t];
+                        bool meshUpdated = false;
+                        var dependencies = JobHandleExtensions.CombineDependencies(treeUpdate.JobHandles.meshDatasJobHandle,
+                                                                                   treeUpdate.JobHandles.colliderMeshUpdatesJobHandle,
+                                                                                   treeUpdate.JobHandles.debugHelperMeshesJobHandle,
+                                                                                   treeUpdate.JobHandles.renderMeshesJobHandle,
+                                                                                   treeUpdate.JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle,
+                                                                                   treeUpdate.JobHandles.vertexBufferContents_meshesJobHandle);
+                        try
+                        {
+                            // TODO: get rid of these crazy legacy flags
+                            #region Clear tree/brush status flags
+                            ref var compactHierarchy = ref CompactHierarchyManager.GetHierarchy(treeUpdate.treeCompactNodeID);
+                            using (var profilerSample = new ProfilerSample("CSG_ClearFlags"))
+                            {
+                                compactHierarchy.ClearAllStatusFlags(treeUpdate.treeCompactNodeID);
+                                for (int b = 0; b < treeUpdate.brushCount; b++)
+                                {
+                                    var brushIndexOrder = treeUpdate.Temporaries.allTreeBrushIndexOrders[b];
+                                    compactHierarchy.ClearAllStatusFlags(brushIndexOrder.compactNodeID);
+                                }
+                            }
+                            #endregion
+
+                            if (treeUpdate.updateCount == 0 &&
+                                treeUpdate.brushCount != 0)
+                                continue;
+
+                            //
+                            // Call delegate to convert the generated meshes in whatever we need 
+                            //  For example, it could create/update Meshes/MeshRenderers/MeshFilters/Gameobjects etc.
+                            //  But it could eventually, optionally, output entities instead at some point
+                            //
+                            #region Finish Mesh Updates
+                            if (finishMeshUpdates != null)
+                            {
+                                using (var profilerSample = new ProfilerSample("CSG_FinishMeshUpdates"))
+                                {
+                                    meshUpdated = true;
+                                    var usedMeshCount = finishMeshUpdates(treeUpdate.tree, ref treeUpdate.Temporaries.vertexBufferContents,
+                                                                          treeUpdate.Temporaries.meshDataArray,
+                                                                          treeUpdate.Temporaries.colliderMeshUpdates,
+                                                                          treeUpdate.Temporaries.debugHelperMeshes,
+                                                                          treeUpdate.Temporaries.renderMeshes,
+                                                                          dependencies);
+                                }
+                            }
+                            #endregion
+                        }
+                        finally
+                        {
+                            #region Ensure meshes are cleaned up
+                            // Whatever happens, error or not, our jobs need to be completed at this point
+                            dependencies.Complete(); 
+
+                            // Whatever happens, make sure our meshDataArray is disposed
+                            if (treeUpdate.updateCount > 0 && !meshUpdated)
+                                treeUpdate.Temporaries.meshDataArray.Dispose();
+                            #endregion
+                        }
+                    }
+                }
+                finally
+                {
+                    #region Free temporaries
+                    // TODO: most of these disposes can be scheduled before we complete and write to the meshes, 
+                    // so that these disposes can happen at the same time as the mesh updates in finishMeshUpdates
+                    using (var profilerSample = new ProfilerSample("CSG_FreeTemporaries"))
+                    {
+                        for (int t = 0; t < treeUpdateLength; t++)
+                        {
+                            ref var treeUpdate = ref s_TreeUpdates[t];
+                            treeUpdate.FreeTemporaries(ref finalJobHandle);
+                        }
+                        GeneratorJobPoolManager.Clear();
+                    }
+                    #endregion
+                }
+                return finalJobHandle;
+            }
 
             #region MeshQueryComparer - Sort mesh mesh queries to help ensure consistency
             struct MeshQueryComparer : System.Collections.Generic.IComparer<MeshQuery>
@@ -462,18 +472,14 @@ namespace Chisel.Core
 
             public void Initialize()
             {
+                // Reset everything
+                JobHandles = default;
+                Temporaries = default;
+
                 var chiselLookupValues = ChiselTreeLookup.Value[this.tree];
                 ref var compactHierarchy = ref CompactHierarchyManager.GetHierarchy(this.treeCompactNodeID);
 
-                // Make sure that if we, somehow, run this while parts of the previous update is still running, we wait for the previous run to complete
-
-                // TODO: STORE THIS ON THE TREE!!! THIS WILL BE FORGOTTEN
-                this.lastJobHandle.Complete();
-                this.lastJobHandle = default;
-
                 const Allocator allocator = Allocator.Persistent;
-
-                Profiler.BeginSample("CSG_Allocations");
 
                 Temporaries.parameterCounts                = new NativeArray<int>(chiselLookupValues.parameters.Length, allocator);
                 Temporaries.transformTreeBrushIndicesList  = new NativeList<NodeOrderNodeID>(allocator);
@@ -493,8 +499,8 @@ namespace Chisel.Core
                 Temporaries.meshDataArray   = default;
                 Temporaries.meshDatas       = new NativeList<UnityEngine.Mesh.MeshData>(allocator);
 
-                //var triangleArraySize         = GeometryMath.GetTriangleArraySize(newBrushCount);
-                //var intersectionCount         = math.max(1, triangleArraySize);
+                //var triangleArraySize     = GeometryMath.GetTriangleArraySize(newBrushCount);
+                //var intersectionCount     = math.max(1, triangleArraySize);
                 Temporaries.brushesThatNeedIndirectUpdateHashMap = new NativeHashSet<IndexOrder>(brushCount, allocator);
                 Temporaries.brushesThatNeedIndirectUpdate   = new NativeList<IndexOrder>(brushCount, allocator);
 
@@ -545,7 +551,6 @@ namespace Chisel.Core
                 for (int l = 0; l < SurfaceLayers.ParameterCount; l++)
                     parameterPtr[l].Clear();
 
-
                 #region MeshQueries
                 // TODO: have more control over the queries
                 Temporaries.meshQueries         = MeshQuery.DefaultQueries.ToNativeArray(allocator);
@@ -595,26 +600,16 @@ namespace Chisel.Core
                 Temporaries.brushRenderBufferDisposeList       = new NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>(chiselLookupValues.brushRenderBufferCache.Length, allocator);
 
                 #endregion
-                
-                Profiler.EndSample();
             }
 
-            public void RunMeshInitJobs(ref CompactHierarchy compactHierarchy, JobHandle dependsOn)
+            public void RunMeshInitJobs(JobHandle dependsOn)
             {
-                // TODO: Remove the need for this Complete
-                dependsOn.Complete(); // <-- Initialize has code that depends on the current state of the tree
-
-                // Reset everything
-                JobHandles = default;
-                Temporaries = default;
-                Initialize();
-
+                ref var compactHierarchy = ref CompactHierarchyManager.GetHierarchy(treeCompactNodeID);
                 var chiselLookupValues = ChiselTreeLookup.Value[this.tree];
                 ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobCache;
                 {
                     #region Build Lookup Tables
-                    Profiler.BeginSample("Job_BuildLookupTables");
-                    try
+                    using (var profilerSample = new ProfilerSample("Job_BuildLookupTablesJob"))
                     {
                         const bool runInParallel = runInParallelDefault;
                         var buildLookupTablesJob = new BuildLookupTablesJob
@@ -638,12 +633,10 @@ namespace Chisel.Core
                                 ref JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle,
                                 ref JobHandles.allTreeBrushIndexOrdersJobHandle));
                     }
-                    finally { Profiler.EndSample(); }
                     #endregion
 
                     #region CacheRemapping
-                    Profiler.BeginSample("Job_CacheRemapping");
-                    try
+                    using (var profilerSample = new ProfilerSample("Job_CacheRemappingJob"))
                     {
                         const bool runInParallel = false;// runInParallelDefault;
                         // TODO: update "previous siblings" when something with an intersection operation has been modified
@@ -693,12 +686,10 @@ namespace Chisel.Core
                                 ref JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle,
                                 ref JobHandles.needRemappingRefJobHandle));
                     }
-                    finally { Profiler.EndSample(); }
                     #endregion
-                    
+
                     #region Update BrushID Values
-                    Profiler.BeginSample("Job_UpdateBrushIDValues");
-                    try
+                    using (var profilerSample = new ProfilerSample("Job_UpdateBrushIDValuesJob"))
                     {
                         const bool runInParallel = runInParallelDefault;
                         var updateBrushIDValuesJob = new UpdateBrushIDValuesJob
@@ -716,12 +707,10 @@ namespace Chisel.Core
                             new WriteJobHandles(
                                 ref JobHandles.brushIDValuesJobHandle));
                     }
-                    finally { Profiler.EndSample(); }
                     #endregion
 
                     #region Find Modified Brushes
-                    Profiler.BeginSample("Job_FindModifiedBrushes");
-                    try
+                    using (var profilerSample = new ProfilerSample("Job_FindModifiedBrushesJob"))
                     {
                         const bool runInParallel = runInParallelDefault;
                         var findModifiedBrushesJob = new FindModifiedBrushesJob
@@ -750,12 +739,10 @@ namespace Chisel.Core
                                 ref JobHandles.transformTreeBrushIndicesListJobHandle,
                                 ref JobHandles.brushBoundsUpdateListJobHandle));
                     }
-                    finally { Profiler.EndSample(); }
                     #endregion
 
                     #region Invalidate Brushes
-                    Profiler.BeginSample("Job_InvalidateBrushes");
-                    try
+                    using (var profilerSample = new ProfilerSample("Job_InvalidateBrushesJob"))
                     {
                         const bool runInParallel = runInParallelDefault;
                         var invalidateBrushesJob = new InvalidateBrushesJob
@@ -786,12 +773,10 @@ namespace Chisel.Core
                                 ref JobHandles.brushesTouchedByBrushCacheJobHandle, // Why?
                                 ref JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle));
                     }
-                    finally { Profiler.EndSample(); }
                     #endregion
 
                     #region Update BrushMesh IDs
-                    Profiler.BeginSample("Job_UpdateBrushMeshIDs");
-                    try
+                    using (var profilerSample = new ProfilerSample("Job_UpdateBrushMeshIDsJob"))
                     {
                         const bool runInParallel = runInParallelDefault;
                         var updateBrushMeshIDsJob = new UpdateBrushMeshIDsJob
@@ -822,1219 +807,1134 @@ namespace Chisel.Core
                                 ref JobHandles.parameterCountsJobHandle,
                                 ref JobHandles.allBrushMeshIDsJobHandle));
                     }
-                    finally { Profiler.EndSample(); }
                     #endregion
                 }
             }
-                
-            public void RunMeshUpdateJobs(ref CompactHierarchy compactHierarchy)
+
+            public void RunMeshUpdateJobs()
             {
-                var chiselLookupValues = ChiselTreeLookup.Value[this.tree];
-                ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobCache;
-
-                #region Perform CSG
-
-                #region Prepare
-                     
-                #region Build Transformations
-                Profiler.BeginSample("Job_UpdateTransformations");
                 try
                 {
-                    const bool runInParallel = runInParallelDefault;
-                    var updateTransformationsJob = new UpdateTransformationsJob
+                    if (updateCount <= 0)
+                        return;
+
+                    ref var compactHierarchy = ref CompactHierarchyManager.GetHierarchy(treeCompactNodeID);
+                    var chiselLookupValues = ChiselTreeLookup.Value[this.tree];
+                    ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobCache;
+
+                    #region Perform CSG
+
+                    #region Prepare
+
+                    #region Update Transformations
+                    using (var profilerSample = new ProfilerSample("Job_UpdateTransformationsJob"))
                     {
-                        // Read
-                        transformTreeBrushIndicesList   = Temporaries.transformTreeBrushIndicesList.AsJobArray(runInParallel),
-                        //compactHierarchy              = compactHierarchy, //<-- cannot do ref or pointer here
-                                                                            //    so we set it below using InitializeHierarchy
-
-                        // Write
-                        transformationCache             = chiselLookupValues.transformationCache.AsJobArray(runInParallel)
-                    };
-                    updateTransformationsJob.InitializeHierarchy(ref compactHierarchy);
-                    updateTransformationsJob.Schedule(runInParallel, Temporaries.transformTreeBrushIndicesList, 8,
-                        new ReadJobHandles(
-                            JobHandles.transformTreeBrushIndicesListJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.transformationCacheJobHandle));
-                } 
-                finally { Profiler.EndSample(); }
-                #endregion
-
-                Profiler.BeginSample("Job_CompactTreeBuilder");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var buildCompactTreeJob = new BuildCompactTreeJob
-                    {
-                        // Read
-                        treeCompactNodeID   = this.treeCompactNodeID,
-                        brushes             = Temporaries.brushes.AsArray(),
-                        nodes               = Temporaries.nodes.AsArray(),
-                        //compactHierarchy  = compactHierarchy,  //<-- cannot do ref or pointer here, 
-                                                                 //    so we set it below using InitializeHierarchy
-
-                        // Write
-                        compactTreeRef      = Temporaries.compactTreeRef
-                    };
-                    buildCompactTreeJob.InitializeHierarchy(ref compactHierarchy);
-                    buildCompactTreeJob.Schedule(runInParallel,
-                        new ReadJobHandles(
-                            JobHandles.brushesJobHandle,
-                            JobHandles.nodesJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.compactTreeRefJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                // Create lookup table for all brushMeshBlobs, based on the node order in the tree
-                Profiler.BeginSample("Job_FillBrushMeshBlobLookup");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var fillBrushMeshBlobLookupJob = new FillBrushMeshBlobLookupJob
-                    {
-                        // Read
-                        brushMeshBlobs          = brushMeshBlobs,
-                        allTreeBrushIndexOrders = Temporaries.allTreeBrushIndexOrders.AsJobArray(runInParallel),
-                        allBrushMeshIDs         = Temporaries.allBrushMeshIDs,
-
-                        // Write
-                        brushMeshLookup         = Temporaries.brushMeshLookup,
-                        surfaceCountRef         = Temporaries.surfaceCountRef
-                    };
-                    fillBrushMeshBlobLookupJob.Schedule(runInParallel,
-                        new ReadJobHandles(
-                            JobHandles.brushMeshBlobsLookupJobHandle,
-                            JobHandles.allTreeBrushIndexOrdersJobHandle,
-                            JobHandles.allBrushMeshIDsJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.brushMeshLookupJobHandle,
-                            ref JobHandles.surfaceCountRefJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                // Invalidate outdated caches for all modified brushes
-                Profiler.BeginSample("Job_InvalidateBrushCache");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var invalidateBrushCacheJob = new InvalidateBrushCacheJob
-                    {
-                        // Read
-                        rebuildTreeBrushIndexOrders     = Temporaries.rebuildTreeBrushIndexOrders               .AsArray(),
-
-                        // Read/Write
-                        basePolygonCache                = chiselLookupValues.basePolygonCache,
-                        treeSpaceVerticesCache          = chiselLookupValues.treeSpaceVerticesCache,
-                        brushesTouchedByBrushCache      = chiselLookupValues.brushesTouchedByBrushCache,
-                        routingTableCache               = chiselLookupValues.routingTableCache,
-                        brushTreeSpacePlaneCache        = chiselLookupValues.brushTreeSpacePlaneCache,
-                        brushRenderBufferCache          = chiselLookupValues.brushRenderBufferCache,
-
-                        // Write
-                        basePolygonDisposeList              = Temporaries.basePolygonDisposeList            .AsParallelWriter(),
-                        treeSpaceVerticesDisposeList        = Temporaries.treeSpaceVerticesDisposeList      .AsParallelWriter(),
-                        brushesTouchedByBrushDisposeList    = Temporaries.brushesTouchedByBrushDisposeList  .AsParallelWriter(),
-                        routingTableDisposeList             = Temporaries.routingTableDisposeList           .AsParallelWriter(),
-                        brushTreeSpacePlaneDisposeList      = Temporaries.brushTreeSpacePlaneDisposeList    .AsParallelWriter(),
-                        brushRenderBufferDisposeList        = Temporaries.brushRenderBufferDisposeList      .AsParallelWriter()
-                    };
-                    invalidateBrushCacheJob.Schedule(runInParallel, Temporaries.rebuildTreeBrushIndexOrders, 16,
-                        new ReadJobHandles(
-                            JobHandles.rebuildTreeBrushIndexOrdersJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.basePolygonCacheJobHandle,
-                            ref JobHandles.treeSpaceVerticesCacheJobHandle,
-                            ref JobHandles.brushesTouchedByBrushCacheJobHandle,
-                            ref JobHandles.routingTableCacheJobHandle,
-                            ref JobHandles.brushTreeSpacePlaneCacheJobHandle,
-                            ref JobHandles.brushRenderBufferCacheJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                // Fix up brush order index in cache data (ordering of brushes may have changed)
-                Profiler.BeginSample("Job_FixupBrushCacheIndices");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var fixupBrushCacheIndicesJob   = new FixupBrushCacheIndicesJob
-                    {
-                        // Read
-                        allTreeBrushIndexOrders         = Temporaries.allTreeBrushIndexOrders           .AsArray(),
-                        nodeIDValueToNodeOrderArray     = Temporaries.nodeIDValueToNodeOrderArray       .AsArray(),
-                        nodeIDValueToNodeOrderOffsetRef = Temporaries.nodeIDValueToNodeOrderOffsetRef,
-
-                        // Read Write
-                        basePolygonCache                = chiselLookupValues.basePolygonCache           .AsJobArray(runInParallel),
-                        brushesTouchedByBrushCache      = chiselLookupValues.brushesTouchedByBrushCache .AsJobArray(runInParallel)
-                    };
-                    fixupBrushCacheIndicesJob.Schedule(runInParallel, Temporaries.allTreeBrushIndexOrders, 16,
-                        new ReadJobHandles(
-                            JobHandles.allTreeBrushIndexOrdersJobHandle,
-                            JobHandles.nodeIDValueToNodeOrderArrayJobHandle,
-                            JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.basePolygonCacheJobHandle,
-                            ref JobHandles.brushesTouchedByBrushCacheJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                // Create tree space vertices from local vertices + transformations & an AABB for each brush that has been modified
-                Profiler.BeginSample("Job_CreateTreeSpaceVerticesAndBounds");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    // TODO: should only do this once at creation time, part of brushMeshBlob? store with brush component itself
-                    var createTreeSpaceVerticesAndBoundsJob = new CreateTreeSpaceVerticesAndBoundsJob
-                    {
-                        // Read
-                        rebuildTreeBrushIndexOrders = Temporaries.rebuildTreeBrushIndexOrders   .AsArray(),
-                        transformationCache         = chiselLookupValues.transformationCache    .AsJobArray(runInParallel),
-                        brushMeshLookup             = Temporaries.brushMeshLookup,
-                        //ref hierarchyIDLookup     = ref CompactHierarchyManager.HierarchyIDLookup,    //<-- cannot do ref or pointer here
-                                                                                                        //    so we set it below using InitializeHierarchy
-
-                        // Read/Write
-                        hierarchyList               = CompactHierarchyManager.HierarchyList,
-                        
-                        // Write
-                        brushTreeSpaceBounds        = chiselLookupValues.brushTreeSpaceBoundCache   .AsJobArray(runInParallel),
-                        treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache     .AsJobArray(runInParallel),
-                    };
-                    createTreeSpaceVerticesAndBoundsJob.InitializeLookups();
-                    createTreeSpaceVerticesAndBoundsJob.Schedule(runInParallel, Temporaries.rebuildTreeBrushIndexOrders, 16,
-                        new ReadJobHandles(
-                            JobHandles.rebuildTreeBrushIndexOrdersJobHandle,
-                            JobHandles.transformationCacheJobHandle,
-                            JobHandles.brushMeshBlobsLookupJobHandle,
-                            JobHandles.hierarchyIDJobHandle,
-                            JobHandles.brushMeshLookupJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.brushTreeSpaceBoundCacheJobHandle,
-                            ref JobHandles.treeSpaceVerticesCacheJobHandle,
-                            ref JobHandles.hierarchyListJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                // Find all pairs of brushes that intersect, for those brushes that have been modified
-                Profiler.BeginSample("Job_FindAllBrushIntersectionPairs");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    // TODO: only change when brush or any touching brush has been added/removed or changes operation/order
-                    // TODO: optimize, use hashed grid
-                    var findAllBrushIntersectionPairsJob = new FindAllBrushIntersectionPairsJob
-                    {
-                        // Read
-                        allTreeBrushIndexOrders     = Temporaries.allTreeBrushIndexOrders           .AsArray(),
-                        transformationCache         = chiselLookupValues.transformationCache        .AsJobArray(runInParallel),
-                        brushMeshLookup             = Temporaries.brushMeshLookup,
-                        brushTreeSpaceBounds        = chiselLookupValues.brushTreeSpaceBoundCache   .AsJobArray(runInParallel),
-                        rebuildTreeBrushIndexOrders = Temporaries.rebuildTreeBrushIndexOrders       .AsArray(),
-                            
-                        // Read / Write
-                        brushBrushIntersections     = Temporaries.brushBrushIntersections,
-                            
-                        // Write
-                        brushesThatNeedIndirectUpdateHashMap = Temporaries.brushesThatNeedIndirectUpdateHashMap.AsParallelWriter()
-                    };
-                    findAllBrushIntersectionPairsJob.Schedule(runInParallel, Temporaries.rebuildTreeBrushIndexOrders, 16,
-                        new ReadJobHandles(
-                            JobHandles.allTreeBrushIndexOrdersJobHandle,
-                            JobHandles.transformationCacheJobHandle,
-                            JobHandles.brushMeshLookupJobHandle,
-                            JobHandles.brushTreeSpaceBoundCacheJobHandle,
-                            JobHandles.rebuildTreeBrushIndexOrdersJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.brushBrushIntersectionsJobHandle,
-                            ref JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                // Find all brushes that touch the brushes that have been modified
-                Profiler.BeginSample("Job_FindUniqueIndirectBrushIntersections");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    // TODO: optimize, use hashed grid
-                    var findUniqueIndirectBrushIntersectionsJob = new FindUniqueIndirectBrushIntersectionsJob
-                    {
-                        // Read
-                        brushesThatNeedIndirectUpdateHashMap     = Temporaries.brushesThatNeedIndirectUpdateHashMap,
-                        
-                        // Write
-                        brushesThatNeedIndirectUpdate            = Temporaries.brushesThatNeedIndirectUpdate
-                    };
-                    findUniqueIndirectBrushIntersectionsJob.Schedule(runInParallel, 
-                        new ReadJobHandles(
-                            JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.brushesThatNeedIndirectUpdateJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                // Invalidate the cache for the brushes that have been indirectly modified (touch a brush that has changed)
-                Profiler.BeginSample("Job_InvalidateBrushCache_Indirect");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var invalidateIndirectBrushCacheJob = new InvalidateIndirectBrushCacheJob
-                    {
-                        // Read
-                        brushesThatNeedIndirectUpdate   = Temporaries.brushesThatNeedIndirectUpdate     .AsJobArray(runInParallel),
-
-                        // Read/Write
-                        basePolygonCache                = chiselLookupValues.basePolygonCache           .AsJobArray(runInParallel),
-                        treeSpaceVerticesCache          = chiselLookupValues.treeSpaceVerticesCache     .AsJobArray(runInParallel),
-                        brushesTouchedByBrushCache      = chiselLookupValues.brushesTouchedByBrushCache .AsJobArray(runInParallel),
-                        routingTableCache               = chiselLookupValues.routingTableCache          .AsJobArray(runInParallel),
-                        brushTreeSpacePlaneCache        = chiselLookupValues.brushTreeSpacePlaneCache   .AsJobArray(runInParallel),
-                        brushRenderBufferCache          = chiselLookupValues.brushRenderBufferCache     .AsJobArray(runInParallel)
-                    };
-                    invalidateIndirectBrushCacheJob.Schedule(runInParallel, Temporaries.brushesThatNeedIndirectUpdate, 16,
-                        new ReadJobHandles(
-                            JobHandles.brushesThatNeedIndirectUpdateJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.basePolygonCacheJobHandle,
-                            ref JobHandles.treeSpaceVerticesCacheJobHandle,
-                            ref JobHandles.brushesTouchedByBrushCacheJobHandle,
-                            ref JobHandles.routingTableCacheJobHandle,
-                            ref JobHandles.brushTreeSpacePlaneCacheJobHandle,
-                            ref JobHandles.brushRenderBufferCacheJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                // Create tree space vertices from local vertices + transformations & an AABB for each brush that has been indirectly modified
-                Profiler.BeginSample("Job_CreateTreeSpaceVerticesAndBounds_Indirect");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var createTreeSpaceVerticesAndBoundsJob = new CreateTreeSpaceVerticesAndBoundsJob
-                    {
-                        // Read
-                        rebuildTreeBrushIndexOrders = Temporaries.brushesThatNeedIndirectUpdate     .AsJobArray(runInParallel),
-                        transformationCache         = chiselLookupValues.transformationCache        .AsJobArray(runInParallel),
-                        brushMeshLookup             = Temporaries.brushMeshLookup,
-                        //ref hierarchyIDLookup     = ref CompactHierarchyManager.HierarchyIDLookup,    //<-- cannot do ref or pointer here
-                                                                                                        //    so we set it below using InitializeHierarchy
-
-                        // Read/Write
-                        hierarchyList               = CompactHierarchyManager.HierarchyList,
-                        
-                        
-                        // Write
-                        brushTreeSpaceBounds        = chiselLookupValues.brushTreeSpaceBoundCache   .AsJobArray(runInParallel),
-                        treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache     .AsJobArray(runInParallel),
-                    };
-                    createTreeSpaceVerticesAndBoundsJob.InitializeLookups();
-                    createTreeSpaceVerticesAndBoundsJob.Schedule(runInParallel, Temporaries.brushesThatNeedIndirectUpdate, 16,
-                        new ReadJobHandles(
-                            JobHandles.brushesThatNeedIndirectUpdateJobHandle,
-                            JobHandles.transformationCacheJobHandle,
-                            JobHandles.brushMeshLookupJobHandle,
-                            //JobHandles.brushMeshBlobsLookupJobHandle,
-                            JobHandles.hierarchyIDJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.brushTreeSpaceBoundCacheJobHandle,
-                            ref JobHandles.treeSpaceVerticesCacheJobHandle,
-                            ref JobHandles.hierarchyListJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                // Find all pairs of brushes that intersect, for those brushes that have been indirectly modified
-                Profiler.BeginSample("Job_FindAllBrushIntersectionPairs_Indirect");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    // TODO: optimize, use hashed grid
-                    var findAllIndirectBrushIntersectionPairsJob = new FindAllIndirectBrushIntersectionPairsJob
-                    {
-                        // Read
-                        allTreeBrushIndexOrders         = Temporaries.allTreeBrushIndexOrders           .AsArray(),
-                        transformationCache             = chiselLookupValues.transformationCache        .AsJobArray(runInParallel),
-                        brushMeshLookup                 = Temporaries.brushMeshLookup,
-                        brushTreeSpaceBounds            = chiselLookupValues.brushTreeSpaceBoundCache   .AsJobArray(runInParallel),
-                        brushesThatNeedIndirectUpdate   = Temporaries.brushesThatNeedIndirectUpdate     .AsJobArray(runInParallel),
-
-                        // Read / Write
-                        brushBrushIntersections         = Temporaries.brushBrushIntersections
-                    };
-                    findAllIndirectBrushIntersectionPairsJob.Schedule(runInParallel, Temporaries.brushesThatNeedIndirectUpdate, 1,
-                        new ReadJobHandles(
-                            JobHandles.allTreeBrushIndexOrdersJobHandle,
-                            JobHandles.transformationCacheJobHandle,
-                            JobHandles.brushMeshLookupJobHandle,
-                            JobHandles.brushTreeSpaceBoundCacheJobHandle,
-                            JobHandles.brushesThatNeedIndirectUpdateJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.brushBrushIntersectionsJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                // Add brushes that need to be indirectly updated to our list of brushes that need updates
-                Profiler.BeginSample("Job_AddIndirectUpdatedBrushesToListAndSort");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var addIndirectUpdatedBrushesToListAndSortJob = new AddIndirectUpdatedBrushesToListAndSortJob
-                    {
-                        // Read
-                        allTreeBrushIndexOrders         = Temporaries.allTreeBrushIndexOrders        .AsArray(),
-                        brushesThatNeedIndirectUpdate   = Temporaries.brushesThatNeedIndirectUpdate  .AsJobArray(runInParallel),
-                        rebuildTreeBrushIndexOrders     = Temporaries.rebuildTreeBrushIndexOrders    .AsArray(),
-
-                        // Write
-                        allUpdateBrushIndexOrders       = Temporaries.allUpdateBrushIndexOrders      .AsParallelWriter(),
-                    };
-                    addIndirectUpdatedBrushesToListAndSortJob.Schedule(runInParallel, 
-                        new ReadJobHandles(
-                            JobHandles.allTreeBrushIndexOrdersJobHandle,
-                            JobHandles.brushesThatNeedIndirectUpdateJobHandle,
-                            JobHandles.rebuildTreeBrushIndexOrdersJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.allUpdateBrushIndexOrdersJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                // Gather all found pairs of brushes that intersect with each other and cache them
-                Profiler.BeginSample("Job_GatherAndStoreBrushIntersections");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var gatherBrushIntersectionsJob = new GatherBrushIntersectionPairsJob
-                    {
-                        // Read
-                        brushBrushIntersections         = Temporaries.brushBrushIntersections,
-
-                        // Write
-                        brushIntersectionsWith          = Temporaries.brushIntersectionsWith.GetUnsafeList(),
-                        brushIntersectionsWithRange     = Temporaries.brushIntersectionsWithRange
-                    };
-                    gatherBrushIntersectionsJob.Schedule(runInParallel,
-                        new ReadJobHandles(
-                            JobHandles.brushBrushIntersectionsJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.brushIntersectionsWithJobHandle,
-                            ref JobHandles.brushIntersectionsWithRangeJobHandle));
-
-                    var storeBrushIntersectionsJob = new StoreBrushIntersectionsJob
-                    {
-                        // Read
-                        treeCompactNodeID           = treeCompactNodeID,
-                        compactTreeRef              = Temporaries.compactTreeRef,
-                        allTreeBrushIndexOrders     = Temporaries.allTreeBrushIndexOrders            .AsJobArray(runInParallel),
-                        allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders          .AsJobArray(runInParallel),
-
-                        brushIntersectionsWith      = Temporaries.brushIntersectionsWith             .AsJobArray(runInParallel),
-                        brushIntersectionsWithRange = Temporaries.brushIntersectionsWithRange,
-
-                        // Write
-                        brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache .AsJobArray(runInParallel)
-                    };
-                    storeBrushIntersectionsJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 16,
-                        new ReadJobHandles(
-                            JobHandles.compactTreeRefJobHandle,
-                            JobHandles.allTreeBrushIndexOrdersJobHandle,
-                            JobHandles.allUpdateBrushIndexOrdersJobHandle,
-                            JobHandles.brushIntersectionsWithJobHandle,
-                            JobHandles.brushIntersectionsWithRangeJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.brushesTouchedByBrushCacheJobHandle));
-                } finally { Profiler.EndSample(); }
-                #endregion
-                /*
-                #region Find Modified Brushes
-                Profiler.BeginSample("Job_UpdateBrushBounds");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var updateBrushBoundsJobJob = new UpdateBrushBoundsJob
-                    {
-                        // Read
-                        brushBoundsUpdateList   = Temporaries.brushBoundsUpdateList,
-                        brushMeshBlobCache      = brushMeshBlobs,
-                        transformationCache     = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
-                        //ref hierarchyIDLookup = ref CompactHierarchyManager.HierarchyIDLookup, //<-- cannot do ref or pointer here
-                                                                                                         //    so we set it below using InitializeHierarchy
-
-                        // Read/Write
-                        hierarchyList           = CompactHierarchyManager.HierarchyList,
-                    };
-                    updateBrushBoundsJobJob.InitializeLookups();
-                    updateBrushBoundsJobJob.Schedule(runInParallel,
-                        new ReadJobHandles(
-                            JobHandles.brushBoundsUpdateListJobHandle,
-                            JobHandles.transformationCacheJobHandle,
-                            JobHandles.brushMeshBlobsLookupJobHandle,
-                            JobHandles.hierarchyIDJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.hierarchyListJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-                #endregion
-                */
-                //
-                // Ensure vertices that should be identical on different brushes, ARE actually identical
-                //
-                /*
-                #region Merge vertices
-                Profiler.BeginSample("Job_MergeTouchingBrushVertices");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-
-                    // ************************
-                    // ************************
-                    // ************************
-                    //
-                    // * This job causes plane-vertex alignment problems when called because vertices are snapped to other vertices 
-                    //   and aren't on their planes anymore. 
-                    // * HOWEVER, this job will remove t-junctions so it is necessary
-                    // 
-                    // -> find a way to snap vertices further on
-                    // -> OR, do all plane distance checks beforehand, and use that information
-                    //
-                    // ************************
-                    // ************************
-                    // ************************
-
-                    // Merges original brush vertices together when they are close to avoid t-junctions
-                    var mergeTouchingBrushVerticesJob = new MergeTouchingBrushVerticesJob
-                    {
-                        // Read
-                        treeBrushIndexOrders        = Temporaries.allUpdateBrushIndexOrders.AsJobArray(sequential),
-                        brushesTouchedByBrushes     = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(sequential),
-
-                        // Read Write
-                        treeSpaceVerticesArray      = chiselLookupValues.treeSpaceVerticesCache.AsJobArray(sequential),
-                    };
-                    mergeTouchingBrushVerticesJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 16,
-                        new ReadJobHandles(
-                            JobHandles.allUpdateBrushIndexOrdersJobHandle,
-                            JobHandles.brushesTouchedByBrushCacheJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.treeSpaceVerticesCacheJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-                #endregion
-                */
-
-                //
-                // Determine all surfaces and intersections
-                //
-
-                #region Determine Intersection Surfaces
-                // Find all pairs of brush intersections for each brush
-                Profiler.BeginSample("Job_PrepareBrushPairIntersections");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var findBrushPairsJob = new FindBrushPairsJob
-                    {
-                        // Read
-                        maxOrder                    = brushCount,
-                        allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders         .AsJobArray(runInParallel),
-                        brushesTouchedByBrushes     = chiselLookupValues.brushesTouchedByBrushCache .AsJobArray(runInParallel),
-
-                        // Read (Re-allocate) / Write
-                        uniqueBrushPairs            = Temporaries.uniqueBrushPairs.GetUnsafeList()
-                    };
-                    findBrushPairsJob.Schedule(runInParallel, 
-                        new ReadJobHandles(
-                            JobHandles.allUpdateBrushIndexOrdersJobHandle,
-                            JobHandles.brushesTouchedByBrushCacheJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.uniqueBrushPairsJobHandle));
-
-                    NativeCollection.ScheduleConstruct(runInParallel, out Temporaries.intersectingBrushesStream, Temporaries.uniqueBrushPairs,
-                                                        new ReadJobHandles(
-                                                            JobHandles.uniqueBrushPairsJobHandle
-                                                            ),
-                                                        new WriteJobHandles(
-                                                            ref JobHandles.intersectingBrushesStreamJobHandle
-                                                            ),
-                                                        Allocator.TempJob);
-
-                    var prepareBrushPairIntersectionsJob = new PrepareBrushPairIntersectionsJob
-                    {
-                        // Read
-                        uniqueBrushPairs            = Temporaries.uniqueBrushPairs          .AsJobArray(runInParallel),
-                        transformationCache         = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
-                        brushMeshLookup             = Temporaries.brushMeshLookup,
-
-                        // Write
-                        intersectingBrushesStream   = Temporaries.intersectingBrushesStream .AsWriter()
-                    };
-                    prepareBrushPairIntersectionsJob.Schedule(runInParallel, Temporaries.uniqueBrushPairs, 1,
-                        new ReadJobHandles(
-                            JobHandles.uniqueBrushPairsJobHandle,
-                            JobHandles.transformationCacheJobHandle,
-                            JobHandles.brushMeshLookupJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.intersectingBrushesStreamJobHandle));
-                } finally { Profiler.EndSample(); }
-
-                Profiler.BeginSample("Job_GenerateBasePolygonLoops");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    // TODO: should only do this once at creation time, part of brushMeshBlob? store with brush component itself
-                    var createBlobPolygonsBlobs = new CreateBlobPolygonsBlobsJob
-                    {
-                        // Read
-                        allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders         .AsJobArray(runInParallel),
-                        brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache .AsJobArray(runInParallel),
-                        brushMeshLookup             = Temporaries.brushMeshLookup,
-                        treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache     .AsJobArray(runInParallel),
-
-                        // Write
-                        basePolygonCache            = chiselLookupValues.basePolygonCache           .AsJobArray(runInParallel)
-                    };
-                    createBlobPolygonsBlobs.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 16,
-                        new ReadJobHandles(
-                            JobHandles.allUpdateBrushIndexOrdersJobHandle,
-                            JobHandles.brushesTouchedByBrushCacheJobHandle,
-                            JobHandles.brushMeshLookupJobHandle,
-                            JobHandles.treeSpaceVerticesCacheJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.basePolygonCacheJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                Profiler.BeginSample("Job_UpdateBrushTreeSpacePlanes");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    // TODO: should only do this at creation time + when moved / store with brush component itself
-                    var createBrushTreeSpacePlanesJob = new CreateBrushTreeSpacePlanesJob
-                    {
-                        // Read
-                        allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders .AsJobArray(runInParallel),
-                        brushMeshLookup             = Temporaries.brushMeshLookup,
-                        transformationCache         = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
-
-                        // Write
-                        brushTreeSpacePlanes        = chiselLookupValues.brushTreeSpacePlaneCache.AsJobArray(runInParallel)
-                    };
-                    createBrushTreeSpacePlanesJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 16,
-                        new ReadJobHandles(
-                            JobHandles.allUpdateBrushIndexOrdersJobHandle,
-                            JobHandles.brushMeshLookupJobHandle,
-                            JobHandles.transformationCacheJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.brushTreeSpacePlaneCacheJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                Profiler.BeginSample("Job_CreateIntersectionLoops");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    NativeCollection.ScheduleEnsureCapacity(runInParallel, ref Temporaries.outputSurfaces, Temporaries.surfaceCountRef,
-                                                        new ReadJobHandles(
-                                                            JobHandles.surfaceCountRefJobHandle),
-                                                        new WriteJobHandles(
-                                                            ref JobHandles.outputSurfacesJobHandle),
-                                                        Allocator.TempJob);
-
-                    var createIntersectionLoopsJob = new CreateIntersectionLoopsJob
-                    {
-                        // Needed for count (forced & unused)
-                        uniqueBrushPairs            = Temporaries.uniqueBrushPairs,
-
-                        // Read
-                        brushTreeSpacePlaneCache    = chiselLookupValues.brushTreeSpacePlaneCache   .AsJobArray(runInParallel),
-                        treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache     .AsJobArray(runInParallel),
-                        intersectingBrushesStream   = Temporaries.intersectingBrushesStream         .AsReader(),
-
-                        // Write
-                        outputSurfaceVertices       = Temporaries.outputSurfaceVertices     .AsParallelWriterExt(),
-                        outputSurfaces              = Temporaries.outputSurfaces            .AsParallelWriter()
-                    };
-                    var currentJobHandle = createIntersectionLoopsJob.Schedule(runInParallel, Temporaries.uniqueBrushPairs, 8,
-                        new ReadJobHandles(
-                            JobHandles.uniqueBrushPairsJobHandle,
-                            JobHandles.brushTreeSpacePlaneCacheJobHandle,
-                            JobHandles.treeSpaceVerticesCacheJobHandle,
-                            JobHandles.intersectingBrushesStreamJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.outputSurfaceVerticesJobHandle,
-                            ref JobHandles.outputSurfacesJobHandle));
-
-                    NativeCollection.ScheduleDispose(runInParallel, ref Temporaries.intersectingBrushesStream, currentJobHandle);
-                } finally { Profiler.EndSample(); }
-            
-                Profiler.BeginSample("Job_GatherOutputSurfaces");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var gatherOutputSurfacesJob = new GatherOutputSurfacesJob
-                    {
-                        // Read / Write (Sort)
-                        outputSurfaces          = Temporaries.outputSurfaces.AsJobArray(runInParallel),
-
-                        // Write
-                        outputSurfacesRange     = Temporaries.outputSurfacesRange
-                    };
-                    gatherOutputSurfacesJob.Schedule(runInParallel, 
-                        new ReadJobHandles(
-                            JobHandles.outputSurfacesJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.outputSurfacesRangeJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                Profiler.BeginSample("Job_FindLoopOverlapIntersections");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    NativeCollection.ScheduleConstruct(runInParallel, out Temporaries.dataStream1, Temporaries.allUpdateBrushIndexOrders,
-                                                        new ReadJobHandles(
-                                                            JobHandles.allUpdateBrushIndexOrdersJobHandle
-                                                            ),
-                                                        new WriteJobHandles(
-                                                            ref JobHandles.dataStream1JobHandle
-                                                            ),
-                                                        Allocator.TempJob);
-
-                    var findLoopOverlapIntersectionsJob = new FindLoopOverlapIntersectionsJob
-                    {
-                        // Read
-                        allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders          .AsJobArray(runInParallel),
-                        outputSurfaceVertices       = Temporaries.outputSurfaceVertices              .AsJobArray(runInParallel),
-                        outputSurfaces              = Temporaries.outputSurfaces                     .AsJobArray(runInParallel),
-                        outputSurfacesRange         = Temporaries.outputSurfacesRange,
-                        maxNodeOrder                = maxNodeOrder,
-                        brushTreeSpacePlaneCache    = chiselLookupValues.brushTreeSpacePlaneCache   .AsJobArray(runInParallel),
-                        basePolygonCache            = chiselLookupValues.basePolygonCache           .AsJobArray(runInParallel),
-
-                        // Read Write
-                        loopVerticesLookup          = Temporaries.loopVerticesLookup,
-                            
-                        // Write
-                        output                      = Temporaries.dataStream1                        .AsWriter()
-                    };
-                    findLoopOverlapIntersectionsJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 1,
-                        new ReadJobHandles(
-                            JobHandles.allUpdateBrushIndexOrdersJobHandle,
-                            JobHandles.outputSurfaceVerticesJobHandle,
-                            JobHandles.outputSurfacesJobHandle,
-                            JobHandles.outputSurfacesRangeJobHandle,
-                            JobHandles.brushTreeSpacePlaneCacheJobHandle,
-                            JobHandles.basePolygonCacheJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.loopVerticesLookupJobHandle,
-                            ref JobHandles.dataStream1JobHandle));
-                } finally { Profiler.EndSample(); }
-                #endregion
-
-                //
-                // Ensure vertices that should be identical on different brushes, ARE actually identical
-                //
-
-                #region Merge vertices
-                Profiler.BeginSample("Job_MergeTouchingBrushVerticesIndirect");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    // TODO: should only try to merge the vertices beyond the original mesh vertices (the intersection vertices)
-                    //       should also try to limit vertices to those that are on the same surfaces (somehow)
-                    var mergeTouchingBrushVerticesIndirectJob = new MergeTouchingBrushVerticesIndirectJob
-                    {
-                        // Read
-                        allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders         .AsJobArray(runInParallel),
-                        brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache .AsJobArray(runInParallel),
-                        treeSpaceVerticesArray      = chiselLookupValues.treeSpaceVerticesCache     .AsJobArray(runInParallel),
-
-                        // Read Write
-                        loopVerticesLookup          = Temporaries.loopVerticesLookup,
-                    };
-                    mergeTouchingBrushVerticesIndirectJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 1,
-                        new ReadJobHandles(
-                            JobHandles.allUpdateBrushIndexOrdersJobHandle,
-                            JobHandles.treeSpaceVerticesCacheJobHandle,
-                            JobHandles.brushesTouchedByBrushCacheJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.loopVerticesLookupJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-                #endregion
-
-                //
-                // Perform CSG on prepared surfaces, giving each surface a categorization
-                //
-
-                #region Perform CSG     
-                Profiler.BeginSample("Job_UpdateBrushCategorizationTables");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    // TODO: only update when brush or any touching brush has been added/removed or changes operation/order                    
-                    // TODO: determine when a brush is completely inside another brush (might not have *any* intersection loops)
-                    var createRoutingTableJob = new CreateRoutingTableJob // Build categorization trees for brushes
-                    {
-                        // Read
-                        allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders         .AsJobArray(runInParallel),
-                        brushesTouchedByBrushes     = chiselLookupValues.brushesTouchedByBrushCache .AsJobArray(runInParallel),
-                        compactTreeRef              = Temporaries.compactTreeRef,
-
-                        // Write
-                        routingTableLookup          = chiselLookupValues.routingTableCache          .AsJobArray(runInParallel)
-                    };
-                    createRoutingTableJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 1,
-                        new ReadJobHandles(
-                            JobHandles.allUpdateBrushIndexOrdersJobHandle,
-                            JobHandles.brushesTouchedByBrushCacheJobHandle,
-                            JobHandles.compactTreeRefJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.routingTableCacheJobHandle));
-                } finally { Profiler.EndSample(); }
-
-                Profiler.BeginSample("Job_PerformCSG");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    NativeCollection.ScheduleConstruct(runInParallel, out Temporaries.dataStream2, Temporaries.allUpdateBrushIndexOrders,
-                                                        new ReadJobHandles(
-                                                            JobHandles.allUpdateBrushIndexOrdersJobHandle
-                                                            ),
-                                                        new WriteJobHandles(
-                                                            ref JobHandles.dataStream2JobHandle
-                                                            ),
-                                                        Allocator.TempJob);
-
-                    // Perform CSG
-                    var performCSGJob = new PerformCSGJob
-                    {
-                        // Read
-                        allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders         .AsJobArray(runInParallel),
-                        routingTableCache           = chiselLookupValues.routingTableCache          .AsJobArray(runInParallel),
-                        brushTreeSpacePlaneCache    = chiselLookupValues.brushTreeSpacePlaneCache   .AsJobArray(runInParallel),
-                        brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache .AsJobArray(runInParallel),
-                        input                       = Temporaries.dataStream1                       .AsReader(),
-                        loopVerticesLookup          = Temporaries.loopVerticesLookup,
-
-                        // Write
-                        output                      = Temporaries.dataStream2                       .AsWriter(),
-                    };
-                    var currentJobHandle = performCSGJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 1,
-                        new ReadJobHandles(
-                            JobHandles.allUpdateBrushIndexOrdersJobHandle,
-                            JobHandles.routingTableCacheJobHandle,
-                            JobHandles.brushTreeSpacePlaneCacheJobHandle,
-                            JobHandles.brushesTouchedByBrushCacheJobHandle,
-                            JobHandles.dataStream1JobHandle,
-                            JobHandles.loopVerticesLookupJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.dataStream2JobHandle));
-
-                    NativeCollection.ScheduleDispose(runInParallel, ref Temporaries.dataStream1, currentJobHandle);
-                } finally { Profiler.EndSample(); }
-                #endregion
-
-                //
-                // Triangulate the surfaces
-                //
-
-                #region Triangulate Surfaces
-                Profiler.BeginSample("Job_GenerateSurfaceTriangles");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var generateSurfaceTrianglesJob = new GenerateSurfaceTrianglesJob
-                    {
-                        // Read
-                        allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders .AsJobArray(runInParallel),
-                        basePolygonCache            = chiselLookupValues.basePolygonCache   .AsJobArray(runInParallel),
-                        transformationCache         = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
-                        input                       = Temporaries.dataStream2               .AsReader(),
-                        meshQueries                 = Temporaries.meshQueries,
-
-                        // Write
-                        brushRenderBufferCache      = chiselLookupValues.brushRenderBufferCache .AsJobArray(runInParallel)
-                    };
-                    var currentJobHandle = generateSurfaceTrianglesJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 1,
-                        new ReadJobHandles(
-                            JobHandles.allUpdateBrushIndexOrdersJobHandle,
-                            JobHandles.meshQueriesJobHandle,
-                            JobHandles.basePolygonCacheJobHandle,
-                            JobHandles.transformationCacheJobHandle,
-                            JobHandles.dataStream2JobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.brushRenderBufferCacheJobHandle));
-
-                    NativeCollection.ScheduleDispose(runInParallel, ref Temporaries.dataStream2, currentJobHandle);
-                }
-                finally { Profiler.EndSample(); }
-                #endregion
-
-
-                //
-                // Create meshes out of ALL the generated and cached surfaces
-                //
-                
-                Profiler.BeginSample("Job_FindBrushRenderBuffers");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    NativeCollection.ScheduleEnsureCapacity(runInParallel, ref Temporaries.brushRenderData, Temporaries.allTreeBrushIndexOrders,
-                                                        new ReadJobHandles(
-                                                            JobHandles.allTreeBrushIndexOrdersJobHandle),
-                                                        new WriteJobHandles(
-                                                            ref JobHandles.brushRenderDataJobHandle),
-                                                        Allocator.TempJob);
-
-                    var findBrushRenderBuffersJob = new FindBrushRenderBuffersJob
-                    {
-                        // Read
-                        meshQueryLength         = Temporaries.meshQueriesLength,
-                        allTreeBrushIndexOrders = Temporaries.allTreeBrushIndexOrders       .AsArray(),
-                        brushRenderBufferCache  = chiselLookupValues.brushRenderBufferCache .AsJobArray(runInParallel),
-
-                        // Write
-                        brushRenderData         = Temporaries.brushRenderData.AsParallelWriter()
-                    };
-                    findBrushRenderBuffersJob.Schedule(runInParallel, 
-                        new ReadJobHandles(
-                            JobHandles.meshQueriesJobHandle,
-                            JobHandles.allTreeBrushIndexOrdersJobHandle,
-                            JobHandles.brushRenderBufferCacheJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.brushRenderDataJobHandle
-                            ));
-                }
-                finally { Profiler.EndSample(); }
-                
-                Profiler.BeginSample("Job_AllocateSubMeshes");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var allocateSubMeshesJob = new AllocateSubMeshesJob
-                    {
-                        // Read
-                        meshQueryLength         = Temporaries.meshQueriesLength,
-                        surfaceCountRef         = Temporaries.surfaceCountRef,
-                        
-                        // Write
-                        subMeshCounts           = Temporaries.subMeshCounts,
-                        subMeshSections         = Temporaries.vertexBufferContents.subMeshSections,
-                    };
-                    allocateSubMeshesJob.Schedule(runInParallel, 
-                        new ReadJobHandles(
-                            JobHandles.meshQueriesJobHandle,
-                            JobHandles.surfaceCountRefJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.subMeshCountsJobHandle,
-                            ref JobHandles.vertexBufferContents_subMeshSectionsJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-
-                Profiler.BeginSample("Job_PrepareSubSections");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var prepareSubSectionsJob = new PrepareSubSectionsJob
-                    {
-                        // Read
-                        meshQueries         = Temporaries.meshQueries,
-                        brushRenderData     = Temporaries.brushRenderData   .AsJobArray(runInParallel),
-
-                        // Write
-                        subMeshSurfaces     = Temporaries.subMeshSurfaces,
-                    };
-                    prepareSubSectionsJob.Schedule(runInParallel, Temporaries.meshQueriesLength, 1,
-                        new ReadJobHandles(
-                            JobHandles.meshQueriesJobHandle,
-                            JobHandles.brushRenderDataJobHandle,
-                            JobHandles.sectionsJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.subMeshSurfacesJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                Profiler.BeginSample("Job_SortSurfaces");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var sortSurfacesParallelJob = new SortSurfacesParallelJob
-                    {
-                        // Read
-                        meshQueries      = Temporaries.meshQueries,
-                        subMeshSurfaces  = Temporaries.subMeshSurfaces,
-
-                        // Write
-                        subMeshCounts    = Temporaries.subMeshCounts
-                    };
-                    sortSurfacesParallelJob.Schedule(runInParallel, 
-                        new ReadJobHandles(
-                            JobHandles.sectionsJobHandle,
-                            JobHandles.subMeshSurfacesJobHandle,
-                            JobHandles.vertexBufferContents_subMeshSectionsJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.subMeshCountsJobHandle));
-
-                    var gatherSurfacesJob = new GatherSurfacesJob
-                    {
-                        // Read / Write
-                        subMeshCounts       = Temporaries.subMeshCounts,
-
-                        // Write
-                        subMeshSections     = Temporaries.vertexBufferContents.subMeshSections,
-                    };
-                    gatherSurfacesJob.Schedule(runInParallel,
-                        new ReadJobHandles(
-                            JobHandles.sectionsJobHandle,
-                            JobHandles.subMeshCountsJobHandle,
-                            JobHandles.subMeshSurfacesJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.subMeshCountsJobHandle,
-                            ref JobHandles.vertexBufferContents_subMeshSectionsJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                Profiler.BeginSample("Job_AllocateVertexBuffers");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var allocateVertexBuffersJob = new AllocateVertexBuffersJob
-                    {
-                        // Read
-                        subMeshSections         = Temporaries.vertexBufferContents.subMeshSections.AsJobArray(runInParallel),
-
-                        // Read Write
-                        triangleBrushIndices    = Temporaries.vertexBufferContents.triangleBrushIndices
-                    };
-                    allocateVertexBuffersJob.Schedule(runInParallel,
-                        new ReadJobHandles(
-                            JobHandles.vertexBufferContents_subMeshSectionsJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-                Profiler.BeginSample("Job_GenerateMeshDescription");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var generateMeshDescriptionJob = new GenerateMeshDescriptionJob
-                    {
-                        // Read
-                        subMeshCounts       = Temporaries.subMeshCounts.AsJobArray(runInParallel),
-
-                        // Read Write
-                        meshDescriptions    = Temporaries.vertexBufferContents.meshDescriptions
-                    };
-                    generateMeshDescriptionJob.Schedule(runInParallel,
-                        new ReadJobHandles(
-                            JobHandles.subMeshCountsJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.vertexBufferContents_meshDescriptionsJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-
-
-                // TODO: store parameterCounts per brush (precalculated), manage these counts in the hierarchy when brushes are added/removed/modified
-                //       then we don't need to count them here & don't need to do a "complete" here
-                JobHandles.parameterCountsJobHandle.Complete();
-
-                #region Create Meshes
-                Profiler.BeginSample("Mesh.AllocateWritableMeshData");
-                try
-                {
-                    var meshAllocations = 0;
-                    for (int m = 0; m < Temporaries.meshQueries.Length; m++)
-                    {
-                        var meshQuery = Temporaries.meshQueries[m];
-                        var surfaceParameterIndex = (meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1 &&
-                                                        meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex) ?
-                                                        (int)meshQuery.LayerParameterIndex : 0;
-
-                        // Query uses Material
-                        if ((meshQuery.LayerQuery & LayerUsageFlags.Renderable) != 0 && surfaceParameterIndex == 1)
+                        const bool runInParallel = runInParallelDefault;
+                        var updateTransformationsJob = new UpdateTransformationsJob
                         {
-                            // Each Material is stored as a submesh in the same mesh
-                            meshAllocations += 1;  
-                        }
-                        // Query uses PhysicMaterial
-                        else if ((meshQuery.LayerQuery & LayerUsageFlags.Collidable) != 0 && surfaceParameterIndex == 2)
+                            // Read
+                            transformTreeBrushIndicesList = Temporaries.transformTreeBrushIndicesList.AsJobArray(runInParallel),
+                            //compactHierarchy              = compactHierarchy, //<-- cannot do ref or pointer here
+                            //    so we set it below using InitializeHierarchy
+
+                            // Write
+                            transformationCache = chiselLookupValues.transformationCache.AsJobArray(runInParallel)
+                        };
+                        updateTransformationsJob.InitializeHierarchy(ref compactHierarchy);
+                        updateTransformationsJob.Schedule(runInParallel, Temporaries.transformTreeBrushIndicesList, 8,
+                            new ReadJobHandles(
+                                JobHandles.transformTreeBrushIndicesListJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.transformationCacheJobHandle));
+                    }
+                    #endregion
+
+                    #region Build CSG Tree
+                    using (var profilerSample = new ProfilerSample("Job_BuildCompactTreeJob"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var buildCompactTreeJob = new BuildCompactTreeJob
                         {
-                            // Each PhysicMaterial is stored in its own separate mesh
-                            meshAllocations += Temporaries.parameterCounts[SurfaceLayers.kColliderLayer];
-                        } else
-                            meshAllocations++;
+                            // Read
+                            treeCompactNodeID = this.treeCompactNodeID,
+                            brushes = Temporaries.brushes.AsArray(),
+                            nodes = Temporaries.nodes.AsArray(),
+                            //compactHierarchy  = compactHierarchy,  //<-- cannot do ref or pointer here, 
+                            //    so we set it below using InitializeHierarchy
+
+                            // Write
+                            compactTreeRef = Temporaries.compactTreeRef
+                        };
+                        buildCompactTreeJob.InitializeHierarchy(ref compactHierarchy);
+                        buildCompactTreeJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.brushesJobHandle,
+                                JobHandles.nodesJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.compactTreeRefJobHandle));
+                    }
+                    #endregion
+
+                    #region Update BrushMeshBlob Lookup table
+                    // Create lookup table for all brushMeshBlobs, based on the node order in the tree
+                    using (var profilerSample = new ProfilerSample("Job_FillBrushMeshBlobLookupJob"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var fillBrushMeshBlobLookupJob = new FillBrushMeshBlobLookupJob
+                        {
+                            // Read
+                            brushMeshBlobs = brushMeshBlobs,
+                            allTreeBrushIndexOrders = Temporaries.allTreeBrushIndexOrders.AsJobArray(runInParallel),
+                            allBrushMeshIDs = Temporaries.allBrushMeshIDs,
+
+                            // Write
+                            brushMeshLookup = Temporaries.brushMeshLookup,
+                            surfaceCountRef = Temporaries.surfaceCountRef
+                        };
+                        fillBrushMeshBlobLookupJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.brushMeshBlobsLookupJobHandle,
+                                JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                JobHandles.allBrushMeshIDsJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.brushMeshLookupJobHandle,
+                                ref JobHandles.surfaceCountRefJobHandle));
+                    }
+                    #endregion
+
+                    #region Invalidate outdated caches
+                    // Invalidate outdated caches for all modified brushes
+                    using (var profilerSample = new ProfilerSample("Job_InvalidateBrushCacheJob"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var invalidateBrushCacheJob = new InvalidateBrushCacheJob
+                        {
+                            // Read
+                            rebuildTreeBrushIndexOrders = Temporaries.rebuildTreeBrushIndexOrders.AsArray(),
+
+                            // Read/Write
+                            basePolygonCache = chiselLookupValues.basePolygonCache,
+                            treeSpaceVerticesCache = chiselLookupValues.treeSpaceVerticesCache,
+                            brushesTouchedByBrushCache = chiselLookupValues.brushesTouchedByBrushCache,
+                            routingTableCache = chiselLookupValues.routingTableCache,
+                            brushTreeSpacePlaneCache = chiselLookupValues.brushTreeSpacePlaneCache,
+                            brushRenderBufferCache = chiselLookupValues.brushRenderBufferCache,
+
+                            // Write
+                            basePolygonDisposeList = Temporaries.basePolygonDisposeList.AsParallelWriter(),
+                            treeSpaceVerticesDisposeList = Temporaries.treeSpaceVerticesDisposeList.AsParallelWriter(),
+                            brushesTouchedByBrushDisposeList = Temporaries.brushesTouchedByBrushDisposeList.AsParallelWriter(),
+                            routingTableDisposeList = Temporaries.routingTableDisposeList.AsParallelWriter(),
+                            brushTreeSpacePlaneDisposeList = Temporaries.brushTreeSpacePlaneDisposeList.AsParallelWriter(),
+                            brushRenderBufferDisposeList = Temporaries.brushRenderBufferDisposeList.AsParallelWriter()
+                        };
+                        invalidateBrushCacheJob.Schedule(runInParallel, Temporaries.rebuildTreeBrushIndexOrders, 16,
+                            new ReadJobHandles(
+                                JobHandles.rebuildTreeBrushIndexOrdersJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.basePolygonCacheJobHandle,
+                                ref JobHandles.treeSpaceVerticesCacheJobHandle,
+                                ref JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                ref JobHandles.routingTableCacheJobHandle,
+                                ref JobHandles.brushTreeSpacePlaneCacheJobHandle,
+                                ref JobHandles.brushRenderBufferCacheJobHandle));
+                    }
+                    #endregion
+
+                    #region Fixup brush cache data order
+                    // Fix up brush order index in cache data (ordering of brushes may have changed)
+                    using (var profilerSample = new ProfilerSample("Job_FixupBrushCacheIndicesJob"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var fixupBrushCacheIndicesJob = new FixupBrushCacheIndicesJob
+                        {
+                            // Read
+                            allTreeBrushIndexOrders = Temporaries.allTreeBrushIndexOrders.AsArray(),
+                            nodeIDValueToNodeOrderArray = Temporaries.nodeIDValueToNodeOrderArray.AsArray(),
+                            nodeIDValueToNodeOrderOffsetRef = Temporaries.nodeIDValueToNodeOrderOffsetRef,
+
+                            // Read Write
+                            basePolygonCache = chiselLookupValues.basePolygonCache.AsJobArray(runInParallel),
+                            brushesTouchedByBrushCache = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel)
+                        };
+                        fixupBrushCacheIndicesJob.Schedule(runInParallel, Temporaries.allTreeBrushIndexOrders, 16,
+                            new ReadJobHandles(
+                                JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                JobHandles.nodeIDValueToNodeOrderArrayJobHandle,
+                                JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.basePolygonCacheJobHandle,
+                                ref JobHandles.brushesTouchedByBrushCacheJobHandle));
+                    }
+                    #endregion
+
+                    #region Update brush tree space vertices and bounds
+                    // Create tree space vertices from local vertices + transformations & an AABB for each brush that has been modified
+                    using (var profilerSample = new ProfilerSample("Job_CreateTreeSpaceVerticesAndBoundsJob"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        // TODO: should only do this once at creation time, part of brushMeshBlob? store with brush component itself
+                        var createTreeSpaceVerticesAndBoundsJob = new CreateTreeSpaceVerticesAndBoundsJob
+                        {
+                            // Read
+                            rebuildTreeBrushIndexOrders = Temporaries.rebuildTreeBrushIndexOrders.AsArray(),
+                            transformationCache = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+                            brushMeshLookup = Temporaries.brushMeshLookup,
+                            //ref hierarchyIDLookup     = ref CompactHierarchyManager.HierarchyIDLookup,    //<-- cannot do ref or pointer here
+                            //    so we set it below using InitializeHierarchy
+
+                            // Read/Write
+                            hierarchyList = CompactHierarchyManager.HierarchyList,
+
+                            // Write
+                            brushTreeSpaceBounds = chiselLookupValues.brushTreeSpaceBoundCache.AsJobArray(runInParallel),
+                            treeSpaceVerticesCache = chiselLookupValues.treeSpaceVerticesCache.AsJobArray(runInParallel),
+                        };
+                        createTreeSpaceVerticesAndBoundsJob.InitializeLookups();
+                        createTreeSpaceVerticesAndBoundsJob.Schedule(runInParallel, Temporaries.rebuildTreeBrushIndexOrders, 16,
+                            new ReadJobHandles(
+                                JobHandles.rebuildTreeBrushIndexOrdersJobHandle,
+                                JobHandles.transformationCacheJobHandle,
+                                JobHandles.brushMeshBlobsLookupJobHandle,
+                                JobHandles.hierarchyIDJobHandle,
+                                JobHandles.brushMeshLookupJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.brushTreeSpaceBoundCacheJobHandle,
+                                ref JobHandles.treeSpaceVerticesCacheJobHandle,
+                                ref JobHandles.hierarchyListJobHandle));
+                    }
+                    #endregion
+
+                    #region Update intersection pairs
+                    // Find all pairs of brushes that intersect, for those brushes that have been modified
+                    using (var profilerSample = new ProfilerSample("Job_FindAllBrushIntersectionPairs"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        // TODO: only change when brush or any touching brush has been added/removed or changes operation/order
+                        // TODO: optimize, use hashed grid
+                        var findAllBrushIntersectionPairsJob = new FindAllBrushIntersectionPairsJob
+                        {
+                            // Read
+                            allTreeBrushIndexOrders = Temporaries.allTreeBrushIndexOrders.AsArray(),
+                            transformationCache = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+                            brushMeshLookup = Temporaries.brushMeshLookup,
+                            brushTreeSpaceBounds = chiselLookupValues.brushTreeSpaceBoundCache.AsJobArray(runInParallel),
+                            rebuildTreeBrushIndexOrders = Temporaries.rebuildTreeBrushIndexOrders.AsArray(),
+
+                            // Read / Write
+                            brushBrushIntersections = Temporaries.brushBrushIntersections,
+
+                            // Write
+                            brushesThatNeedIndirectUpdateHashMap = Temporaries.brushesThatNeedIndirectUpdateHashMap.AsParallelWriter()
+                        };
+                        findAllBrushIntersectionPairsJob.Schedule(runInParallel, Temporaries.rebuildTreeBrushIndexOrders, 16,
+                            new ReadJobHandles(
+                                JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                JobHandles.transformationCacheJobHandle,
+                                JobHandles.brushMeshLookupJobHandle,
+                                JobHandles.brushTreeSpaceBoundCacheJobHandle,
+                                JobHandles.rebuildTreeBrushIndexOrdersJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.brushBrushIntersectionsJobHandle,
+                                ref JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle));
+                    }
+                    #endregion
+
+                    #region Update list of brushes that touch brushes
+                    // Find all brushes that touch the brushes that have been modified
+                    using (var profilerSample = new ProfilerSample("Job_FindUniqueIndirectBrushIntersections"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        // TODO: optimize, use hashed grid
+                        var findUniqueIndirectBrushIntersectionsJob = new FindUniqueIndirectBrushIntersectionsJob
+                        {
+                            // Read
+                            brushesThatNeedIndirectUpdateHashMap = Temporaries.brushesThatNeedIndirectUpdateHashMap,
+
+                            // Write
+                            brushesThatNeedIndirectUpdate = Temporaries.brushesThatNeedIndirectUpdate
+                        };
+                        findUniqueIndirectBrushIntersectionsJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.brushesThatNeedIndirectUpdateJobHandle));
+                    }
+                    #endregion
+
+                    #region Invalidate indirectly outdated caches (when brush touches a brush that has changed)
+                    // Invalidate the cache for the brushes that have been indirectly modified (touch a brush that has changed)
+                    using (var profilerSample = new ProfilerSample("Job_InvalidateBrushCache_Indirect"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var invalidateIndirectBrushCacheJob = new InvalidateIndirectBrushCacheJob
+                        {
+                            // Read
+                            brushesThatNeedIndirectUpdate = Temporaries.brushesThatNeedIndirectUpdate.AsJobArray(runInParallel),
+
+                            // Read/Write
+                            basePolygonCache = chiselLookupValues.basePolygonCache.AsJobArray(runInParallel),
+                            treeSpaceVerticesCache = chiselLookupValues.treeSpaceVerticesCache.AsJobArray(runInParallel),
+                            brushesTouchedByBrushCache = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel),
+                            routingTableCache = chiselLookupValues.routingTableCache.AsJobArray(runInParallel),
+                            brushTreeSpacePlaneCache = chiselLookupValues.brushTreeSpacePlaneCache.AsJobArray(runInParallel),
+                            brushRenderBufferCache = chiselLookupValues.brushRenderBufferCache.AsJobArray(runInParallel)
+                        };
+                        invalidateIndirectBrushCacheJob.Schedule(runInParallel, Temporaries.brushesThatNeedIndirectUpdate, 16,
+                            new ReadJobHandles(
+                                JobHandles.brushesThatNeedIndirectUpdateJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.basePolygonCacheJobHandle,
+                                ref JobHandles.treeSpaceVerticesCacheJobHandle,
+                                ref JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                ref JobHandles.routingTableCacheJobHandle,
+                                ref JobHandles.brushTreeSpacePlaneCacheJobHandle,
+                                ref JobHandles.brushRenderBufferCacheJobHandle));
+                    }
+                    #endregion
+
+                    #region Fixup indirectly brush cache data order (when brush touches a brush that has changed)
+                    // Create tree space vertices from local vertices + transformations & an AABB for each brush that has been indirectly modified
+                    using (var profilerSample = new ProfilerSample("Job_CreateTreeSpaceVerticesAndBounds_Indirect"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var createTreeSpaceVerticesAndBoundsJob = new CreateTreeSpaceVerticesAndBoundsJob
+                        {
+                            // Read
+                            rebuildTreeBrushIndexOrders = Temporaries.brushesThatNeedIndirectUpdate.AsJobArray(runInParallel),
+                            transformationCache = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+                            brushMeshLookup = Temporaries.brushMeshLookup,
+                            //ref hierarchyIDLookup     = ref CompactHierarchyManager.HierarchyIDLookup,    //<-- cannot do ref or pointer here
+                            //    so we set it below using InitializeHierarchy
+
+                            // Read/Write
+                            hierarchyList = CompactHierarchyManager.HierarchyList,
+
+
+                            // Write
+                            brushTreeSpaceBounds = chiselLookupValues.brushTreeSpaceBoundCache.AsJobArray(runInParallel),
+                            treeSpaceVerticesCache = chiselLookupValues.treeSpaceVerticesCache.AsJobArray(runInParallel),
+                        };
+                        createTreeSpaceVerticesAndBoundsJob.InitializeLookups();
+                        createTreeSpaceVerticesAndBoundsJob.Schedule(runInParallel, Temporaries.brushesThatNeedIndirectUpdate, 16,
+                            new ReadJobHandles(
+                                JobHandles.brushesThatNeedIndirectUpdateJobHandle,
+                                JobHandles.transformationCacheJobHandle,
+                                JobHandles.brushMeshLookupJobHandle,
+                                //JobHandles.brushMeshBlobsLookupJobHandle,
+                                JobHandles.hierarchyIDJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.brushTreeSpaceBoundCacheJobHandle,
+                                ref JobHandles.treeSpaceVerticesCacheJobHandle,
+                                ref JobHandles.hierarchyListJobHandle));
+                    }
+                    #endregion
+
+                    #region Update intersection pairs (when brush touches a brush that has changed)
+                    // Find all pairs of brushes that intersect, for those brushes that have been indirectly modified
+                    using (var profilerSample = new ProfilerSample("Job_FindAllBrushIntersectionPairs_Indirect"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        // TODO: optimize, use hashed grid
+                        var findAllIndirectBrushIntersectionPairsJob = new FindAllIndirectBrushIntersectionPairsJob
+                        {
+                            // Read
+                            allTreeBrushIndexOrders = Temporaries.allTreeBrushIndexOrders.AsArray(),
+                            transformationCache = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+                            brushMeshLookup = Temporaries.brushMeshLookup,
+                            brushTreeSpaceBounds = chiselLookupValues.brushTreeSpaceBoundCache.AsJobArray(runInParallel),
+                            brushesThatNeedIndirectUpdate = Temporaries.brushesThatNeedIndirectUpdate.AsJobArray(runInParallel),
+
+                            // Read / Write
+                            brushBrushIntersections = Temporaries.brushBrushIntersections
+                        };
+                        findAllIndirectBrushIntersectionPairsJob.Schedule(runInParallel, Temporaries.brushesThatNeedIndirectUpdate, 1,
+                            new ReadJobHandles(
+                                JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                JobHandles.transformationCacheJobHandle,
+                                JobHandles.brushMeshLookupJobHandle,
+                                JobHandles.brushTreeSpaceBoundCacheJobHandle,
+                                JobHandles.brushesThatNeedIndirectUpdateJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.brushBrushIntersectionsJobHandle));
+                    }
+                    #endregion
+
+                    #region Update list of brushes that touch brushes (when brush touches a brush that has changed)
+                    // Add brushes that need to be indirectly updated to our list of brushes that need updates
+                    using (var profilerSample = new ProfilerSample("Job_AddIndirectUpdatedBrushesToListAndSort"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var addIndirectUpdatedBrushesToListAndSortJob = new AddIndirectUpdatedBrushesToListAndSortJob
+                        {
+                            // Read
+                            allTreeBrushIndexOrders = Temporaries.allTreeBrushIndexOrders.AsArray(),
+                            brushesThatNeedIndirectUpdate = Temporaries.brushesThatNeedIndirectUpdate.AsJobArray(runInParallel),
+                            rebuildTreeBrushIndexOrders = Temporaries.rebuildTreeBrushIndexOrders.AsArray(),
+
+                            // Write
+                            allUpdateBrushIndexOrders = Temporaries.allUpdateBrushIndexOrders.AsParallelWriter(),
+                        };
+                        addIndirectUpdatedBrushesToListAndSortJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                JobHandles.brushesThatNeedIndirectUpdateJobHandle,
+                                JobHandles.rebuildTreeBrushIndexOrdersJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.allUpdateBrushIndexOrdersJobHandle));
+                    }
+                    #endregion
+
+                    #region Gather all brush intersections
+                    // Gather all found pairs of brushes that intersect with each other and cache them
+                    using (var profilerSample = new ProfilerSample("Job_GatherAndStoreBrushIntersections"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var gatherBrushIntersectionsJob = new GatherBrushIntersectionPairsJob
+                        {
+                            // Read
+                            brushBrushIntersections = Temporaries.brushBrushIntersections,
+
+                            // Write
+                            brushIntersectionsWith = Temporaries.brushIntersectionsWith.GetUnsafeList(),
+                            brushIntersectionsWithRange = Temporaries.brushIntersectionsWithRange
+                        };
+                        gatherBrushIntersectionsJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.brushBrushIntersectionsJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.brushIntersectionsWithJobHandle,
+                                ref JobHandles.brushIntersectionsWithRangeJobHandle));
+
+                        var storeBrushIntersectionsJob = new StoreBrushIntersectionsJob
+                        {
+                            // Read
+                            treeCompactNodeID = treeCompactNodeID,
+                            compactTreeRef = Temporaries.compactTreeRef,
+                            allTreeBrushIndexOrders = Temporaries.allTreeBrushIndexOrders.AsJobArray(runInParallel),
+                            allUpdateBrushIndexOrders = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
+
+                            brushIntersectionsWith = Temporaries.brushIntersectionsWith.AsJobArray(runInParallel),
+                            brushIntersectionsWithRange = Temporaries.brushIntersectionsWithRange,
+
+                            // Write
+                            brushesTouchedByBrushCache = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel)
+                        };
+                        storeBrushIntersectionsJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 16,
+                            new ReadJobHandles(
+                                JobHandles.compactTreeRefJobHandle,
+                                JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                JobHandles.brushIntersectionsWithJobHandle,
+                                JobHandles.brushIntersectionsWithRangeJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.brushesTouchedByBrushCacheJobHandle));
+                    }
+                    #endregion
+
+                    #endregion
+
+                    //
+                    // Determine all surfaces and intersections
+                    //
+
+                    #region Determine Intersection Surfaces
+                    // Find all pairs of brush intersections for each brush
+                    using (var profilerSample = new ProfilerSample("Job_PrepareBrushPairIntersections"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var findBrushPairsJob = new FindBrushPairsJob
+                        {
+                            // Read
+                            maxOrder = brushCount,
+                            allUpdateBrushIndexOrders = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
+                            brushesTouchedByBrushes = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel),
+
+                            // Read (Re-allocate) / Write
+                            uniqueBrushPairs = Temporaries.uniqueBrushPairs.GetUnsafeList()
+                        };
+                        findBrushPairsJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                JobHandles.brushesTouchedByBrushCacheJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.uniqueBrushPairsJobHandle));
+
+                        NativeCollection.ScheduleConstruct(runInParallel, out Temporaries.intersectingBrushesStream, Temporaries.uniqueBrushPairs,
+                                                            new ReadJobHandles(
+                                                                JobHandles.uniqueBrushPairsJobHandle
+                                                                ),
+                                                            new WriteJobHandles(
+                                                                ref JobHandles.intersectingBrushesStreamJobHandle
+                                                                ),
+                                                            Allocator.TempJob);
+
+                        var prepareBrushPairIntersectionsJob = new PrepareBrushPairIntersectionsJob
+                        {
+                            // Read
+                            uniqueBrushPairs = Temporaries.uniqueBrushPairs.AsJobArray(runInParallel),
+                            transformationCache = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+                            brushMeshLookup = Temporaries.brushMeshLookup,
+
+                            // Write
+                            intersectingBrushesStream = Temporaries.intersectingBrushesStream.AsWriter()
+                        };
+                        prepareBrushPairIntersectionsJob.Schedule(runInParallel, Temporaries.uniqueBrushPairs, 1,
+                            new ReadJobHandles(
+                                JobHandles.uniqueBrushPairsJobHandle,
+                                JobHandles.transformationCacheJobHandle,
+                                JobHandles.brushMeshLookupJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.intersectingBrushesStreamJobHandle));
                     }
 
-                    Temporaries.meshDataArray = UnityEngine.Mesh.AllocateWritableMeshData(meshAllocations);
+                    using (var profilerSample = new ProfilerSample("Job_GenerateBasePolygonLoops"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        // TODO: should only do this once at creation time, part of brushMeshBlob? store with brush component itself
+                        var createBlobPolygonsBlobs = new CreateBlobPolygonsBlobsJob
+                        {
+                            // Read
+                            allUpdateBrushIndexOrders = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
+                            brushesTouchedByBrushCache = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel),
+                            brushMeshLookup = Temporaries.brushMeshLookup,
+                            treeSpaceVerticesCache = chiselLookupValues.treeSpaceVerticesCache.AsJobArray(runInParallel),
 
-                    for (int i = 0; i < meshAllocations; i++)
-                        Temporaries.meshDatas.Add(Temporaries.meshDataArray[i]);
+                            // Write
+                            basePolygonCache = chiselLookupValues.basePolygonCache.AsJobArray(runInParallel)
+                        };
+                        createBlobPolygonsBlobs.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 16,
+                            new ReadJobHandles(
+                                JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                JobHandles.brushMeshLookupJobHandle,
+                                JobHandles.treeSpaceVerticesCacheJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.basePolygonCacheJobHandle));
+                    }
+
+                    using (var profilerSample = new ProfilerSample("Job_UpdateBrushTreeSpacePlanes"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        // TODO: should only do this at creation time + when moved / store with brush component itself
+                        var createBrushTreeSpacePlanesJob = new CreateBrushTreeSpacePlanesJob
+                        {
+                            // Read
+                            allUpdateBrushIndexOrders = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
+                            brushMeshLookup = Temporaries.brushMeshLookup,
+                            transformationCache = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+
+                            // Write
+                            brushTreeSpacePlanes = chiselLookupValues.brushTreeSpacePlaneCache.AsJobArray(runInParallel)
+                        };
+                        createBrushTreeSpacePlanesJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 16,
+                            new ReadJobHandles(
+                                JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                JobHandles.brushMeshLookupJobHandle,
+                                JobHandles.transformationCacheJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.brushTreeSpacePlaneCacheJobHandle));
+                    }
+
+                    using (var profilerSample = new ProfilerSample("Job_CreateIntersectionLoops"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        NativeCollection.ScheduleEnsureCapacity(runInParallel, ref Temporaries.outputSurfaces, Temporaries.surfaceCountRef,
+                                                            new ReadJobHandles(
+                                                                JobHandles.surfaceCountRefJobHandle),
+                                                            new WriteJobHandles(
+                                                                ref JobHandles.outputSurfacesJobHandle),
+                                                            Allocator.TempJob);
+
+                        var createIntersectionLoopsJob = new CreateIntersectionLoopsJob
+                        {
+                            // Needed for count (forced & unused)
+                            uniqueBrushPairs = Temporaries.uniqueBrushPairs,
+
+                            // Read
+                            brushTreeSpacePlaneCache = chiselLookupValues.brushTreeSpacePlaneCache.AsJobArray(runInParallel),
+                            treeSpaceVerticesCache = chiselLookupValues.treeSpaceVerticesCache.AsJobArray(runInParallel),
+                            intersectingBrushesStream = Temporaries.intersectingBrushesStream.AsReader(),
+
+                            // Write
+                            outputSurfaceVertices = Temporaries.outputSurfaceVertices.AsParallelWriterExt(),
+                            outputSurfaces = Temporaries.outputSurfaces.AsParallelWriter()
+                        };
+                        var currentJobHandle = createIntersectionLoopsJob.Schedule(runInParallel, Temporaries.uniqueBrushPairs, 8,
+                            new ReadJobHandles(
+                                JobHandles.uniqueBrushPairsJobHandle,
+                                JobHandles.brushTreeSpacePlaneCacheJobHandle,
+                                JobHandles.treeSpaceVerticesCacheJobHandle,
+                                JobHandles.intersectingBrushesStreamJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.outputSurfaceVerticesJobHandle,
+                                ref JobHandles.outputSurfacesJobHandle));
+
+                        NativeCollection.ScheduleDispose(runInParallel, ref Temporaries.intersectingBrushesStream, currentJobHandle);
+                    }
+
+                    using (var profilerSample = new ProfilerSample("Job_GatherOutputSurfaces"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var gatherOutputSurfacesJob = new GatherOutputSurfacesJob
+                        {
+                            // Read / Write (Sort)
+                            outputSurfaces = Temporaries.outputSurfaces.AsJobArray(runInParallel),
+
+                            // Write
+                            outputSurfacesRange = Temporaries.outputSurfacesRange
+                        };
+                        gatherOutputSurfacesJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.outputSurfacesJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.outputSurfacesRangeJobHandle));
+                    }
+
+                    using (var profilerSample = new ProfilerSample("Job_FindLoopOverlapIntersections"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        NativeCollection.ScheduleConstruct(runInParallel, out Temporaries.dataStream1, Temporaries.allUpdateBrushIndexOrders,
+                                                            new ReadJobHandles(
+                                                                JobHandles.allUpdateBrushIndexOrdersJobHandle
+                                                                ),
+                                                            new WriteJobHandles(
+                                                                ref JobHandles.dataStream1JobHandle
+                                                                ),
+                                                            Allocator.TempJob);
+
+                        var findLoopOverlapIntersectionsJob = new FindLoopOverlapIntersectionsJob
+                        {
+                            // Read
+                            allUpdateBrushIndexOrders = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
+                            outputSurfaceVertices = Temporaries.outputSurfaceVertices.AsJobArray(runInParallel),
+                            outputSurfaces = Temporaries.outputSurfaces.AsJobArray(runInParallel),
+                            outputSurfacesRange = Temporaries.outputSurfacesRange,
+                            maxNodeOrder = maxNodeOrder,
+                            brushTreeSpacePlaneCache = chiselLookupValues.brushTreeSpacePlaneCache.AsJobArray(runInParallel),
+                            basePolygonCache = chiselLookupValues.basePolygonCache.AsJobArray(runInParallel),
+
+                            // Read Write
+                            loopVerticesLookup = Temporaries.loopVerticesLookup,
+
+                            // Write
+                            output = Temporaries.dataStream1.AsWriter()
+                        };
+                        findLoopOverlapIntersectionsJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 1,
+                            new ReadJobHandles(
+                                JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                JobHandles.outputSurfaceVerticesJobHandle,
+                                JobHandles.outputSurfacesJobHandle,
+                                JobHandles.outputSurfacesRangeJobHandle,
+                                JobHandles.brushTreeSpacePlaneCacheJobHandle,
+                                JobHandles.basePolygonCacheJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.loopVerticesLookupJobHandle,
+                                ref JobHandles.dataStream1JobHandle));
+                    }
+                    #endregion
+
+                    //
+                    // Ensure vertices that should be identical on different brushes, ARE actually identical
+                    //
+
+                    #region Merge vertices
+                    using (var profilerSample = new ProfilerSample("Job_MergeTouchingBrushVerticesIndirect"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        // TODO: should only try to merge the vertices beyond the original mesh vertices (the intersection vertices)
+                        //       should also try to limit vertices to those that are on the same surfaces (somehow)
+                        var mergeTouchingBrushVerticesIndirectJob = new MergeTouchingBrushVerticesIndirectJob
+                        {
+                            // Read
+                            allUpdateBrushIndexOrders = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
+                            brushesTouchedByBrushCache = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel),
+                            treeSpaceVerticesArray = chiselLookupValues.treeSpaceVerticesCache.AsJobArray(runInParallel),
+
+                            // Read Write
+                            loopVerticesLookup = Temporaries.loopVerticesLookup,
+                        };
+                        mergeTouchingBrushVerticesIndirectJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 1,
+                            new ReadJobHandles(
+                                JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                JobHandles.treeSpaceVerticesCacheJobHandle,
+                                JobHandles.brushesTouchedByBrushCacheJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.loopVerticesLookupJobHandle));
+                    }
+                    #endregion
+
+                    //
+                    // Perform CSG on prepared surfaces, giving each surface a categorization
+                    //
+
+                    #region Perform CSG     
+                    using (var profilerSample = new ProfilerSample("Job_UpdateBrushCategorizationTables"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        // TODO: only update when brush or any touching brush has been added/removed or changes operation/order                    
+                        // TODO: determine when a brush is completely inside another brush (might not have *any* intersection loops)
+                        var createRoutingTableJob = new CreateRoutingTableJob // Build categorization trees for brushes
+                        {
+                            // Read
+                            allUpdateBrushIndexOrders = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
+                            brushesTouchedByBrushes = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel),
+                            compactTreeRef = Temporaries.compactTreeRef,
+
+                            // Write
+                            routingTableLookup = chiselLookupValues.routingTableCache.AsJobArray(runInParallel)
+                        };
+                        createRoutingTableJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 1,
+                            new ReadJobHandles(
+                                JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                JobHandles.compactTreeRefJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.routingTableCacheJobHandle));
+                    }
+
+                    using (var profilerSample = new ProfilerSample("Job_PerformCSG"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        NativeCollection.ScheduleConstruct(runInParallel, out Temporaries.dataStream2, Temporaries.allUpdateBrushIndexOrders,
+                                                            new ReadJobHandles(
+                                                                JobHandles.allUpdateBrushIndexOrdersJobHandle
+                                                                ),
+                                                            new WriteJobHandles(
+                                                                ref JobHandles.dataStream2JobHandle
+                                                                ),
+                                                            Allocator.TempJob);
+
+                        // Perform CSG
+                        var performCSGJob = new PerformCSGJob
+                        {
+                            // Read
+                            allUpdateBrushIndexOrders = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
+                            routingTableCache = chiselLookupValues.routingTableCache.AsJobArray(runInParallel),
+                            brushTreeSpacePlaneCache = chiselLookupValues.brushTreeSpacePlaneCache.AsJobArray(runInParallel),
+                            brushesTouchedByBrushCache = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel),
+                            input = Temporaries.dataStream1.AsReader(),
+                            loopVerticesLookup = Temporaries.loopVerticesLookup,
+
+                            // Write
+                            output = Temporaries.dataStream2.AsWriter(),
+                        };
+                        var currentJobHandle = performCSGJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 1,
+                            new ReadJobHandles(
+                                JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                JobHandles.routingTableCacheJobHandle,
+                                JobHandles.brushTreeSpacePlaneCacheJobHandle,
+                                JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                JobHandles.dataStream1JobHandle,
+                                JobHandles.loopVerticesLookupJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.dataStream2JobHandle));
+
+                        NativeCollection.ScheduleDispose(runInParallel, ref Temporaries.dataStream1, currentJobHandle);
+                    }
+                    #endregion
+
+                    //
+                    // Triangulate the surfaces
+                    //
+
+                    #region Triangulate Surfaces
+                    using (var profilerSample = new ProfilerSample("Job_GenerateSurfaceTriangles"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var generateSurfaceTrianglesJob = new GenerateSurfaceTrianglesJob
+                        {
+                            // Read
+                            allUpdateBrushIndexOrders = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
+                            basePolygonCache = chiselLookupValues.basePolygonCache.AsJobArray(runInParallel),
+                            transformationCache = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+                            input = Temporaries.dataStream2.AsReader(),
+                            meshQueries = Temporaries.meshQueries,
+
+                            // Write
+                            brushRenderBufferCache = chiselLookupValues.brushRenderBufferCache.AsJobArray(runInParallel)
+                        };
+                        var currentJobHandle = generateSurfaceTrianglesJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 1,
+                            new ReadJobHandles(
+                                JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                JobHandles.meshQueriesJobHandle,
+                                JobHandles.basePolygonCacheJobHandle,
+                                JobHandles.transformationCacheJobHandle,
+                                JobHandles.dataStream2JobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.brushRenderBufferCacheJobHandle));
+
+                        NativeCollection.ScheduleDispose(runInParallel, ref Temporaries.dataStream2, currentJobHandle);
+                    }
+                    #endregion
+
+
+                    //
+                    // Create meshes out of ALL the generated AND cached surfaces
+                    //
+
+                    #region Find all generated brush specific geometry
+                    using (var profilerSample = new ProfilerSample("Job_FindBrushRenderBuffers"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        NativeCollection.ScheduleEnsureCapacity(runInParallel, ref Temporaries.brushRenderData, Temporaries.allTreeBrushIndexOrders,
+                                                            new ReadJobHandles(
+                                                                JobHandles.allTreeBrushIndexOrdersJobHandle),
+                                                            new WriteJobHandles(
+                                                                ref JobHandles.brushRenderDataJobHandle),
+                                                            Allocator.TempJob);
+
+                        var findBrushRenderBuffersJob = new FindBrushRenderBuffersJob
+                        {
+                            // Read
+                            meshQueryLength = Temporaries.meshQueriesLength,
+                            allTreeBrushIndexOrders = Temporaries.allTreeBrushIndexOrders.AsArray(),
+                            brushRenderBufferCache = chiselLookupValues.brushRenderBufferCache.AsJobArray(runInParallel),
+
+                            // Write
+                            brushRenderData = Temporaries.brushRenderData.AsParallelWriter()
+                        };
+                        findBrushRenderBuffersJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.meshQueriesJobHandle,
+                                JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                JobHandles.brushRenderBufferCacheJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.brushRenderDataJobHandle
+                                ));
+                    }
+                    #endregion
+
+                    #region Allocate sub meshes
+                    using (var profilerSample = new ProfilerSample("Job_AllocateSubMeshes"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var allocateSubMeshesJob = new AllocateSubMeshesJob
+                        {
+                            // Read
+                            meshQueryLength = Temporaries.meshQueriesLength,
+                            surfaceCountRef = Temporaries.surfaceCountRef,
+
+                            // Write
+                            subMeshCounts = Temporaries.subMeshCounts,
+                            subMeshSections = Temporaries.vertexBufferContents.subMeshSections,
+                        };
+                        allocateSubMeshesJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.meshQueriesJobHandle,
+                                JobHandles.surfaceCountRefJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.subMeshCountsJobHandle,
+                                ref JobHandles.vertexBufferContents_subMeshSectionsJobHandle));
+                    }
+                    #endregion
+
+                    #region Prepare sub sections
+                    using (var profilerSample = new ProfilerSample("Job_PrepareSubSections"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var prepareSubSectionsJob = new PrepareSubSectionsJob
+                        {
+                            // Read
+                            meshQueries = Temporaries.meshQueries,
+                            brushRenderData = Temporaries.brushRenderData.AsJobArray(runInParallel),
+
+                            // Write
+                            subMeshSurfaces = Temporaries.subMeshSurfaces,
+                        };
+                        prepareSubSectionsJob.Schedule(runInParallel, Temporaries.meshQueriesLength, 1,
+                            new ReadJobHandles(
+                                JobHandles.meshQueriesJobHandle,
+                                JobHandles.brushRenderDataJobHandle,
+                                JobHandles.sectionsJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.subMeshSurfacesJobHandle));
+                    }
+                    #endregion
+
+                    #region Sort surfaces
+                    using (var profilerSample = new ProfilerSample("Job_SortSurfaces"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var sortSurfacesParallelJob = new SortSurfacesParallelJob
+                        {
+                            // Read
+                            meshQueries = Temporaries.meshQueries,
+                            subMeshSurfaces = Temporaries.subMeshSurfaces,
+
+                            // Write
+                            subMeshCounts = Temporaries.subMeshCounts
+                        };
+                        sortSurfacesParallelJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.sectionsJobHandle,
+                                JobHandles.subMeshSurfacesJobHandle,
+                                JobHandles.vertexBufferContents_subMeshSectionsJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.subMeshCountsJobHandle));
+
+                        var gatherSurfacesJob = new GatherSurfacesJob
+                        {
+                            // Read / Write
+                            subMeshCounts = Temporaries.subMeshCounts,
+
+                            // Write
+                            subMeshSections = Temporaries.vertexBufferContents.subMeshSections,
+                        };
+                        gatherSurfacesJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.sectionsJobHandle,
+                                JobHandles.subMeshCountsJobHandle,
+                                JobHandles.subMeshSurfacesJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.subMeshCountsJobHandle,
+                                ref JobHandles.vertexBufferContents_subMeshSectionsJobHandle));
+                    }
+                    #endregion
+
+                    #region Allocate vertex buffers
+                    using (var profilerSample = new ProfilerSample("Job_AllocateVertexBuffers"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var allocateVertexBuffersJob = new AllocateVertexBuffersJob
+                        {
+                            // Read
+                            subMeshSections = Temporaries.vertexBufferContents.subMeshSections.AsJobArray(runInParallel),
+
+                            // Read Write
+                            triangleBrushIndices = Temporaries.vertexBufferContents.triangleBrushIndices
+                        };
+                        allocateVertexBuffersJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.vertexBufferContents_subMeshSectionsJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle));
+                    }
+                    #endregion
+
+                    #region Generate mesh descriptions
+                    using (var profilerSample = new ProfilerSample("Job_GenerateMeshDescription"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var generateMeshDescriptionJob = new GenerateMeshDescriptionJob
+                        {
+                            // Read
+                            subMeshCounts = Temporaries.subMeshCounts.AsJobArray(runInParallel),
+
+                            // Read Write
+                            meshDescriptions = Temporaries.vertexBufferContents.meshDescriptions
+                        };
+                        generateMeshDescriptionJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.subMeshCountsJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.vertexBufferContents_meshDescriptionsJobHandle));
+                    }
+                    #endregion
+
+
+                    // TODO: store parameterCounts per brush (precalculated), manage these counts in the hierarchy when brushes are added/removed/modified
+                    //       then we don't need to count them here & don't need to do a "complete" here
+                    JobHandles.parameterCountsJobHandle.Complete();
+                    JobHandles.parameterCountsJobHandle = default;
+
+                    #region Create Meshes
+                    using (var profilerSample = new ProfilerSample("Mesh.AllocateWritableMeshData"))
+                    {
+                        var meshAllocations = 0;
+                        for (int m = 0; m < Temporaries.meshQueries.Length; m++)
+                        {
+                            var meshQuery = Temporaries.meshQueries[m];
+                            var surfaceParameterIndex = (meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1 &&
+                                                            meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex) ?
+                                                            (int)meshQuery.LayerParameterIndex : 0;
+
+                            // Query uses Material
+                            if ((meshQuery.LayerQuery & LayerUsageFlags.Renderable) != 0 && surfaceParameterIndex == 1)
+                            {
+                                // Each Material is stored as a submesh in the same mesh
+                                meshAllocations += 1;
+                            }
+                            // Query uses PhysicMaterial
+                            else if ((meshQuery.LayerQuery & LayerUsageFlags.Collidable) != 0 && surfaceParameterIndex == 2)
+                            {
+                                // Each PhysicMaterial is stored in its own separate mesh
+                                meshAllocations += Temporaries.parameterCounts[SurfaceLayers.kColliderLayer];
+                            } else
+                                meshAllocations++;
+                        }
+
+                        Temporaries.meshDataArray = UnityEngine.Mesh.AllocateWritableMeshData(meshAllocations);
+
+                        for (int i = 0; i < meshAllocations; i++)
+                            Temporaries.meshDatas.Add(Temporaries.meshDataArray[i]);
+                    }
+
+                    using (var profilerSample = new ProfilerSample("Job_CopyToMeshes"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var assignMeshesJob = new AssignMeshesJob
+                        {
+                            // Read
+                            meshDescriptions = Temporaries.vertexBufferContents.meshDescriptions,
+                            subMeshSections = Temporaries.vertexBufferContents.subMeshSections,
+                            meshDatas = Temporaries.meshDatas,
+
+                            // Write
+                            meshes = Temporaries.vertexBufferContents.meshes,
+                            debugHelperMeshes = Temporaries.debugHelperMeshes,
+                            renderMeshes = Temporaries.renderMeshes,
+
+                            // Read / Write
+                            colliderMeshUpdates = Temporaries.colliderMeshUpdates,
+                        };
+                        assignMeshesJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.vertexBufferContents_meshDescriptionsJobHandle,
+                                JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
+                                JobHandles.meshDatasJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.vertexBufferContents_meshesJobHandle,
+                                ref JobHandles.debugHelperMeshesJobHandle,
+                                ref JobHandles.renderMeshesJobHandle,
+                                ref JobHandles.colliderMeshUpdatesJobHandle));
+
+                        var colliderCopyToMeshJob = new CopyToColliderMeshJob
+                        {
+                            // Read
+                            subMeshSections = Temporaries.vertexBufferContents.subMeshSections.AsJobArray(runInParallel),
+                            subMeshCounts = Temporaries.subMeshCounts.AsJobArray(runInParallel),
+                            subMeshSurfaces = Temporaries.subMeshSurfaces,
+                            colliderDescriptors = Temporaries.vertexBufferContents.colliderDescriptors,
+                            colliderMeshes = Temporaries.colliderMeshUpdates.AsJobArray(runInParallel),
+
+                            // Read/Write
+                            meshes = Temporaries.vertexBufferContents.meshes,
+                        };
+                        var dependencies1 = JobHandleExtensions.CombineDependencies(
+                                                JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
+                                                JobHandles.subMeshCountsJobHandle,
+                                                JobHandles.subMeshSurfacesJobHandle,
+                                                JobHandles.vertexBufferContents_colliderDescriptorsJobHandle,
+                                                JobHandles.colliderMeshUpdatesJobHandle,
+                                                JobHandles.vertexBufferContents_meshesJobHandle);
+                        var job1 = colliderCopyToMeshJob.Schedule(runInParallel, Temporaries.colliderMeshUpdates, 1, dependencies1);
+
+                        var renderCopyToMeshJob = new CopyToRenderMeshJob
+                        {
+                            // Read
+                            subMeshSections = Temporaries.vertexBufferContents.subMeshSections.AsJobArray(runInParallel),
+                            subMeshCounts = Temporaries.subMeshCounts.AsJobArray(runInParallel),
+                            subMeshSurfaces = Temporaries.subMeshSurfaces,
+                            renderDescriptors = Temporaries.vertexBufferContents.renderDescriptors,
+                            renderMeshes = Temporaries.renderMeshes.AsJobArray(runInParallel),
+
+                            // Read/Write
+                            triangleBrushIndices = Temporaries.vertexBufferContents.triangleBrushIndices,
+                            meshes = Temporaries.vertexBufferContents.meshes,
+                        };
+                        var dependencies2 = JobHandleExtensions.CombineDependencies(
+                                                JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
+                                                JobHandles.subMeshCountsJobHandle,
+                                                JobHandles.subMeshSurfacesJobHandle,
+                                                JobHandles.vertexBufferContents_renderDescriptorsJobHandle,
+                                                JobHandles.renderMeshesJobHandle,
+                                                JobHandles.vertexBufferContents_meshesJobHandle,
+                                                JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle);
+                        var job2 = renderCopyToMeshJob.Schedule(runInParallel, Temporaries.renderMeshes, 1, dependencies2);
+
+                        var helperCopyToMeshJob = new CopyToRenderMeshJob
+                        {
+                            // Read
+                            subMeshSections = Temporaries.vertexBufferContents.subMeshSections.AsJobArray(runInParallel),
+                            subMeshCounts = Temporaries.subMeshCounts.AsJobArray(runInParallel),
+                            subMeshSurfaces = Temporaries.subMeshSurfaces,
+                            renderDescriptors = Temporaries.vertexBufferContents.renderDescriptors,
+                            renderMeshes = Temporaries.debugHelperMeshes.AsJobArray(runInParallel),
+
+                            // Read/Write
+                            triangleBrushIndices = Temporaries.vertexBufferContents.triangleBrushIndices,
+                            meshes = Temporaries.vertexBufferContents.meshes,
+                        };
+                        var dependencies3 = JobHandleExtensions.CombineDependencies(
+                                                JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
+                                                JobHandles.subMeshCountsJobHandle,
+                                                JobHandles.subMeshSurfacesJobHandle,
+                                                JobHandles.vertexBufferContents_renderDescriptorsJobHandle,
+                                                JobHandles.debugHelperMeshesJobHandle,
+                                                JobHandles.vertexBufferContents_meshesJobHandle,
+                                                JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle);
+                        var job3 = helperCopyToMeshJob.Schedule(runInParallel, Temporaries.debugHelperMeshes, 1, dependencies3);
+
+                        var copyJobs = JobHandle.CombineDependencies(job1, job2, job3);
+                        JobHandles.vertexBufferContents_meshesJobHandle = JobHandle.CombineDependencies(JobHandles.vertexBufferContents_meshesJobHandle, copyJobs);
+                        JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle = JobHandle.CombineDependencies(JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle, copyJobs);
+                    }
+                    #endregion
+
+                    //
+                    // Finally store the generated surfaces into our cache
+                    //
+
+                    #region Store cached values back into cache (by node Index)
+                    using (var profilerSample = new ProfilerSample("Job_StoreToCache"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var storeToCacheJob = new StoreToCacheJob
+                        {
+                            // Read
+                            allTreeBrushIndexOrders = Temporaries.allTreeBrushIndexOrders.AsJobArray(runInParallel),
+                            brushTreeSpaceBoundCache = chiselLookupValues.brushTreeSpaceBoundCache.AsJobArray(runInParallel),
+                            brushRenderBufferCache = chiselLookupValues.brushRenderBufferCache.AsJobArray(runInParallel),
+
+                            // Read Write
+                            brushTreeSpaceBoundLookup = chiselLookupValues.brushTreeSpaceBoundLookup,
+                            brushRenderBufferLookup = chiselLookupValues.brushRenderBufferLookup
+                        };
+                        storeToCacheJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                JobHandles.brushTreeSpaceBoundCacheJobHandle,
+                                JobHandles.brushRenderBufferCacheJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.storeToCacheJobHandle));
+                    }
+                    #endregion
+
+                    #region Create wireframes for all new/modified brushes
+                    using (var profilerSample = new ProfilerSample("Job_UpdateBrushOutline"))
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var updateBrushOutlineJob = new UpdateBrushOutlineJob
+                        {
+                            // Read
+                            allUpdateBrushIndexOrders = Temporaries.allUpdateBrushIndexOrders,
+                            brushMeshBlobs = brushMeshBlobs
+
+                            // Write
+                            //compactHierarchy          = compactHierarchy,  //<-- cannot do ref or pointer here
+                            //    so we set it below using InitializeHierarchy
+                        };
+                        updateBrushOutlineJob.InitializeHierarchy(ref compactHierarchy);
+                        updateBrushOutlineJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                JobHandles.brushMeshBlobsLookupJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.compactTreeRefJobHandle));
+                    }
+                    #endregion
+
+                    #endregion
                 }
-                finally { Profiler.EndSample(); }
-
-                Profiler.BeginSample("Job_CopyToMeshes");
-                try
+                finally
                 {
-                    const bool runInParallel = runInParallelDefault;
-                    var assignMeshesJob = new AssignMeshesJob
-                    {
-                        // Read
-                        meshDescriptions    = Temporaries.vertexBufferContents.meshDescriptions,
-                        subMeshSections     = Temporaries.vertexBufferContents.subMeshSections,
-                        meshDatas           = Temporaries.meshDatas,
+                    //
+                    // Dispose temporaries that we don't need anymore
+                    //
 
-                        // Write
-                        meshes              = Temporaries.vertexBufferContents.meshes,
-                        debugHelperMeshes   = Temporaries.debugHelperMeshes,
-                        renderMeshes        = Temporaries.renderMeshes,
-
-                        // Read / Write
-                        colliderMeshUpdates = Temporaries.colliderMeshUpdates,
-                    };
-                    assignMeshesJob.Schedule(runInParallel,
-                        new ReadJobHandles(
-                            JobHandles.vertexBufferContents_meshDescriptionsJobHandle,
-                            JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
-                            JobHandles.meshDatasJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.vertexBufferContents_meshesJobHandle,
-                            ref JobHandles.debugHelperMeshesJobHandle,
-                            ref JobHandles.renderMeshesJobHandle,
-                            ref JobHandles.colliderMeshUpdatesJobHandle));
-
-                    var colliderCopyToMeshJob = new CopyToColliderMeshJob
-                    {
-                        // Read
-                        subMeshSections         = Temporaries.vertexBufferContents.subMeshSections      .AsJobArray(runInParallel),
-                        subMeshCounts           = Temporaries.subMeshCounts                             .AsJobArray(runInParallel),
-                        subMeshSurfaces         = Temporaries.subMeshSurfaces,
-                        colliderDescriptors     = Temporaries.vertexBufferContents.colliderDescriptors,
-                        colliderMeshes          = Temporaries.colliderMeshUpdates                       .AsJobArray(runInParallel),
-                            
-                        // Read/Write
-                        meshes                  = Temporaries.vertexBufferContents.meshes,
-                    };
-                    var dependencies1 = JobHandleExtensions.CombineDependencies(
-                                            JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
-                                            JobHandles.subMeshCountsJobHandle,
-                                            JobHandles.subMeshSurfacesJobHandle,
-                                            JobHandles.vertexBufferContents_colliderDescriptorsJobHandle,
-                                            JobHandles.colliderMeshUpdatesJobHandle,
-                                            JobHandles.vertexBufferContents_meshesJobHandle);
-                    var job1 = colliderCopyToMeshJob.Schedule(runInParallel, Temporaries.colliderMeshUpdates, 1, dependencies1);
-
-                    var renderCopyToMeshJob = new CopyToRenderMeshJob
-                    {
-                        // Read
-                        subMeshSections         = Temporaries.vertexBufferContents.subMeshSections  .AsJobArray(runInParallel),
-                        subMeshCounts           = Temporaries.subMeshCounts                         .AsJobArray(runInParallel),
-                        subMeshSurfaces         = Temporaries.subMeshSurfaces,
-                        renderDescriptors       = Temporaries.vertexBufferContents.renderDescriptors,
-                        renderMeshes            = Temporaries.renderMeshes                          .AsJobArray(runInParallel),
-
-                        // Read/Write
-                        triangleBrushIndices    = Temporaries.vertexBufferContents.triangleBrushIndices,
-                        meshes                  = Temporaries.vertexBufferContents.meshes,
-                    };
-                    var dependencies2 = JobHandleExtensions.CombineDependencies(
-                                            JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
-                                            JobHandles.subMeshCountsJobHandle,
-                                            JobHandles.subMeshSurfacesJobHandle,
-                                            JobHandles.vertexBufferContents_renderDescriptorsJobHandle,
-                                            JobHandles.renderMeshesJobHandle,
-                                            JobHandles.vertexBufferContents_meshesJobHandle,
-                                            JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle);
-                    var job2 = renderCopyToMeshJob.Schedule(runInParallel, Temporaries.renderMeshes, 1, dependencies2);
-
-                    var helperCopyToMeshJob = new CopyToRenderMeshJob
-                    {
-                        // Read
-                        subMeshSections         = Temporaries.vertexBufferContents.subMeshSections  .AsJobArray(runInParallel),
-                        subMeshCounts           = Temporaries.subMeshCounts                         .AsJobArray(runInParallel),
-                        subMeshSurfaces         = Temporaries.subMeshSurfaces,
-                        renderDescriptors       = Temporaries.vertexBufferContents.renderDescriptors,
-                        renderMeshes            = Temporaries.debugHelperMeshes                     .AsJobArray(runInParallel),
-
-                        // Read/Write
-                        triangleBrushIndices    = Temporaries.vertexBufferContents.triangleBrushIndices,
-                        meshes                  = Temporaries.vertexBufferContents.meshes,
-                    };
-                    var dependencies3 = JobHandleExtensions.CombineDependencies(
-                                            JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
-                                            JobHandles.subMeshCountsJobHandle,
-                                            JobHandles.subMeshSurfacesJobHandle,
-                                            JobHandles.vertexBufferContents_renderDescriptorsJobHandle,
-                                            JobHandles.debugHelperMeshesJobHandle,
-                                            JobHandles.vertexBufferContents_meshesJobHandle,
-                                            JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle);
-                    var job3 = helperCopyToMeshJob.Schedule(runInParallel, Temporaries.debugHelperMeshes, 1, dependencies3);
-
-                    var copyJobs = JobHandle.CombineDependencies(job1, job2, job3);
-                    JobHandles.vertexBufferContents_meshesJobHandle = JobHandle.CombineDependencies(JobHandles.vertexBufferContents_meshesJobHandle, copyJobs);
-                    JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle = JobHandle.CombineDependencies(JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle, copyJobs);
+                    PreMeshUpdateDispose(); 
                 }
-                finally { Profiler.EndSample(); }
-                #endregion
-
-                //
-                // Finally store the generated surfaces into our cache
-                //
-
-                #region Store cached values back into cache (by node Index)
-                Profiler.BeginSample("Job_StoreToCache");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var storeToCacheJob = new StoreToCacheJob
-                    {
-                        // Read
-                        allTreeBrushIndexOrders     = Temporaries.allTreeBrushIndexOrders.AsJobArray(runInParallel),
-                        brushTreeSpaceBoundCache    = chiselLookupValues.brushTreeSpaceBoundCache.AsJobArray(runInParallel),
-                        brushRenderBufferCache      = chiselLookupValues.brushRenderBufferCache.AsJobArray(runInParallel),
-
-                        // Read Write
-                        brushTreeSpaceBoundLookup   = chiselLookupValues.brushTreeSpaceBoundLookup,
-                        brushRenderBufferLookup     = chiselLookupValues.brushRenderBufferLookup
-                    };
-                    storeToCacheJob.Schedule(runInParallel,
-                        new ReadJobHandles(
-                            JobHandles.allTreeBrushIndexOrdersJobHandle,
-                            JobHandles.brushTreeSpaceBoundCacheJobHandle,
-                            JobHandles.brushRenderBufferCacheJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.storeToCacheJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-                #endregion
-
-                #region Create wireframes for all new/modified brushes
-                Profiler.BeginSample("Job_UpdateBrushOutline");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var updateBrushOutlineJob = new UpdateBrushOutlineJob
-                    {
-                        // Read
-                        allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders,
-                        brushMeshBlobs              = brushMeshBlobs
-
-                        // Write
-                        //compactHierarchy          = compactHierarchy,  //<-- cannot do ref or pointer here
-                                                                         //    so we set it below using InitializeHierarchy
-                    };
-                    updateBrushOutlineJob.InitializeHierarchy(ref compactHierarchy);
-                    updateBrushOutlineJob.Schedule(runInParallel,
-                        new ReadJobHandles(
-                            JobHandles.allUpdateBrushIndexOrdersJobHandle,
-                            JobHandles.brushMeshBlobsLookupJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.compactTreeRefJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-                #endregion
-
-                #endregion
             }
 
             public JobHandle PreMeshUpdateDispose()

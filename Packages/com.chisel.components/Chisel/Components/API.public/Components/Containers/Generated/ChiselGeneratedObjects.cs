@@ -384,7 +384,7 @@ namespace Chisel.Components
                                      NativeList<ChiselMeshUpdate>   colliderMeshUpdates,
                                      NativeList<ChiselMeshUpdate>   debugHelperMeshes,
                                      NativeList<ChiselMeshUpdate>   renderMeshes,
-                                     JobHandle dependencies)
+                                     JobHandle                      dependencies)
         {
             gameObjectStates.Clear();
             colliderObjectUpdates.Clear();
