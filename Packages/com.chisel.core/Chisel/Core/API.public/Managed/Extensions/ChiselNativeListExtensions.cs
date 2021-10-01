@@ -17,7 +17,7 @@ namespace Chisel.Core
     public static unsafe class ChiselNativeListExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void CopyTo<T>(this UnsafeList<T> src, T[] dst, int count)
+        public static unsafe void CopyTo<T>(ref this UnsafeList<T> src, T[] dst, int count)
             where T : unmanaged
         {
             if (dst == null)
@@ -176,6 +176,15 @@ namespace Chisel.Core
                 return 0;
             return math.hash(list.GetUnsafeReadOnlyPtr(), length * sizeof(T));
         }
+        /*
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void AddRangeNoResize<T>(ref this UnsafeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
+        {
+            if (elements.Length == 0)
+                return;
+            CheckCreated(list.IsCreated);
+            list.AddRangeNoResize(elements.GetUnsafeReadOnlyPtr(), elements.Length);
+        }*/
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRangeNoResize<T>(this NativeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
@@ -243,7 +252,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void CopyFrom<T>(this UnsafeList<T> list, NativeList<T> elements, int start, int count) where T : unmanaged
+        public static void CopyFrom<T>(ref this UnsafeList<T> list, NativeList<T> elements, int start, int count) where T : unmanaged
         {
             if (count == 0)
                 return;

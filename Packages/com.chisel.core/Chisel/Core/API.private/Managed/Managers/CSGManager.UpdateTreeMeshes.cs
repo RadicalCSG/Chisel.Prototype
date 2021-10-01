@@ -76,7 +76,7 @@ namespace Chisel.Core
             }
         }
         #endregion
-
+        /*
         #region GetHash
         static unsafe uint GetHash(NativeList<uint> list)
         {
@@ -99,7 +99,7 @@ namespace Chisel.Core
             }
         }
         #endregion
-
+        */
         const Allocator allocator = Allocator.Persistent;
 
         internal unsafe struct TreeUpdate

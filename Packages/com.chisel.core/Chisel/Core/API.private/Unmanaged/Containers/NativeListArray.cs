@@ -165,7 +165,7 @@ namespace Chisel.Core
                 UnsafeUtility.Free(arrayData, allocator);
             }
 
-            public bool IsCreated => Ptr != null;
+           //public bool IsCreated => Ptr != null;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal static bool ShouldDeallocate(Allocator allocator)
@@ -197,7 +197,7 @@ namespace Chisel.Core
                 Length = 0;
                 Capacity = 0;
             }
-
+            /*
             public void Clear()
             {
                 if (Length == 0)
@@ -215,7 +215,7 @@ namespace Chisel.Core
                 }
                 Length = 0;
             }
-
+            */
             public void ClearChildren()
             {
                 if (Length == 0)
@@ -275,16 +275,16 @@ namespace Chisel.Core
         UnsafeListArray* m_Array;
         
         public int Length { [return: AssumeRange(0, int.MaxValue)][MethodImpl(MethodImplOptions.AggressiveInlining)] get { return m_Array->Length; } }
-        public int Count { [return: AssumeRange(0, int.MaxValue)][MethodImpl(MethodImplOptions.AggressiveInlining)] get { return m_Array->Length; } }
+        //public int Count { [return: AssumeRange(0, int.MaxValue)][MethodImpl(MethodImplOptions.AggressiveInlining)] get { return m_Array->Length; } }
         public int Capacity { [return: AssumeRange(0, int.MaxValue)][MethodImpl(MethodImplOptions.AggressiveInlining)] get { return m_Array->Capacity; } }
         public bool IsCreated => m_Array != null;
-
+        /*
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeListArray(Allocator allocator)
             : this(1, allocator, 2)
         {
         }
-
+        */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeListArray(int initialListCapacity, Allocator allocator)
             : this(initialListCapacity, allocator, 2)
@@ -368,7 +368,7 @@ namespace Chisel.Core
             CheckArgPositive(length);
             m_Array->ResizeExact(length);
         }
-
+        /*
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Clear()
         {
@@ -377,7 +377,7 @@ namespace Chisel.Core
 #endif
             m_Array->Clear();
         }
-
+        */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ClearChildren()
         {
@@ -802,7 +802,7 @@ namespace Chisel.Core
                     return AssumePositive(m_ListData->Length);
                 }
             }
-
+            /*
             public int Count
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -819,7 +819,7 @@ namespace Chisel.Core
                     return AssumePositive(m_ListData->Length);
                 }
             }
-
+            */
             public int Capacity
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -937,7 +937,7 @@ namespace Chisel.Core
 #endif
                 return array;
             }
-            
+            /*
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public NativeList<T> ToList(Allocator allocator)
             {
@@ -959,7 +959,7 @@ namespace Chisel.Core
                 CheckAllocated(m_ListData);
 #endif
                 m_ListData->Resize(length, options);
-            }
+            }*/
         }
     }
 }
