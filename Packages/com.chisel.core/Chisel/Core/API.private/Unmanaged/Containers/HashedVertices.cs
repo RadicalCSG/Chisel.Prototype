@@ -25,7 +25,7 @@ namespace Chisel.Core
         }
 
         
-        public unsafe static float3 SnapToExistingVertex(ushort* hashTable, UnsafeList* chainedIndices, UnsafeList* vertices, float3 vertex)
+        public unsafe static float3 SnapToExistingVertex(ushort* hashTable, UnsafeList<ushort>* chainedIndices, UnsafeList<float3>* vertices, float3 vertex)
         {
             var centerIndex = new int3((int)(vertex.x / HashedVertices.kCellSize), (int)(vertex.y / HashedVertices.kCellSize), (int)(vertex.z / HashedVertices.kCellSize));
             var offsets = stackalloc int3[]
@@ -71,7 +71,7 @@ namespace Chisel.Core
             return verticesPtr[closestVertexIndex];
         }
         
-        public unsafe static void ReplaceIfExists(ushort* hashTable, UnsafeList* chainedIndices, UnsafeList* vertices, float3 vertex)
+        public unsafe static void ReplaceIfExists(ushort* hashTable, UnsafeList<ushort>* chainedIndices, UnsafeList<float3>* vertices, float3 vertex)
         {
             var centerIndex = new int3((int)(vertex.x / HashedVertices.kCellSize), (int)(vertex.y / HashedVertices.kCellSize), (int)(vertex.z / HashedVertices.kCellSize));
             var offsets = stackalloc int3[]
@@ -118,7 +118,7 @@ namespace Chisel.Core
         }
         
         // Add but make the assumption we're not growing any list
-        public unsafe static ushort AddNoResize(ushort* hashTable, UnsafeList* chainedIndices, UnsafeList* vertices, float3 vertex)
+        public unsafe static ushort AddNoResize(ushort* hashTable, UnsafeList<ushort>* chainedIndices, UnsafeList<float3>* vertices, float3 vertex)
         {
             var centerIndex = new int3((int)(vertex.x / HashedVertices.kCellSize), (int)(vertex.y / HashedVertices.kCellSize), (int)(vertex.z / HashedVertices.kCellSize));
             var offsets = stackalloc int3[]
@@ -175,7 +175,7 @@ namespace Chisel.Core
         }
 
         // Add but make the assumption we're not growing any list
-        public unsafe static ushort Add(ushort* hashTable, UnsafeList* chainedIndices, UnsafeList* vertices, float3 vertex)
+        public unsafe static ushort Add(ushort* hashTable, UnsafeList<ushort>* chainedIndices, UnsafeList<float3>* vertices, float3 vertex)
         {
             var centerIndex = new int3((int)(vertex.x / HashedVertices.kCellSize), (int)(vertex.y / HashedVertices.kCellSize), (int)(vertex.z / HashedVertices.kCellSize));
             var offsets = stackalloc int3[]
@@ -293,7 +293,7 @@ namespace Chisel.Core
     // TODO: make this safely writable in parallel / maybe check out NativeMultiHashMap? 
     //       write multiple vertices -> combine? but what about indices? seperate vertex generation from getting indices?
     [NativeContainer]
-    public unsafe struct HashedVertices : IDisposable, IDisposableJob
+    public unsafe struct HashedVertices : INativeDisposable
     {
         public const ushort     kMaxVertexCount = 65000;
         internal const uint     kHashTableSize  = 509u;
@@ -312,9 +312,9 @@ namespace Chisel.Core
         [NativeSetClassTypeToNullOnSchedule]
         DisposeSentinel m_DisposeSentinel;
 #endif
-        [NativeDisableUnsafePtrRestriction] internal UnsafeList*    m_Vertices;
-        [NativeDisableUnsafePtrRestriction] internal UnsafeList*    m_ChainedIndices;
-        [NativeDisableUnsafePtrRestriction] internal void*          m_HashTable;
+        [NativeDisableUnsafePtrRestriction] internal UnsafeList<float3>*    m_Vertices;
+        [NativeDisableUnsafePtrRestriction] internal UnsafeList<ushort>*    m_ChainedIndices;
+        [NativeDisableUnsafePtrRestriction] internal void*                  m_HashTable;
 
         // Keep track of where the memory for this was allocated
         Allocator m_AllocatorLabel;
@@ -397,8 +397,8 @@ namespace Chisel.Core
             m_HashTable = UnsafeUtility.Malloc(hashTableMemSize, UnsafeUtility.AlignOf<ushort>(), m_AllocatorLabel);
             UnsafeUtility.MemClear(m_HashTable, hashTableMemSize);
             
-            m_Vertices          = UnsafeList.Create(UnsafeUtility.SizeOf<float3>(), UnsafeUtility.AlignOf<float3>(), vertexCapacity, allocator);
-            m_ChainedIndices    = UnsafeList.Create(UnsafeUtility.SizeOf<ushort>(), UnsafeUtility.AlignOf<ushort>(), chainedIndicesCapacity, allocator);
+            m_Vertices          = UnsafeList<float3>.Create(vertexCapacity, allocator);
+            m_ChainedIndices    = UnsafeList<ushort>.Create(chainedIndicesCapacity, allocator);
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.SetBumpSecondaryVersionOnScheduleWrite(m_Safety, true);
@@ -409,8 +409,8 @@ namespace Chisel.Core
             : this((otherHashedVertices.m_Vertices != null) ? otherHashedVertices.m_Vertices->Length : 1, (otherHashedVertices.m_ChainedIndices != null) ? otherHashedVertices.m_ChainedIndices->Length : 1, allocator, 2)
         {
             CheckAllocated(otherHashedVertices);
-            m_ChainedIndices->AddRangeNoResize<ushort>(*otherHashedVertices.m_ChainedIndices);
-            m_Vertices->AddRangeNoResize<float3>(*otherHashedVertices.m_Vertices);
+            m_ChainedIndices->AddRangeNoResize(*otherHashedVertices.m_ChainedIndices);
+            m_Vertices->AddRangeNoResize(*otherHashedVertices.m_Vertices);
         }
 
         public HashedVertices(ref ChiselBlobArray<float3> uniqueVertices, Allocator allocator = Allocator.Persistent)
@@ -438,9 +438,9 @@ namespace Chisel.Core
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
 #endif
-            UnsafeList.Destroy(m_Vertices);
+            UnsafeList<float3>.Destroy(m_Vertices);
             m_Vertices = null;
-            UnsafeList.Destroy(m_ChainedIndices);
+            UnsafeList<ushort>.Destroy(m_ChainedIndices);
             m_ChainedIndices = null;
             UnsafeUtility.Free(m_HashTable, m_AllocatorLabel);
         }
@@ -458,15 +458,15 @@ namespace Chisel.Core
         [BurstCompile(CompileSynchronously = true)]
         internal unsafe struct UnsafeDisposeJob : IJob
         {
-            [NativeDisableUnsafePtrRestriction] public UnsafeList* vertices;
-            [NativeDisableUnsafePtrRestriction] public UnsafeList* chainedIndices;
+            [NativeDisableUnsafePtrRestriction] public UnsafeList<float3>* vertices;
+            [NativeDisableUnsafePtrRestriction] public UnsafeList<ushort>* chainedIndices;
             [NativeDisableUnsafePtrRestriction] public void* hashTable;
             public Allocator allocator;
 
             public void Execute()
             {
-                UnsafeList.Destroy(vertices);
-                UnsafeList.Destroy(chainedIndices);
+                UnsafeList<float3>.Destroy(vertices);
+                UnsafeList<ushort>.Destroy(chainedIndices);
                 UnsafeUtility.Free(hashTable, allocator);
             }
         }
@@ -501,8 +501,8 @@ namespace Chisel.Core
                 throw new IndexOutOfRangeException($"Value {value} is out of range of '{length}' Length.");
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static void CheckAllocated(UnsafeList* listData)
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]        
+        private static void CheckAllocated<T>(UnsafeList<T>* listData) where T : unmanaged
         {
             if (listData == null || !listData->IsCreated)
                 throw new Exception($"Expected {nameof(listData)} to be allocated.");
@@ -544,12 +544,12 @@ namespace Chisel.Core
             var requiredVertCapacity    = m_Vertices->Length + extraIndices;
             var requiredVertices        = m_Vertices->Length + (extraIndices * 2);
             if (m_Vertices->Capacity < requiredVertCapacity)
-                m_Vertices->SetCapacity<float3>(requiredVertices);
+                m_Vertices->SetCapacity(requiredVertices);
 
             var requiredIndexCapacity   = m_ChainedIndices->Length + extraIndices;
             var requiredIndices         = m_ChainedIndices->Length + (extraIndices * 2);
             if (m_ChainedIndices->Capacity < requiredIndexCapacity)
-                m_ChainedIndices->SetCapacity<ushort>(requiredIndices);
+                m_ChainedIndices->SetCapacity(requiredIndices);
         }
 
         /// <summary>

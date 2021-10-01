@@ -20,6 +20,27 @@ namespace Chisel.Core
         public void Dispose() { Profiler.EndSample(); }
     }
 
+    // TODO: reorder nodes in backend every time a node is added/removed
+    //          this ensures 
+    //              everything is sequential in memory
+    //              we don't have gaps between nodes
+    //              order is always predictable
+
+    // TODO: ensure we only update exactly what we need, and nothing more
+
+    // TODO: figure out exactly what materials/physicMaterials we have per tree
+    //          => give each material a unique index per tree.
+    //          => cache this material index 
+    //          => have a lookup table for material <=> material index
+    //       have array of lists for indices, colliderVertices, renderVertices
+    //       our number of meshes is now 100% predictable
+    //       instead of storing indices, vertices etc. in blobs, store these in these lists, per query
+    //       at beginning of frame remove all invalidated pieces of these lists and pack them
+    //       when adding new geometry, add them at the end
+    //       then figure out if its worth it to keep these lists "in order"
+
+    // TODO: use parameter1Count/parameter2Count for submeshes etc. just pre-allocate blocks for all possible meshes/submeshes
+
     partial class CompactHierarchyManager
     {
         const bool runInParallelDefault = true;
@@ -243,29 +264,7 @@ namespace Chisel.Core
             static TreeUpdate[] s_TreeUpdates;
             public static JobHandle ScheduleTreeMeshJobs(FinishMeshUpdate finishMeshUpdates, NativeList<CSGTree> trees)
             {
-                // TODO: reorder nodes in backend every time a node is added/removed
-                //          this ensures 
-                //              everything is sequential in memory
-                //              we don't have gaps between nodes
-                //              order is always predictable
-
-                // TODO: ensure we only update exactly what we need, and nothing more
-
-                // TODO: figure out exactly what materials/physicMaterials we have per tree
-                //          => give each material a unique index per tree.
-                //          => cache this material index 
-                //          => have a lookup table for material <=> material index
-                //       have array of lists for indices, colliderVertices, renderVertices
-                //       our number of meshes is now 100% predictable
-                //       instead of storing indices, vertices etc. in blobs, store these in these lists, per query
-                //       at beginning of frame remove all invalidated pieces of these lists and pack them
-                //       when adding new geometry, add them at the end
-                //       then figure out if its worth it to keep these lists "in order"
-
-                // TODO: use parameter1Count/parameter2Count for submeshes etc. just pre-allocate blocks for all possible meshes/submeshes
-
                 var finalJobHandle          = default(JobHandle);
-
 
                 //
                 // Schedule all the jobs that create new meshes based on our CSG trees
@@ -341,7 +340,7 @@ namespace Chisel.Core
                 try
                 {
                     //
-                    // Preprocess the data we need to perform CSG
+                    // Preprocess the data we need to perform CSG, figure what needs to be updated in the tree (might be nothing)
                     //
                     #region Schedule cache update jobs
                     using (var profilerSample = new ProfilerSample("CSG_RunMeshInitJobs"))
@@ -352,19 +351,26 @@ namespace Chisel.Core
                     #endregion
 
                     //
-                    // Schedule chain of jobs that will generate our surface meshes
+                    // Schedule chain of jobs that will generate our surface meshes 
+                    // At this point we need previously scheduled jobs to be completed so we know what actually needs to be updated, if anything
                     //
                     #region Schedule CSG jobs
                     using (var profilerSample = new ProfilerSample("CSG_RunMeshUpdateJobs"))
                     {
-                        for (int t = 0; t < treeUpdateLength; t++)
+                        // Reverse order since we sorted the trees from big to small & small trees are more likely to have already completed
+                        for (int t = treeUpdateLength - 1; t >= 0; t--)
                         {
-                            // TODO: figure out if there's a way around this ....
-                            s_TreeUpdates[t].JobHandles.rebuildTreeBrushIndexOrdersJobHandle.Complete();
-                            s_TreeUpdates[t].JobHandles.rebuildTreeBrushIndexOrdersJobHandle = default;
-                            s_TreeUpdates[t].updateCount = s_TreeUpdates[t].Temporaries.rebuildTreeBrushIndexOrders.Length;
+                            ref var treeUpdate = ref s_TreeUpdates[t];
 
-                            s_TreeUpdates[t].RunMeshUpdateJobs();
+                            // TODO: figure out if there's a way around this ....
+                            treeUpdate.JobHandles.rebuildTreeBrushIndexOrdersJobHandle.Complete();
+                            treeUpdate.JobHandles.rebuildTreeBrushIndexOrdersJobHandle = default;
+                            treeUpdate.updateCount = treeUpdate.Temporaries.rebuildTreeBrushIndexOrders.Length;
+
+                            if (treeUpdate.updateCount <= 0)
+                                continue;
+
+                            treeUpdate.RunMeshUpdateJobs();
                         }
                     }
                     #endregion
@@ -427,10 +433,10 @@ namespace Chisel.Core
                         finally
                         {
                             #region Ensure meshes are cleaned up
-                            // Whatever happens, error or not, our jobs need to be completed at this point
+                            // Error or not, our jobs need to be completed at this point
                             dependencies.Complete(); 
 
-                            // Whatever happens, make sure our meshDataArray is disposed
+                            // Ensure our meshDataArray ends up being disposed, even if we had errors
                             if (treeUpdate.updateCount > 0 && !meshUpdated)
                                 treeUpdate.Temporaries.meshDataArray.Dispose();
                             #endregion
@@ -815,9 +821,6 @@ namespace Chisel.Core
             {
                 try
                 {
-                    if (updateCount <= 0)
-                        return;
-
                     ref var compactHierarchy = ref CompactHierarchyManager.GetHierarchy(treeCompactNodeID);
                     var chiselLookupValues = ChiselTreeLookup.Value[this.tree];
                     ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobCache;
@@ -1702,6 +1705,7 @@ namespace Chisel.Core
                             subMeshSections = Temporaries.vertexBufferContents.subMeshSections.AsJobArray(runInParallel),
 
                             // Read Write
+                            allocator = Allocator.Persistent,
                             triangleBrushIndices = Temporaries.vertexBufferContents.triangleBrushIndices
                         };
                         allocateVertexBuffersJob.Schedule(runInParallel,

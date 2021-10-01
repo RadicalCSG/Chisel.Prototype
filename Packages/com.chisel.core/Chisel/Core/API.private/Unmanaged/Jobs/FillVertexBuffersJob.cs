@@ -376,14 +376,15 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<SubMeshSection>                      subMeshSections;
 
         // Read / Write
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<CompactNodeID> triangleBrushIndices;
+        public Allocator allocator;
+        [NativeDisableParallelForRestriction, NoAlias] public NativeList<UnsafeList<CompactNodeID>> triangleBrushIndices;
 
         public void Execute()
         {
             if (subMeshSections.Length == 0)
                 return;
 
-            triangleBrushIndices.   ResizeExact(subMeshSections.Length);
+            triangleBrushIndices.Resize(subMeshSections.Length, NativeArrayOptions.ClearMemory);
             for (int i = 0; i < subMeshSections.Length; i++)
             {
                 var section             = subMeshSections[i];
@@ -392,9 +393,9 @@ namespace Chisel.Core
                     continue;
 
                 var totalIndexCount = section.totalIndexCount;
-                triangleBrushIndices.AllocateWithCapacityForIndex(i, totalIndexCount / 3);                        
-                triangleBrushIndices[i].Clear();
-                triangleBrushIndices[i].Resize(totalIndexCount / 3, NativeArrayOptions.ClearMemory);
+                var newBrushIndices = new UnsafeList<CompactNodeID>(totalIndexCount / 3, allocator);
+                newBrushIndices.Resize(totalIndexCount / 3, NativeArrayOptions.ClearMemory);
+                triangleBrushIndices[i] = newBrushIndices;
             }
         }
     }
@@ -576,8 +577,8 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<ChiselMeshUpdate>            renderMeshes;
 
         // Read / Write
-        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeListArray<CompactNodeID>    triangleBrushIndices;
-        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeList<Mesh.MeshData>         meshes;
+        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeList<UnsafeList<CompactNodeID>> triangleBrushIndices;
+        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeList<Mesh.MeshData>             meshes;
 
         public void Execute(int renderIndex)
         {
@@ -610,7 +611,7 @@ namespace Chisel.Core
             var vertices    = meshData.GetVertexData<RenderVertex>(stream: 0);
             var indices     = meshData.GetIndexData<int>();
 
-            var triangleBrushIndices = this.triangleBrushIndices[contentsIndex].AsArray();
+            var triangleBrushIndices = this.triangleBrushIndices[contentsIndex];
                 
             int currentBaseVertex = 0;
             int currentBaseIndex = 0;

@@ -17,6 +17,26 @@ namespace Chisel.Core
     public static unsafe class ChiselNativeListExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void CopyTo<T>(this UnsafeList<T> src, T[] dst, int count)
+            where T : unmanaged
+        {
+            if (dst == null)
+                throw new NullReferenceException();
+            if (count < 0)
+                throw new ArgumentOutOfRangeException($"{nameof(count)} must be positive.", nameof(count));
+            if (count > src.Length)
+                throw new ArgumentOutOfRangeException($" {nameof(count)} must be within bounds of array ({src.Length}).", nameof(count));
+            if (count > dst.Length)
+                throw new ArgumentOutOfRangeException($"{nameof(count)} must be within bounds of array ({dst.Length}).", nameof(count));
+            if (count == 0)
+                return;
+            fixed (T* dstPtr = &dst[0])
+            {
+                UnsafeUtility.MemCpy(src.Ptr, dstPtr, count * sizeof(T));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T[] ToArray<T>(ref this UnsafeList<T> input) 
             where T : unmanaged
         {

@@ -13,164 +13,196 @@ namespace Chisel.Core
     using Chisel.Core.LowLevel.Unsafe;
     using UnityEngine;
 
-    [DebuggerDisplay("Length = {Length}, Capacity = {Capacity}, IsCreated = {IsCreated}")]
-    unsafe struct UnsafeListArray : IDisposable
+    [NativeContainer]
+    [StructLayout(LayoutKind.Sequential)]
+    [DebuggerDisplay("Length = {Length}")]
+    public unsafe struct NativeListArray<T> : INativeDisposable
+        where T : unmanaged
     {
-        // TODO: use "FixedList" instead
-        [NativeDisableUnsafePtrRestriction]
-        public UnsafeList** Ptr;
-
-        public int Length;
-        public int Capacity;
-        public int InitialListCapacity;
-
-        public Allocator Allocator;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static UnsafeListArray* Create(Allocator allocator)
+        [DebuggerDisplay("Length = {Length}, Capacity = {Capacity}, IsCreated = {IsCreated}")]
+        unsafe struct UnsafeListArray : IDisposable
         {
-            UnsafeListArray* arrayData = (UnsafeListArray*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<UnsafeListArray>(), UnsafeUtility.AlignOf<UnsafeListArray>(), allocator);
-            UnsafeUtility.MemClear(arrayData, UnsafeUtility.SizeOf<UnsafeListArray>());
+            // TODO: use "FixedList" instead
+            [NativeDisableUnsafePtrRestriction]
+            public UnsafeList<T>** Ptr;
 
-            arrayData->Allocator = allocator;
-            arrayData->Length = 0;
-            arrayData->Capacity = 0;
+            public int Length;
+            public int Capacity;
+            public int InitialListCapacity;
 
-            return arrayData;
-        }
+            public Allocator Allocator;
 
-        void ResizeCapacity(int newCapacity)
-        {
-            CheckAllocator(Allocator);
-            var oldBytesToMalloc = sizeof(UnsafeList*) * Capacity;
-            var newBytesToMalloc = sizeof(UnsafeList*) * newCapacity;
-            var newPtr = (UnsafeList**)UnsafeUtility.Malloc(newBytesToMalloc, UnsafeUtility.AlignOf<long>(), Allocator);
-            UnsafeUtility.MemClear(newPtr, newBytesToMalloc);
-            if (Ptr != null)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static UnsafeListArray* Create(Allocator allocator)
             {
-                UnsafeUtility.MemCpy(newPtr, Ptr, oldBytesToMalloc);
-                UnsafeUtility.Free(Ptr, Allocator);
+                UnsafeListArray* arrayData = (UnsafeListArray*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<UnsafeListArray>(), UnsafeUtility.AlignOf<UnsafeListArray>(), allocator);
+                UnsafeUtility.MemClear(arrayData, UnsafeUtility.SizeOf<UnsafeListArray>());
+
+                arrayData->Allocator = allocator;
+                arrayData->Length = 0;
+                arrayData->Capacity = 0;
+
+                return arrayData;
             }
-            Ptr = newPtr;
-            Capacity = newCapacity;
-        }
 
-        public void ResizeExact(int newLength)
-        {
-            if (newLength == Length)
-                return;
-
-            if (Length > 0 && newLength < Length)
+            void ResizeCapacity(int newCapacity)
             {
-                for (int i = newLength; i < Length; i++)
+                CheckAllocator(Allocator);
+                var oldBytesToMalloc = sizeof(UnsafeList<T>*) * Capacity;
+                var newBytesToMalloc = sizeof(UnsafeList<T>*) * newCapacity;
+                var newPtr = (UnsafeList<T>**)UnsafeUtility.Malloc(newBytesToMalloc, UnsafeUtility.AlignOf<long>(), Allocator);
+                UnsafeUtility.MemClear(newPtr, newBytesToMalloc);
+                if (Ptr != null)
                 {
-                    if (Ptr[i] != null &&
-                        Ptr[i]->IsCreated)
+                    UnsafeUtility.MemCpy(newPtr, Ptr, oldBytesToMalloc);
+                    UnsafeUtility.Free(Ptr, Allocator);
+                }
+                Ptr = newPtr;
+                Capacity = newCapacity;
+            }
+
+            public void ResizeExact(int newLength)
+            {
+                if (newLength == Length)
+                    return;
+
+                if (Length > 0 && newLength < Length)
+                {
+                    for (int i = newLength; i < Length; i++)
                     {
-                        Ptr[i]->Clear();
-                    } else
-                        Ptr[i] = null;
+                        if (Ptr[i] != null &&
+                            Ptr[i]->IsCreated)
+                        {
+                            Ptr[i]->Clear();
+                        } else
+                            Ptr[i] = null;
+                    }
+                }
+                if (Capacity < newLength)
+                    ResizeCapacity(newLength);
+                Length = newLength;
+            }
+
+            void Resize(int newLength)
+            {
+                if (newLength == Length)
+                    return;
+
+                if (Length > 0 && newLength < Length)
+                {
+                    for (int i = newLength; i < Length; i++)
+                    {
+                        if (Ptr[i] != null &&
+                            Ptr[i]->IsCreated)
+                        {
+                            Ptr[i]->Clear();
+                        } else
+                            Ptr[i] = null;
+                    }
+                }
+
+                if (Capacity < newLength)
+                {
+                    var capacity = (int)((newLength * 1.5f) + 0.5f);
+                    ResizeCapacity(capacity);
+                }
+                Length = newLength;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public UnsafeList<T>* InitializeIndex(int index, int capacity, NativeArrayOptions options = NativeArrayOptions.UninitializedMemory)
+            {
+                CheckIndexInRange(index, Length);
+                var ptr = UnsafeList<T>.Create(capacity, Allocator, options);
+                Ptr[index] = ptr;
+                return ptr;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public UnsafeList<T>* InitializeIndex(int index, NativeArrayOptions options = NativeArrayOptions.UninitializedMemory)
+            {
+                return InitializeIndex(index, InitialListCapacity, options);
+            }
+
+            /*
+            [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static void CheckAlreadyAllocated(int length)
+            {
+                if (length > 0)
+                    throw new IndexOutOfRangeException($"NativeListArray already allocated.");
+            }
+            */
+
+
+            [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static void CheckIndexInRange(int value, int length)
+            {
+                if (value < 0)
+                    throw new IndexOutOfRangeException($"Value {value} must be positive.");
+
+                if ((uint)value >= (uint)length)
+                    throw new IndexOutOfRangeException($"Value {value} is out of range in NativeList of '{length}' Length.");
+            }
+
+            [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal static void NullCheck(void* arrayData)
+            {
+                if (arrayData == null)
+                {
+                    throw new Exception("UnsafeListArray has yet to be created or has been destroyed!");
                 }
             }
-            if (Capacity < newLength)
-                ResizeCapacity(newLength);
-            Length = newLength;
-        }
 
-        void Resize(int newLength)
-        {
-            if (newLength == Length)
-                return;
-
-            if (Length > 0 && newLength < Length)
+            public static void Destroy(UnsafeListArray* arrayData)
             {
-                for (int i = newLength; i < Length; i++)
+                NullCheck(arrayData);
+                var allocator = arrayData->Allocator;
+                CheckAllocator(allocator);
+                arrayData->Dispose();
+                UnsafeUtility.Free(arrayData, allocator);
+            }
+
+            public bool IsCreated => Ptr != null;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal static bool ShouldDeallocate(Allocator allocator)
+            {
+                // Allocator.Invalid == container is not initialized.
+                // Allocator.None    == container is initialized, but container doesn't own data.
+                return allocator > Allocator.None;
+            }
+
+            public void Dispose()
+            {
+                if (ShouldDeallocate(Allocator))
                 {
-                    if (Ptr[i] != null &&
-                        Ptr[i]->IsCreated)
+                    for (int i = 0; i < Length; i++)
                     {
-                        Ptr[i]->Clear();
-                    } else
+                        if (Ptr[i] != null &&
+                            Ptr[i]->IsCreated)
+                        {
+                            Ptr[i]->Clear();
+                            Ptr[i]->Dispose();
+                        }
                         Ptr[i] = null;
+                    }
+                    UnsafeUtility.Free(Ptr, Allocator);
+                    Allocator = Allocator.Invalid;
                 }
+
+                Ptr = null;
+                Length = 0;
+                Capacity = 0;
             }
 
-            if (Capacity < newLength)
+            public void Clear()
             {
-                var capacity = (int)((newLength * 1.5f) + 0.5f);
-                ResizeCapacity(capacity);
-            }
-            Length = newLength;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public UnsafeList* InitializeIndex(int index, int sizeOf, int alignOf, int capacity, NativeArrayOptions options = NativeArrayOptions.UninitializedMemory)
-        {
-            CheckIndexInRange(index, Length);
-            var ptr = UnsafeList.Create(sizeOf, alignOf, capacity, Allocator, options);
-            Ptr[index] = ptr;
-            return ptr;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public UnsafeList* InitializeIndex(int index, int sizeOf, int alignOf, NativeArrayOptions options = NativeArrayOptions.UninitializedMemory)
-        {
-            return InitializeIndex(index, sizeOf, alignOf, InitialListCapacity, options);
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void CheckAlreadyAllocated(int length)
-        {
-            if (length > 0)
-                throw new IndexOutOfRangeException($"NativeListArray already allocated.");
-        }
-
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void CheckIndexInRange(int value, int length)
-        {
-            if (value < 0)
-                throw new IndexOutOfRangeException($"Value {value} must be positive.");
-
-            if ((uint)value >= (uint)length)
-                throw new IndexOutOfRangeException($"Value {value} is out of range in NativeList of '{length}' Length.");
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void NullCheck(void* arrayData)
-        {
-            if (arrayData == null)
-            {
-                throw new Exception("UnsafeListArray has yet to be created or has been destroyed!");
-            }
-        }
-
-        public static void Destroy(UnsafeListArray* arrayData)
-        {
-            NullCheck(arrayData);
-            var allocator = arrayData->Allocator;
-            CheckAllocator(allocator);
-            arrayData->Dispose();
-            UnsafeUtility.Free(arrayData, allocator);
-        }
-
-        public bool IsCreated => Ptr != null;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool ShouldDeallocate(Allocator allocator)
-        {
-            // Allocator.Invalid == container is not initialized.
-            // Allocator.None    == container is initialized, but container doesn't own data.
-            return allocator > Allocator.None;
-        }
-
-        public void Dispose()
-        {
-            if (ShouldDeallocate(Allocator))
-            {
+                if (Length == 0)
+                    return;
+            
                 for (int i = 0; i < Length; i++)
                 {
                     if (Ptr[i] != null &&
@@ -181,92 +213,57 @@ namespace Chisel.Core
                     }
                     Ptr[i] = null;
                 }
-                UnsafeUtility.Free(Ptr, Allocator);
-                Allocator = Allocator.Invalid;
+                Length = 0;
             }
 
-            Ptr = null;
-            Length = 0;
-            Capacity = 0;
-        }
-
-        public void Clear()
-        {
-            if (Length == 0)
-                return;
-            
-            for (int i = 0; i < Length; i++)
+            public void ClearChildren()
             {
-                if (Ptr[i] != null &&
-                    Ptr[i]->IsCreated)
+                if (Length == 0)
+                    return;
+
+                for (int i = 0; i < Length; i++)
                 {
-                    Ptr[i]->Clear();
-                    Ptr[i]->Dispose();
+                    if (Ptr[i] != null &&
+                        Ptr[i]->IsCreated)
+                    {
+                        Ptr[i]->Clear();
+                    } else
+                        Ptr[i] = null;
                 }
-                Ptr[i] = null;
+                Length = 0;
             }
-            Length = 0;
-        }
 
-        public void ClearChildren()
-        {
-            if (Length == 0)
-                return;
-
-            for (int i = 0; i < Length; i++)
+            [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static private void CheckAllocator(Allocator a)
             {
-                if (Ptr[i] != null &&
-                    Ptr[i]->IsCreated)
+                if (a <= Allocator.None)
                 {
-                    Ptr[i]->Clear();
-                } else
-                    Ptr[i] = null;
+                    throw new Exception("UnsafeListArray is not initialized, it must be initialized with allocator before use.");
+                }
             }
-            Length = 0;
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static private void CheckAllocator(Allocator a)
-        {
-            if (a <= Allocator.None)
+            /*
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int IndexOf<T1>(T1 value) where T1 : unmanaged, IEquatable<T1>
             {
-                throw new Exception("UnsafeListArray is not initialized, it must be initialized with allocator before use.");
+                return NativeArrayExtensions.IndexOf<T1, T1>(Ptr, Length, value);
+            }
+        
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool Contains<T1>(T1 value) where T1 : unmanaged, IEquatable<T1>
+            {
+                return IndexOf(value) != -1;
+            }*/
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int AllocateItem()
+            {
+                var prevLength = Length;
+                Resize(prevLength + 1);
+                return prevLength;
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int IndexOf<T>(T value) where T : unmanaged, IEquatable<T>
-        {
-            return NativeArrayExtensions.IndexOf<T, T>(Ptr, Length, value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Contains<T>(T value) where T : unmanaged, IEquatable<T>
-        {
-            return IndexOf(value) != -1;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int AllocateItem()
-        {
-            var prevLength = Length;
-            Resize(prevLength + 1);
-            return prevLength;
-        }
-    }
-
-    interface IDisposableJob
-    {
-        JobHandle Dispose(JobHandle handle);
-    }
-    
-    [NativeContainer]
-    [StructLayout(LayoutKind.Sequential)]
-    [DebuggerDisplay("Length = {Length}")]
-    public unsafe struct NativeListArray<T> : IDisposable, IDisposableJob
-        where T : unmanaged
-    {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         internal AtomicSafetyHandle m_Safety;
 
@@ -275,7 +272,7 @@ namespace Chisel.Core
 #endif
 
         [NativeDisableUnsafePtrRestriction]
-        internal UnsafeListArray* m_Array;
+        UnsafeListArray* m_Array;
         
         public int Length { [return: AssumeRange(0, int.MaxValue)][MethodImpl(MethodImplOptions.AggressiveInlining)] get { return m_Array->Length; } }
         public int Count { [return: AssumeRange(0, int.MaxValue)][MethodImpl(MethodImplOptions.AggressiveInlining)] get { return m_Array->Length; } }
@@ -303,7 +300,7 @@ namespace Chisel.Core
                 throw new Exception("Allocator must be Temp, TempJob or Persistent.");
             }
         }
-
+        /*
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CheckCapacityInRange(long value, long length)
@@ -313,7 +310,7 @@ namespace Chisel.Core
 
             if ((uint)value < (uint)length)
                 throw new ArgumentOutOfRangeException($"Value {value} is out of range in NativeListArray of '{length}' Length.");
-        }
+        }*/
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -456,12 +453,12 @@ namespace Chisel.Core
             var ptr = m_Array->Ptr[index];
             if (ptr == null || !ptr->IsCreated)
             {
-                m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
+                m_Array->InitializeIndex(index, capacity);
             } else
             {
                 ptr->Clear();
                 if (ptr->Capacity < capacity)
-                    ptr->SetCapacity<T>(capacity);
+                    ptr->SetCapacity(capacity);
             }
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -483,12 +480,12 @@ namespace Chisel.Core
             capacity = Math.Max(1, capacity);
             if (ptr == null || !ptr->IsCreated)
             {
-                m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
+                m_Array->InitializeIndex(index, capacity);
             } else
             {
                 ptr->Clear();
                 if (ptr->Capacity < capacity)
-                    ptr->SetCapacity<T>(capacity);
+                    ptr->SetCapacity(capacity);
             }
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckAllocated(m_Array->Ptr[index]);
@@ -497,7 +494,7 @@ namespace Chisel.Core
             return new NativeList(m_Array->Ptr[index]);
 #endif
         }
-
+        /*
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int AllocateItemAndAddValues(NativeArray<T> other)
         {
@@ -507,7 +504,7 @@ namespace Chisel.Core
             var index = m_Array->AllocateItem();
             var ptr = m_Array->Ptr[index];
             CheckNotAllocated(ptr);
-            m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), other.Length);
+            m_Array->InitializeIndex(index, other.Length);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckAllocated(m_Array->Ptr[index]);
             var dstList = new NativeList(m_Array->Ptr[index], ref m_Safety);
@@ -517,7 +514,7 @@ namespace Chisel.Core
             dstList.AddRangeNoResize(other);
             return index;
         }
-
+        */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int AllocateItemAndAddValues(NativeListArray<T>.NativeList other)
         {
@@ -529,12 +526,12 @@ namespace Chisel.Core
 
             if (ptr == null || !ptr->IsCreated)
             {
-                m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), other.Length);
+                m_Array->InitializeIndex(index, other.Length);
             } else
             {
                 ptr->Clear();
                 if (ptr->Capacity < other.Length)
-                    ptr->SetCapacity<T>(other.Length);
+                    ptr->SetCapacity(other.Length);
             }
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckAllocated(m_Array->Ptr[index]);
@@ -545,7 +542,7 @@ namespace Chisel.Core
             dstList.AddRangeNoResize(other);
             return index;
         }
-
+        /*
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe int AllocateItemAndAddValues(T* otherPtr, int otherLength)
         {
@@ -555,7 +552,7 @@ namespace Chisel.Core
             var index = m_Array->AllocateItem();
             var ptr = m_Array->Ptr[index];
             var capacity = Math.Max(1, otherLength);
-            m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
+            m_Array->InitializeIndex(index, capacity);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckAllocated(m_Array->Ptr[index]);
 #endif
@@ -570,7 +567,7 @@ namespace Chisel.Core
             }
             Debug.Assert(IsAllocated(index));
             return index;
-        }
+        }*/
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe int AllocateItemAndAddValues(NativeArray<T> other, int otherLength)
@@ -582,7 +579,7 @@ namespace Chisel.Core
             var index = m_Array->AllocateItem();
             var ptr = m_Array->Ptr[index];
             var capacity = Math.Max(1, otherLength);
-            m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
+            m_Array->InitializeIndex(index, capacity);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckAllocated(m_Array->Ptr[index]);
 #endif
@@ -607,10 +604,9 @@ namespace Chisel.Core
             return x;
         }
 
-
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void CheckNull(UnsafeList* listData)
+        private static void CheckNull(UnsafeList<T>* listData)
         {
             if (listData == null)
                 throw new Exception($"Expected {nameof(listData)} to not be null.");
@@ -618,19 +614,19 @@ namespace Chisel.Core
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void CheckAllocated(UnsafeList* listData)
+        private static void CheckAllocated(UnsafeList<T>* listData)
         {
             if (listData == null || !listData->IsCreated)
                 throw new Exception($"Expected {nameof(listData)} to be allocated.");
         }
-
+        /*
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void CheckNotAllocated(UnsafeList* listData)
+        private static void CheckNotAllocated(UnsafeList<T>* listData)
         {
             if (listData != null && listData->IsCreated)
                 throw new Exception($"Expected {nameof(listData)} to not be allocated.");
-        }
+        }*/
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -675,7 +671,7 @@ namespace Chisel.Core
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe static void CheckPtrInitialized(UnsafeList* ptr, int index)
+        private unsafe static void CheckPtrInitialized(UnsafeList<T>* ptr, int index)
         {
             if (ptr == null ||
                 !ptr->IsCreated)
@@ -697,7 +693,7 @@ namespace Chisel.Core
                 CheckPtrInitialized(ptr, index);
                 if (ptr == null ||
                     !ptr->IsCreated)
-                    ptr = m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>());
+                    ptr = m_Array->InitializeIndex(index);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                 return new NativeList(m_Array->Ptr[positiveIndex], ref m_Safety);
 #else
@@ -716,7 +712,7 @@ namespace Chisel.Core
         }
 
         [BurstCompile(CompileSynchronously = true)]
-        internal unsafe struct UnsafeDisposeJob : IJob
+        unsafe struct UnsafeDisposeJob : IJob
         {
             [NativeDisableUnsafePtrRestriction]
             public UnsafeListArray* array;
@@ -749,19 +745,19 @@ namespace Chisel.Core
         public unsafe struct NativeList
         {
             [NativeDisableUnsafePtrRestriction]
-            public UnsafeList* m_ListData;
+            public UnsafeList<T>* m_ListData;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             internal AtomicSafetyHandle m_Safety;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe NativeList(UnsafeList* listData, ref AtomicSafetyHandle safety)
+            public unsafe NativeList(UnsafeList<T>* listData, ref AtomicSafetyHandle safety)
             {
                 m_ListData = listData;
                 m_Safety = safety;
             }
 #else
-            public unsafe NativeList(UnsafeList* listData)
+            public unsafe NativeList(UnsafeList<T>* listData)
             {
                 m_ListData = listData;
             }
@@ -848,7 +844,7 @@ namespace Chisel.Core
                     CheckNull(m_ListData);
                     CheckCapacityInRange(value, m_ListData->Length);
 #endif
-                    m_ListData->SetCapacity<T>(value);
+                    m_ListData->SetCapacity(value);
                 }
             }
 
@@ -870,7 +866,7 @@ namespace Chisel.Core
                 CheckNull(m_ListData);
 #endif
                 CheckArgPositive(length);
-                m_ListData->AddRangeNoResize<T>(ptr, length);
+                m_ListData->AddRangeNoResize(ptr, length);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -881,65 +877,23 @@ namespace Chisel.Core
                 CheckNull(m_ListData);
 #endif
                 CheckArgPositive(length);
-                m_ListData->AddRangeNoResize<T>(other.GetUnsafeReadOnlyPtr(), length);
+                m_ListData->AddRangeNoResize(other.GetUnsafeReadOnlyPtr(), length);
             }
-
+            /*
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void AddRangeNoResize(NativeArray<T> list)
             {
                 AddRangeNoResize(list.GetUnsafeReadOnlyPtr(), list.Length);
-            }
+            }*/
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void AddRangeNoResize(NativeList<T> list)
-            {
-                AddRangeNoResize(list.GetUnsafeReadOnlyPtr(), list.Length);
-            }
+            //[MethodImpl(MethodImplOptions.AggressiveInlining)] public void AddRangeNoResize(NativeList<T> list) { AddRangeNoResize(list.GetUnsafeReadOnlyPtr(), list.Length); }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void AddRangeNoResize(NativeListArray<T>.NativeList list)
             {
                 AddRangeNoResize(list.GetUnsafeReadOnlyPtr(), list.Length);
             }
-            /*
-            public void Add(T value)
-            {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-                AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
-                CheckNull(m_ListData);
-#endif
-                m_ListData->Add(value);
-            }
 
-            public void AddRange(List<T> items)
-            {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-                AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
-                CheckNull(m_ListData);
-#endif
-                var length = items.Count;
-                CheckArgPositive(length);
-                if (m_ListData->Capacity < length)
-                    m_ListData->SetCapacity<T>(length);
-                for (int i=0;i<length;i++)
-                    m_ListData->Add<T>(items[i]);
-            }
-
-            public unsafe void AddRange(void* elements, int count)
-            {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-                AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
-                CheckNull(m_ListData);
-                CheckArgPositive(count);
-#endif
-                m_ListData->AddRange<T>(elements, AssumePositive(count));
-            }
-
-            public void AddRange(NativeArray<T> elements)
-            {
-                AddRange(elements.GetUnsafeReadOnlyPtr(), elements.Length);
-            }
-            */
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void RemoveAtSwapBack(int index)
             {
@@ -948,7 +902,7 @@ namespace Chisel.Core
                 CheckAllocated(m_ListData);
                 CheckArgInRange(index, Length);
 #endif
-                m_ListData->RemoveAtSwapBack<T>(AssumePositive(index));
+                m_ListData->RemoveAtSwapBack(AssumePositive(index));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -983,27 +937,6 @@ namespace Chisel.Core
 #endif
                 return array;
             }
-            /*
-            public T[] ToArray()
-            {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-                AtomicSafetyHandle.CheckGetSecondaryDataPointerAndThrow(m_Safety);
-                CheckAllocated(m_ListData);
-#endif
-                return AsArray().ToArray();
-            }
-
-            public NativeArray<T> ToArray(Allocator allocator)
-            {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-                AtomicSafetyHandle.CheckGetSecondaryDataPointerAndThrow(m_Safety);
-                CheckAllocated(m_ListData);
-#endif
-                var result = new NativeArray<T>(Length, allocator, NativeArrayOptions.UninitializedMemory);
-                result.CopyFrom(this);
-                return result;
-            }
-            */
             
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public NativeList<T> ToList(Allocator allocator)
@@ -1016,18 +949,6 @@ namespace Chisel.Core
                 result.AddRange(this);
                 return result;
             }
-            /*
-            public void CopyFrom(T[] array)
-            {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-                AtomicSafetyHandle.CheckGetSecondaryDataPointerAndThrow(m_Safety);
-                CheckAllocated(m_ListData);
-#endif
-                Resize(array.Length, NativeArrayOptions.UninitializedMemory);
-                NativeArray<T> na = AsArray();
-                na.CopyFrom(array);
-            }
-            */
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Resize(int length, NativeArrayOptions options)
@@ -1037,13 +958,8 @@ namespace Chisel.Core
                 AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
                 CheckAllocated(m_ListData);
 #endif
-                m_ListData->Resize(UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), length, options);
+                m_ListData->Resize(length, options);
             }
-            /*
-            public void ResizeUninitialized(int length)
-            {
-                Resize(length, NativeArrayOptions.UninitializedMemory);
-            }*/
         }
     }
 }
@@ -1054,41 +970,12 @@ namespace Chisel.Core.LowLevel.Unsafe
 {
     public unsafe static class NativeArrayListUnsafeUtility
     {
-        public static void* GetUnsafePtr<T>(this NativeListArray<T>.NativeList list) where T : unmanaged
-        {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            AtomicSafetyHandle.CheckWriteAndThrow(list.m_Safety);
-#endif
-            return list.m_ListData->Ptr;
-        }
-
         public static unsafe void* GetUnsafeReadOnlyPtr<T>(this NativeListArray<T>.NativeList list) where T : unmanaged
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckReadAndThrow(list.m_Safety);
 #endif
             return list.m_ListData->Ptr;
-        }
-
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-        public static AtomicSafetyHandle GetAtomicSafetyHandle<T>(ref NativeListArray<T>.NativeList list) where T : unmanaged
-        {
-            return list.m_Safety;
-        }
-#endif
-
-        public static void* GetInternalListDataPtrUnchecked<T>(ref NativeListArray<T>.NativeList list) where T : unmanaged
-        {
-            return list.m_ListData;
-        }
-
-
-        public static void AddRange<T>(this NativeList<T> dst, in NativeListArray<T>.NativeList list) where T : unmanaged
-        {
-            var offset = dst.Length;
-            dst.ResizeUninitialized(offset + list.Length);
-            for (int i = 0; i < list.Length; i++)
-                dst[offset + i] = list[i];
         }
     }
 }
