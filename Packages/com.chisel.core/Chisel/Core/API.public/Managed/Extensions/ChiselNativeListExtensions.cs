@@ -88,15 +88,6 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddRange<T>(this NativeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
-        {
-            CheckCreated(list.IsCreated);
-            if (elements.Length == 0)
-                return;
-            list.AddRange(elements.GetUnsafeReadOnlyPtr(), elements.Length);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRange<T>(ref this UnsafeList<T> list, ref UnsafeList<T> elements) where T : unmanaged
         {
             CheckCreated(elements.Ptr != null && elements.IsCreated);
@@ -253,18 +244,6 @@ namespace Chisel.Core
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyFrom<T>(this UnsafeList<T> list, NativeList<T> elements, int start, int count) where T : unmanaged
-        {
-            if (count == 0)
-                return;
-            CheckCreated(elements.IsCreated);
-            CheckLengthInRange(count, list.Capacity);
-            CheckIndexInRangeInc(start, elements.Length - count);
-
-            list.Clear();
-            list.AddRangeNoResize((T*)elements.GetUnsafeReadOnlyPtr() + start, count);
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void CopyFrom<T>(this NativeListArray<T>.NativeList list, NativeList<T> elements, int start, int count) where T : unmanaged
         {
             if (count == 0)
                 return;
@@ -547,26 +526,7 @@ namespace Chisel.Core
                 list.MemMove(index, index + count, list.Length - (index + count));
             list.Resize(list.Length - count, NativeArrayOptions.ClearMemory);
         }
-        /*
-        public static void RemoveAt<T>(this NativeListArray<T>.NativeList list, int index) 
-            where T : unmanaged, IEquatable<T>
-        {
-            RemoveRange(list, index, 1);
-        }
 
-        public static void Remove<T>(this NativeListArray<T>.NativeList list, T item) 
-            where T : unmanaged, IEquatable<T>
-        {
-            for (int index = 0; index < list.Length; index++)
-            {
-                if (list[index].Equals(item))
-                {
-                    RemoveRange(list, index, 1);
-                    return;
-                }
-            }
-        }
-        */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Remove(this NativeListArray<int>.NativeList list, int item) 
         {
@@ -674,18 +634,6 @@ namespace Chisel.Core
             for (int i = 0; i < array.Length; i++)
             {
                 if (array[i].Equals(value))
-                    return true;
-            }
-            return false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool Contains<T>(this NativeListArray<T>.NativeList array, T item)
-            where T : unmanaged, IEquatable<T>
-        {
-            for (int index = 0; index < array.Length; index++)
-            {
-                if (array[index].Equals(item))
                     return true;
             }
             return false;
