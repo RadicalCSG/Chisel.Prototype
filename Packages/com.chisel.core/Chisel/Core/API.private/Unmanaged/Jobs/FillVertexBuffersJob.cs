@@ -119,8 +119,9 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<BrushData>   brushRenderData;
 
         // Read, Write
+        public Allocator allocator;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeListArray<SubMeshSurface>    subMeshSurfaces;
+        [NoAlias] public NativeArray<UnsafeList<SubMeshSurface>> subMeshSurfaces;
 
         struct SubMeshSurfaceComparer : System.Collections.Generic.IComparer<SubMeshSurface>
         {
@@ -145,8 +146,7 @@ namespace Chisel.Core
             // TODO: store surface info and its vertices/indices separately, both sequentially in arrays
             // TODO: store surface vertices/indices sequentially in a big array, *somehow* make ordering work
                 
-            subMeshSurfaces.AllocateWithCapacityForIndex(t, requiredSurfaceCount);
-            var subMeshSurfaceList = subMeshSurfaces[t];
+            var subMeshSurfaceList = new UnsafeList<SubMeshSurface>(requiredSurfaceCount, allocator);
 
             for (int b = 0, count_b = brushRenderData.Length; b < count_b; b++)
             {
@@ -173,8 +173,9 @@ namespace Chisel.Core
                 }
                 // ^ do those 3 points (mentioned in comments)
             }
-
-            subMeshSurfaceList.AsArray().Sort(subMeshSurfaceComparer);
+            
+            subMeshSurfaceList.Sort(subMeshSurfaceComparer);
+            subMeshSurfaces[t] = subMeshSurfaceList;
         }
     }
 
@@ -183,7 +184,7 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<MeshQuery>           meshQueries;
-        [NoAlias, ReadOnly] public NativeListArray<SubMeshSurface>  subMeshSurfaces;
+        [NoAlias, ReadOnly] public NativeArray<UnsafeList<SubMeshSurface>> subMeshSurfaces;
 
         // Write
         [NoAlias, WriteOnly] public NativeList<SubMeshCounts> subMeshCounts;
@@ -571,7 +572,7 @@ namespace Chisel.Core
         // Read
         [NoAlias, ReadOnly] public NativeArray<SubMeshSection>              subMeshSections;
         [NoAlias, ReadOnly] public NativeArray<SubMeshCounts>               subMeshCounts;
-        [NoAlias, ReadOnly] public NativeListArray<SubMeshSurface>          subMeshSurfaces;
+        [NoAlias, ReadOnly] public NativeArray<UnsafeList<SubMeshSurface>>  subMeshSurfaces;
 
         [NoAlias, ReadOnly] public NativeArray<VertexAttributeDescriptor>   renderDescriptors;
         [NoAlias, ReadOnly] public NativeArray<ChiselMeshUpdate>            renderMeshes;
@@ -624,7 +625,7 @@ namespace Chisel.Core
                 var surfacesOffset      = subMeshCount.surfacesOffset;
                 var surfacesCount       = subMeshCount.surfacesCount;
                 var meshQueryIndex      = subMeshCount.meshQueryIndex;
-                var subMeshSurfaceArray = subMeshSurfaces[meshQueryIndex].AsArray();
+                var subMeshSurfaceArray = subMeshSurfaces[meshQueryIndex];
 
                 var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
                 var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
@@ -698,7 +699,7 @@ namespace Chisel.Core
         // Read
         [NoAlias, ReadOnly] public NativeArray<SubMeshSection>              subMeshSections;
         [NoAlias, ReadOnly] public NativeArray<SubMeshCounts>               subMeshCounts;
-        [NoAlias, ReadOnly] public NativeListArray<SubMeshSurface>          subMeshSurfaces;
+        [NoAlias, ReadOnly] public NativeArray<UnsafeList<SubMeshSurface>>  subMeshSurfaces;
 
         [NoAlias, ReadOnly] public NativeArray<VertexAttributeDescriptor>   colliderDescriptors;
         [NoAlias, ReadOnly] public NativeArray<ChiselMeshUpdate>            colliderMeshes;

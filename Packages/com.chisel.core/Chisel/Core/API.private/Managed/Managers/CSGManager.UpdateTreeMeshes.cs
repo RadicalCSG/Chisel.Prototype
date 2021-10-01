@@ -160,7 +160,7 @@ namespace Chisel.Core
 
                 public NativeList<BrushData>                brushRenderData;
                 public NativeList<SubMeshCounts>            subMeshCounts;
-                public NativeListArray<SubMeshSurface>      subMeshSurfaces;
+                public NativeArray<UnsafeList<SubMeshSurface>>  subMeshSurfaces;
 
                 public NativeStream                         dataStream1;
                 public NativeStream                         dataStream2;
@@ -536,7 +536,6 @@ namespace Chisel.Core
 
                 Temporaries.brushBrushIntersections         = new NativeArray<UnsafeList<BrushIntersectWith>>(brushCount, allocator);
 
-                Temporaries.subMeshSurfaces            = new NativeListArray<SubMeshSurface>(allocator);
                 Temporaries.subMeshCounts              = new NativeList<SubMeshCounts>(allocator);
 
                 Temporaries.colliderMeshUpdates        = new NativeList<ChiselMeshUpdate>(allocator);
@@ -560,9 +559,9 @@ namespace Chisel.Core
                 Temporaries.meshQueries.Sort(meshQueryComparer);
                 #endregion
 
-                Temporaries.subMeshSurfaces.ResizeExact(Temporaries.meshQueriesLength);
+                Temporaries.subMeshSurfaces = new NativeArray<UnsafeList<SubMeshSurface>>(Temporaries.meshQueriesLength, allocator);
                 for (int i = 0; i < Temporaries.meshQueriesLength; i++)
-                    Temporaries.subMeshSurfaces.AllocateWithCapacityForIndex(i, 1000);
+                    Temporaries.subMeshSurfaces[i] = new UnsafeList<SubMeshSurface>(1000, allocator);
 
                 Temporaries.subMeshCounts.Clear();
 
@@ -1642,6 +1641,7 @@ namespace Chisel.Core
                             brushRenderData = Temporaries.brushRenderData.AsJobArray(runInParallel),
 
                             // Write
+                            allocator = allocator,
                             subMeshSurfaces = Temporaries.subMeshSurfaces,
                         };
                         prepareSubSectionsJob.Schedule(runInParallel, Temporaries.meshQueriesLength, 1,
@@ -2134,7 +2134,7 @@ namespace Chisel.Core
                 lastJobHandle.AddDependency(Temporaries.meshDatas               .Dispose(dependencies));                
                 lastJobHandle.AddDependency(Temporaries.vertexBufferContents    .Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.subMeshCounts           .Dispose(dependencies));
-                lastJobHandle.AddDependency(Temporaries.subMeshSurfaces         .Dispose(dependencies));
+                lastJobHandle.AddDependency(NativeCollection.DisposeDeep(Temporaries.subMeshSurfaces,   dependencies));
 
                 return lastJobHandle;
             }
