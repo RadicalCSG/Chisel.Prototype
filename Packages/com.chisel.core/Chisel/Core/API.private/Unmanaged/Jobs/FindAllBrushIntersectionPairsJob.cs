@@ -20,8 +20,9 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                      rebuildTreeBrushIndexOrders;
 
         // Read (Re-alloc) / Write
+        public Allocator allocator;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeListArray<BrushIntersectWith>                    brushBrushIntersections;
+        [NoAlias] public NativeArray<UnsafeList<BrushIntersectWith>>            brushBrushIntersections;
 
         // Write
         [NoAlias, WriteOnly] public NativeHashSet<IndexOrder>.ParallelWriter    brushesThatNeedIndirectUpdateHashMap;
@@ -40,11 +41,9 @@ namespace Chisel.Core
                 {
                     var brush1IndexOrder = rebuildTreeBrushIndexOrders[index1];
                     int brush1NodeOrder  = brush1IndexOrder.nodeOrder;
-                    NativeListArray<BrushIntersectWith>.NativeList brush1Intersections;
-                    if (!brushBrushIntersections.IsAllocated(brush1NodeOrder))
-                        brush1Intersections = brushBrushIntersections.AllocateWithCapacityForIndex(brush1NodeOrder, 16);
-                    else
-                        brush1Intersections = brushBrushIntersections[brush1NodeOrder];
+                    var brush1Intersections = brushBrushIntersections[brush1NodeOrder];
+                    if (!brush1Intersections.IsCreated)
+                        brush1Intersections = new UnsafeList<BrushIntersectWith>(16, allocator);
                     for (int index0 = 0; index0 < rebuildTreeBrushIndexOrders.Length; index0++)
                     {
                         var brush0IndexOrder    = rebuildTreeBrushIndexOrders[index0];
@@ -57,8 +56,9 @@ namespace Chisel.Core
                         if (result == IntersectionType.NoIntersection)
                             continue;
                         result = IntersectionUtility.Flip(result);
-                        IntersectionUtility.StoreIntersection(brush1Intersections, brush0IndexOrder, result);
+                        IntersectionUtility.StoreIntersection(ref brush1Intersections, brush0IndexOrder, result);
                     }
+                    brushBrushIntersections[brush1NodeOrder] = brush1Intersections;
                 }
                 return;
             }
@@ -75,11 +75,9 @@ namespace Chisel.Core
                 var brush1IndexOrder = rebuildTreeBrushIndexOrders[index1];
                 int brush1NodeOrder  = brush1IndexOrder.nodeOrder;
 
-                NativeListArray<BrushIntersectWith>.NativeList brush1Intersections;
-                if (!brushBrushIntersections.IsAllocated(brush1NodeOrder))
-                    brush1Intersections = brushBrushIntersections.AllocateWithCapacityForIndex(brush1NodeOrder, 16);
-                else
-                    brush1Intersections = brushBrushIntersections[brush1NodeOrder];
+                var brush1Intersections = brushBrushIntersections[brush1NodeOrder];
+                if (!brush1Intersections.IsCreated)
+                    brush1Intersections = new UnsafeList<BrushIntersectWith>(16, allocator);
                 for (int index0 = 0; index0 < allTreeBrushIndexOrders.Length; index0++)
                 {
                     var brush0IndexOrder    = allTreeBrushIndexOrders[index0];
@@ -101,17 +99,18 @@ namespace Chisel.Core
                             usedBrushes.Set(brush0IndexOrder.nodeOrder, true);
                             brushesThatNeedIndirectUpdateHashMap.Add(brush0IndexOrder);
                             result = IntersectionUtility.Flip(result);
-                            IntersectionUtility.StoreIntersection(brush1Intersections, brush0IndexOrder, result);
+                            IntersectionUtility.StoreIntersection(ref brush1Intersections, brush0IndexOrder, result);
                         }
                     } else
                     {
                         if (brush0NodeOrder > brush1NodeOrder)
                         {
                             result = IntersectionUtility.Flip(result);
-                            IntersectionUtility.StoreIntersection(brush1Intersections, brush0IndexOrder, result);
+                            IntersectionUtility.StoreIntersection(ref brush1Intersections, brush0IndexOrder, result);
                         }
                     }
                 }
+                brushBrushIntersections[brush1NodeOrder] = brush1Intersections;
             }
         }
     }
@@ -187,8 +186,9 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  brushesThatNeedIndirectUpdate;
 
         // Read (Re-alloc) / Write
+        public Allocator allocator;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeListArray<BrushIntersectWith>                brushBrushIntersections;
+        [NoAlias] public NativeArray<UnsafeList<BrushIntersectWith>>        brushBrushIntersections;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>       transformedPlanes0;
@@ -201,11 +201,9 @@ namespace Chisel.Core
                 var brush1IndexOrder = brushesThatNeedIndirectUpdate[index1];
                 int brush1NodeOrder  = brush1IndexOrder.nodeOrder;
                 
-                NativeListArray<BrushIntersectWith>.NativeList brush1Intersections;
-                if (!brushBrushIntersections.IsAllocated(brush1NodeOrder))
-                    brush1Intersections = brushBrushIntersections.AllocateWithCapacityForIndex(brush1NodeOrder, 16);
-                else
-                    brush1Intersections = brushBrushIntersections[brush1NodeOrder];
+                var brush1Intersections = brushBrushIntersections[brush1NodeOrder];
+                if (!brush1Intersections.IsCreated)
+                    brush1Intersections = new UnsafeList<BrushIntersectWith>(16, allocator);
                 for (int index0 = 0; index0 < allTreeBrushIndexOrders.Length; index0++)
                 {
                     var brush0IndexOrder    = allTreeBrushIndexOrders[index0];
@@ -223,7 +221,7 @@ namespace Chisel.Core
                         if (result == IntersectionType.NoIntersection)
                             continue;
                         result = IntersectionUtility.Flip(result);
-                        IntersectionUtility.StoreIntersection(brush1Intersections, brush0IndexOrder, result);
+                        IntersectionUtility.StoreIntersection(ref brush1Intersections, brush0IndexOrder, result);
                     } else
                     {
                         var result = IntersectionUtility.FindIntersection(brush1NodeOrder, brush0NodeOrder,
@@ -231,9 +229,10 @@ namespace Chisel.Core
                                                                           ref transformedPlanes0, ref transformedPlanes1);
                         if (result == IntersectionType.NoIntersection)
                             continue;
-                        IntersectionUtility.StoreIntersection(brush1Intersections, brush0IndexOrder, result);
+                        IntersectionUtility.StoreIntersection(ref brush1Intersections, brush0IndexOrder, result);
                     }
                 }
+                brushBrushIntersections[brush1NodeOrder] = brush1Intersections;
             }
             //*/
         }
@@ -624,10 +623,10 @@ namespace Chisel.Core
         }
 
         // TODO: check if each intersection is unique, store in stream
-        public static void StoreIntersection([NoAlias] NativeListArray<BrushIntersectWith>.NativeList intersections, IndexOrder brush1IndexOrder, IntersectionType result)
+        public static void StoreIntersection([NoAlias] ref UnsafeList<BrushIntersectWith> intersections, IndexOrder brush1IndexOrder, IntersectionType result)
         {
             if (intersections.Capacity < intersections.Length + 1)
-                intersections.Capacity = intersections.Length + 4;
+                intersections.SetCapacity((int)((intersections.Length + 1)*1.5f));
             if (result != IntersectionType.NoIntersection)
             {
                 if (result == IntersectionType.Intersection)

@@ -13,7 +13,7 @@ namespace Chisel.Core
     unsafe struct GatherBrushIntersectionPairsJob : IJob
     {
         // Read
-        [NoAlias, ReadOnly] public NativeListArray<BrushIntersectWith> brushBrushIntersections;
+        [NoAlias, ReadOnly] public NativeArray<UnsafeList<BrushIntersectWith>> brushBrushIntersections;
 
         // Write
         [NativeDisableUnsafePtrRestriction]
@@ -43,16 +43,16 @@ namespace Chisel.Core
 
         public void Execute()
         {
-            var minCount = brushBrushIntersections.Count * 16;
+            var minCount = brushBrushIntersections.Length * 16;
 
             NativeCollectionHelpers.EnsureCapacityAndClear(ref intersections, minCount);
 
-            for (int i = 0; i < brushBrushIntersections.Count; i++)
+            for (int i = 0; i < brushBrushIntersections.Length; i++)
             {
-                if (!brushBrushIntersections.IsAllocated(i))
+                if (!brushBrushIntersections[i].IsCreated)
                     continue;
                 var subArray = brushBrushIntersections[i];
-                for (int j = 0; j < subArray.Count; j++)
+                for (int j = 0; j < subArray.Length; j++)
                 {
                     var intersectWith = subArray[j];
                     var pair = new BrushPair

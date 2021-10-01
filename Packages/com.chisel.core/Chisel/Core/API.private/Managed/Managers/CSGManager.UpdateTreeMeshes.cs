@@ -100,10 +100,10 @@ namespace Chisel.Core
         }
         #endregion
 
+        const Allocator allocator = Allocator.Persistent;
+
         internal unsafe struct TreeUpdate
         {
-            const Allocator allocator = Allocator.Persistent;
-
             public CSGTree          tree;
             public CompactNodeID    treeCompactNodeID;
             public int              brushCount;
@@ -133,7 +133,7 @@ namespace Chisel.Core
                 public NativeArray<MeshQuery>               meshQueries;
                 public int                                  meshQueriesLength;
 
-                public NativeListArray<BrushIntersectWith>  brushBrushIntersections;
+                public NativeArray<UnsafeList<BrushIntersectWith>>  brushBrushIntersections;
                 public NativeList<BrushIntersectWith>       brushIntersectionsWith;
                 public NativeArray<int2>                    brushIntersectionsWithRange;
                 public NativeList<IndexOrder>               brushesThatNeedIndirectUpdate;
@@ -534,8 +534,7 @@ namespace Chisel.Core
                 Temporaries.nodeIDValueToNodeOrderArray     = new NativeList<int>(brushCount, allocator);
                 Temporaries.brushMeshLookup                 = new NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>(brushCount, allocator);
 
-                Temporaries.brushBrushIntersections         = new NativeListArray<BrushIntersectWith>(16, allocator);
-                Temporaries.brushBrushIntersections.ResizeExact(brushCount);
+                Temporaries.brushBrushIntersections         = new NativeArray<UnsafeList<BrushIntersectWith>>(brushCount, allocator);
 
                 Temporaries.subMeshSurfaces            = new NativeListArray<SubMeshSurface>(allocator);
                 Temporaries.subMeshCounts              = new NativeList<SubMeshCounts>(allocator);
@@ -1022,6 +1021,7 @@ namespace Chisel.Core
                             rebuildTreeBrushIndexOrders = Temporaries.rebuildTreeBrushIndexOrders.AsArray(),
 
                             // Read / Write
+                            allocator = allocator,
                             brushBrushIntersections = Temporaries.brushBrushIntersections,
 
                             // Write
@@ -1146,6 +1146,7 @@ namespace Chisel.Core
                             brushesThatNeedIndirectUpdate = Temporaries.brushesThatNeedIndirectUpdate.AsJobArray(runInParallel),
 
                             // Read / Write
+                            allocator = allocator,
                             brushBrushIntersections = Temporaries.brushBrushIntersections
                         };
                         findAllIndirectBrushIntersectionPairsJob.Schedule(runInParallel, Temporaries.brushesThatNeedIndirectUpdate, 1,
@@ -1703,7 +1704,7 @@ namespace Chisel.Core
                             subMeshSections = Temporaries.vertexBufferContents.subMeshSections.AsJobArray(runInParallel),
 
                             // Read Write
-                            allocator = Allocator.Persistent,
+                            allocator = allocator,
                             triangleBrushIndices = Temporaries.vertexBufferContents.triangleBrushIndices
                         };
                         allocateVertexBuffersJob.Schedule(runInParallel,
@@ -2017,14 +2018,14 @@ namespace Chisel.Core
                 lastJobHandle.AddDependency(Temporaries.nodeIDValueToNodeOrderArray  .Dispose(dependencies));
                 
                 lastJobHandle.AddDependency(Temporaries.brushesThatNeedIndirectUpdateHashMap.Dispose(dependencies));
-                lastJobHandle.AddDependency(Temporaries.brushBrushIntersections             .Dispose(dependencies));
                 
                 
                 // Note: cannot use "IsCreated" on this job, for some reason it won't be scheduled and then complain that it's leaking? Bug in IsCreated?
                 lastJobHandle.AddDependency(Temporaries.meshQueries.Dispose(dependencies));
-                
-                
-                lastJobHandle.AddDependency(NativeCollection.DisposeDeep(Temporaries.loopVerticesLookup,               dependencies),
+
+
+                lastJobHandle.AddDependency(NativeCollection.DisposeDeep(Temporaries.brushBrushIntersections,          dependencies),
+                                            NativeCollection.DisposeDeep(Temporaries.loopVerticesLookup,               dependencies),
                                             NativeCollection.DisposeDeep(Temporaries.basePolygonDisposeList,           dependencies),
                                             NativeCollection.DisposeDeep(Temporaries.treeSpaceVerticesDisposeList,     dependencies),
                                             NativeCollection.DisposeDeep(Temporaries.brushesTouchedByBrushDisposeList, dependencies),
