@@ -124,6 +124,22 @@ namespace Chisel.Core
             return default;
         }
 
+        public static JobHandle DisposeDeep<T>(this NativeArray<T> array, JobHandle dependencies) where T : unmanaged, IDisposable { return DisposeDeep(true, array, dependencies); }
+
+        public static JobHandle DisposeDeep<T>(bool runInParallel, NativeArray<T> array, JobHandle dependencies)
+            where T : unmanaged, IDisposable
+        {
+            var disposeListJob = new DisposeArrayChildrenJob<T> { array = array };
+            JobExtensions.CheckDependencies(runInParallel, dependencies);
+            var currentHandle = disposeListJob.Schedule(runInParallel, dependencies);
+            if (runInParallel)
+                return array.Dispose(currentHandle);
+
+            currentHandle.Complete();
+            array.Dispose();
+            return default;
+        }
+
         public static JobHandle DisposeDeep<T>(bool runInParallel, NativeList<T> list, JobHandle dependencies)
             where T : unmanaged, IDisposable
         {
@@ -245,6 +261,23 @@ namespace Chisel.Core
             for (int i = 0; i < list.Length; i++)
                 list[i].Dispose();
             list.Clear();
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
+    public struct DisposeArrayChildrenJob<T> : IJob
+        where T : unmanaged, IDisposable
+    {
+        // Read / Write
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<T> array;
+
+        public void Execute()
+        {
+            if (!array.IsCreated)
+                return;
+            for (int i = 0; i < array.Length; i++)
+                array[i].Dispose();
         }
     }
 

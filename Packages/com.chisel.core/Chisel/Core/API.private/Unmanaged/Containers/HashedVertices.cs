@@ -631,6 +631,25 @@ namespace Chisel.Core
             }
         }
         
+        public unsafe void AddUniqueVertices(in UnsafeList<float3> uniqueVertices)
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+#endif
+            // Add Unique vertex
+            for (int i = 0; i < uniqueVertices.Length; i++)
+            {
+                var vertex = uniqueVertices[i];
+                var centerIndex = new int3((int)(vertex.x / kCellSize), (int)(vertex.y / kCellSize), (int)(vertex.z / kCellSize));
+                var hashCode = HashedVerticesUtility.GetHash(centerIndex);
+                var prevChainIndex = ((ushort*)m_HashTable)[hashCode];
+                var newChainIndex = m_ChainedIndices->Length;
+                m_Vertices      ->AddNoResize(vertex);
+                m_ChainedIndices->AddNoResize((ushort)prevChainIndex);
+                ((ushort*)m_HashTable)[(int)hashCode] = (ushort)(newChainIndex + 1);
+            }
+        }
+        
         public unsafe void AddUniqueVertices(NativeListArray<float3>.NativeList uniqueVertices)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -677,6 +696,19 @@ namespace Chisel.Core
         }
 
         public unsafe void ReplaceIfExists(ref ChiselBlobArray<float3> uniqueVertices)
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+#endif
+            // Add Unique vertex
+            for (int i = 0; i < uniqueVertices.Length; i++)
+            {
+                var vertex = uniqueVertices[i];
+                HashedVerticesUtility.ReplaceIfExists((ushort*)m_HashTable, m_ChainedIndices, m_Vertices, vertex);
+            }
+        }
+
+        public unsafe void ReplaceIfExists(in UnsafeList<float3> uniqueVertices)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);

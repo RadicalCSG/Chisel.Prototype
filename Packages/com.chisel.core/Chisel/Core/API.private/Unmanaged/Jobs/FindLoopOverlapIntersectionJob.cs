@@ -28,8 +28,9 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlaneCache;
 
         // Read Write
+        public Allocator allocator;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeListArray<float3>                            loopVerticesLookup;
+        [NoAlias] public NativeArray<UnsafeList<float3>>                    loopVerticesLookup;
 
         // Write
         [NativeDisableParallelForRestriction]
@@ -91,9 +92,7 @@ namespace Chisel.Core
             // Can happen when BrushMeshes are not initialized correctly
             if (basePolygonCache[brushNodeOrder] == ChiselBlobAssetReference<BasePolygonsBlob>.Null)
             {
-                if (!loopVerticesLookup.IsIndexCreated(brushIndexOrder.nodeOrder))
-                    loopVerticesLookup.AllocateWithCapacityForIndex(brushIndexOrder.nodeOrder, 16);
-                loopVerticesLookup[brushIndexOrder.nodeOrder].Clear();
+                loopVerticesLookup[brushIndexOrder.nodeOrder] = new UnsafeList<float3>(16, allocator);
                 output.BeginForEachIndex(index);
                 output.Write(brushIndexOrder);
                 output.Write(0);
@@ -107,9 +106,7 @@ namespace Chisel.Core
             var surfaceCount        = basePolygonBlob.polygons.Length;
             if (surfaceCount == 0)
             {
-                if (!loopVerticesLookup.IsIndexCreated(brushIndexOrder.nodeOrder))
-                    loopVerticesLookup.AllocateWithCapacityForIndex(brushIndexOrder.nodeOrder, 16);
-                loopVerticesLookup[brushIndexOrder.nodeOrder].Clear();
+                loopVerticesLookup[brushIndexOrder.nodeOrder] = new UnsafeList<float3>(16, allocator);
                 output.BeginForEachIndex(index);
                 output.Write(brushIndexOrder);
                 output.Write(0);
@@ -159,14 +156,12 @@ namespace Chisel.Core
 
                 if (intersectionSurfaceInfos.IsCreated)
                     intersectionSurfaceInfos.Clear();
-                
 
-                if (!loopVerticesLookup.IsIndexCreated(brushIndexOrder.nodeOrder))
-                    loopVerticesLookup.AllocateWithCapacityForIndex(brushIndexOrder.nodeOrder, hashedTreeSpaceVertices.Length);
-                var writeVertices = loopVerticesLookup[brushIndexOrder.nodeOrder];
+                var writeVertices = new UnsafeList<float3>(hashedTreeSpaceVertices.Length, allocator);
                 writeVertices.Resize(hashedTreeSpaceVertices.Length, NativeArrayOptions.UninitializedMemory);
                 for (int l = 0; l < hashedTreeSpaceVertices.Length; l++)
                     writeVertices[l] = hashedTreeSpaceVertices[l];
+                loopVerticesLookup[brushIndexOrder.nodeOrder] = writeVertices;
 
                 output.BeginForEachIndex(index);
                 output.Write(brushIndexOrder);
@@ -377,12 +372,11 @@ namespace Chisel.Core
                         }); //OUTPUT
                 }
 
-                if (!loopVerticesLookup.IsIndexCreated(brushIndexOrder.nodeOrder))
-                    loopVerticesLookup.AllocateWithCapacityForIndex(brushIndexOrder.nodeOrder, hashedTreeSpaceVertices.Length);
-                var writeVertices = loopVerticesLookup[brushIndexOrder.nodeOrder];
+                var writeVertices = new UnsafeList<float3>(hashedTreeSpaceVertices.Length, allocator);
                 writeVertices.Resize(hashedTreeSpaceVertices.Length, NativeArrayOptions.UninitializedMemory);
                 for (int l = 0; l < hashedTreeSpaceVertices.Length; l++)
                     writeVertices[l] = hashedTreeSpaceVertices[l];
+                loopVerticesLookup[brushIndexOrder.nodeOrder] = writeVertices;
 
                 output.BeginForEachIndex(index);
                 output.Write(brushIndexOrder);

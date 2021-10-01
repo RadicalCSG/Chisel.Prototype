@@ -102,6 +102,8 @@ namespace Chisel.Core
 
         internal unsafe struct TreeUpdate
         {
+            const Allocator allocator = Allocator.Persistent;
+
             public CSGTree          tree;
             public CompactNodeID    treeCompactNodeID;
             public int              brushCount;
@@ -145,7 +147,7 @@ namespace Chisel.Core
 
                 public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>   brushMeshLookup;
 
-                public NativeListArray<float3>              loopVerticesLookup;
+                public NativeArray<UnsafeList<float3>>      loopVerticesLookup;
 
                 public NativeReference<int>                 surfaceCountRef;
                 public NativeReference<ChiselBlobAssetReference<CompactTree>> compactTreeRef;
@@ -485,8 +487,6 @@ namespace Chisel.Core
                 var chiselLookupValues = ChiselTreeLookup.Value[this.tree];
                 ref var compactHierarchy = ref CompactHierarchyManager.GetHierarchy(this.treeCompactNodeID);
 
-                const Allocator allocator = Allocator.Persistent;
-
                 Temporaries.parameterCounts                = new NativeArray<int>(chiselLookupValues.parameters.Length, allocator);
                 Temporaries.transformTreeBrushIndicesList  = new NativeList<NodeOrderNodeID>(allocator);
                 Temporaries.brushBoundsUpdateList          = new NativeList<NodeOrderNodeID>(allocator);
@@ -505,8 +505,6 @@ namespace Chisel.Core
                 Temporaries.meshDataArray   = default;
                 Temporaries.meshDatas       = new NativeList<UnityEngine.Mesh.MeshData>(allocator);
 
-                //var triangleArraySize     = GeometryMath.GetTriangleArraySize(newBrushCount);
-                //var intersectionCount     = math.max(1, triangleArraySize);
                 Temporaries.brushesThatNeedIndirectUpdateHashMap = new NativeHashSet<IndexOrder>(brushCount, allocator);
                 Temporaries.brushesThatNeedIndirectUpdate   = new NativeList<IndexOrder>(brushCount, allocator);
 
@@ -547,8 +545,7 @@ namespace Chisel.Core
                 Temporaries.renderMeshes               = new NativeList<ChiselMeshUpdate>(allocator);
 
 
-                Temporaries.loopVerticesLookup          = new NativeListArray<float3>(this.brushCount, allocator);
-                Temporaries.loopVerticesLookup.ResizeExact(this.brushCount);
+                Temporaries.loopVerticesLookup          = new NativeArray<UnsafeList<float3>>(this.brushCount, allocator);
 
                 Temporaries.vertexBufferContents.EnsureInitialized();
 
@@ -1418,6 +1415,7 @@ namespace Chisel.Core
                             basePolygonCache = chiselLookupValues.basePolygonCache.AsJobArray(runInParallel),
 
                             // Read Write
+                            allocator = allocator,
                             loopVerticesLookup = Temporaries.loopVerticesLookup,
 
                             // Write
@@ -2003,8 +2001,6 @@ namespace Chisel.Core
                 lastJobHandle.AddDependency(Temporaries.outputSurfacesRange          .Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.parameterCounts              .Dispose(dependencies));
                 
-                lastJobHandle.AddDependency(Temporaries.loopVerticesLookup           .Dispose(dependencies));
-                
                 lastJobHandle.AddDependency(Temporaries.transformTreeBrushIndicesList.Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.brushBoundsUpdateList        .Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.brushes                      .Dispose(dependencies));
@@ -2026,8 +2022,10 @@ namespace Chisel.Core
                 
                 // Note: cannot use "IsCreated" on this job, for some reason it won't be scheduled and then complain that it's leaking? Bug in IsCreated?
                 lastJobHandle.AddDependency(Temporaries.meshQueries.Dispose(dependencies));
-
-                lastJobHandle.AddDependency(NativeCollection.DisposeDeep(Temporaries.basePolygonDisposeList,           dependencies),
+                
+                
+                lastJobHandle.AddDependency(NativeCollection.DisposeDeep(Temporaries.loopVerticesLookup,               dependencies),
+                                            NativeCollection.DisposeDeep(Temporaries.basePolygonDisposeList,           dependencies),
                                             NativeCollection.DisposeDeep(Temporaries.treeSpaceVerticesDisposeList,     dependencies),
                                             NativeCollection.DisposeDeep(Temporaries.brushesTouchedByBrushDisposeList, dependencies),
                                             NativeCollection.DisposeDeep(Temporaries.routingTableDisposeList,          dependencies),
