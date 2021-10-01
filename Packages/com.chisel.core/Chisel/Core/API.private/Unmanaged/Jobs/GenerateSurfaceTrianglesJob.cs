@@ -36,7 +36,7 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] HashedVertices                    brushVertices;
         [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<int>>       surfaceLoopIndices;
         [NativeDisableContainerSafetyRestriction] NativeArray<SurfaceInfo>          surfaceLoopAllInfos;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>             surfaceLoopAllEdges;
+        [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<Edge>>      surfaceLoopAllEdges;
         [NativeDisableContainerSafetyRestriction] NativeList<int>                   surfaceIndexList;
         [NativeDisableContainerSafetyRestriction] NativeList<int>                   outputSurfaceIndicesArray;
         [NativeDisableContainerSafetyRestriction] NativeArray<float2>               context_points;
@@ -44,10 +44,10 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeList<int>                   context_sortedPoints;
         [NativeDisableContainerSafetyRestriction] NativeList<bool>                  context_triangleInterior;
         [NativeDisableContainerSafetyRestriction] NativeList<Edge>                  context_inputEdgesCopy; 
-        [NativeDisableContainerSafetyRestriction] NativeListArray<Chisel.Core.Edge> context_edgeLookupEdges;
+        [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<Edge>>      context_edgeLookupEdges;
         [NativeDisableContainerSafetyRestriction] NativeHashMap<int, int>           context_edgeLookups;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<Chisel.Core.Edge> context_foundLoops;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<int>              context_children;
+        [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<Edge>>      context_foundLoops;
+        [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<int>>       context_children;
         [NativeDisableContainerSafetyRestriction] NativeList<Poly2Tri.DTSweep.DirectedEdge>         context_allEdges;
         [NativeDisableContainerSafetyRestriction] NativeList<Poly2Tri.DTSweep.DelaunayTriangle>     context_triangles;
         [NativeDisableContainerSafetyRestriction] NativeList<Poly2Tri.DTSweep.AdvancingFrontNode>   context_advancingFrontNodes;
@@ -115,12 +115,13 @@ namespace Chisel.Core
                 var edgeCount   = input.Read<int>();
                 if (edgeCount > 0)
                 { 
-                    var edgesInner  = surfaceLoopAllEdges.AllocateWithCapacityForIndex(l, edgeCount);
+                    var edgesInner  = new UnsafeList<Edge>(edgeCount, Allocator.Temp);
                     //edgesInner.ResizeUninitialized(edgeCount);
                     for (int e = 0; e < edgeCount; e++)
                     {
                         edgesInner.AddNoResize(input.Read<Edge>());
                     }
+                    surfaceLoopAllEdges[l] = edgesInner;
                 }
             }
             input.EndForEachIndex();

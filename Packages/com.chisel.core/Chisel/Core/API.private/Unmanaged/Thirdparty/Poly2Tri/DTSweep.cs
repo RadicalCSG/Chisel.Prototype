@@ -289,24 +289,24 @@ namespace Poly2Tri
         // SweepContext
         //
 
-        [NoAlias, ReadOnly] public quaternion                           rotation;
-        [NoAlias, ReadOnly] public float3                               normal;
-        [NoAlias, ReadOnly] public HashedVertices                       vertices;
-        [NoAlias, ReadOnly] public NativeArray<float2>                  points;
-        [NoAlias, ReadOnly] public int                                  edgeLength;
-        [NoAlias, ReadOnly] public NativeArray<int>                     edges;
-        [NoAlias, ReadOnly] public NativeList<DirectedEdge>             allEdges;
-        [NoAlias, ReadOnly] public NativeList<DelaunayTriangle>         triangles;
-        [NoAlias, ReadOnly] public NativeList<bool>                     triangleInterior;
-        [NoAlias, ReadOnly] public NativeList<int>                      sortedPoints;
-        [NoAlias, ReadOnly] public NativeList<AdvancingFrontNode>       advancingFrontNodes;
-        [NoAlias, ReadOnly] public NativeListArray<Chisel.Core.Edge>    edgeLookupEdges;
-        [NoAlias, ReadOnly] public NativeHashMap<int, int>              edgeLookups;
-        [NoAlias, ReadOnly] public NativeListArray<Chisel.Core.Edge>    foundLoops;
-        [NoAlias, ReadOnly] public NativeListArray<int>                 children;
-        [NoAlias, ReadOnly] public NativeList<Edge>                     inputEdgesCopy;
-        [NoAlias, ReadOnly] public NativeListArray<Edge>.NativeList     inputEdges;
-        [NoAlias]           public NativeList<int>                      surfaceIndicesArray;
+        [NoAlias, ReadOnly] public quaternion                        rotation;
+        [NoAlias, ReadOnly] public float3                           normal;
+        [NoAlias, ReadOnly] public HashedVertices                   vertices;
+        [NoAlias, ReadOnly] public NativeArray<float2>              points;
+        [NoAlias, ReadOnly] public int                              edgeLength;
+        [NoAlias, ReadOnly] public NativeArray<int>                 edges;
+        [NoAlias, ReadOnly] public NativeList<DirectedEdge>         allEdges;
+        [NoAlias, ReadOnly] public NativeList<DelaunayTriangle>     triangles;
+        [NoAlias, ReadOnly] public NativeList<bool>                 triangleInterior;
+        [NoAlias, ReadOnly] public NativeList<int>                  sortedPoints;
+        [NoAlias, ReadOnly] public NativeList<AdvancingFrontNode>   advancingFrontNodes;
+        [NoAlias, ReadOnly] public NativeList<UnsafeList<Edge>>     edgeLookupEdges;
+        [NoAlias, ReadOnly] public NativeHashMap<int, int>          edgeLookups;
+        [NoAlias, ReadOnly] public NativeList<UnsafeList<Edge>>     foundLoops;
+        [NoAlias, ReadOnly] public NativeList<UnsafeList<int>>      children;
+        [NoAlias, ReadOnly] public NativeList<Edge>                 inputEdgesCopy;
+        [NoAlias, ReadOnly] public UnsafeList<Edge>                 inputEdges;
+        [NoAlias]           public NativeList<int>                  surfaceIndicesArray;
 
         void Clear()
         {
@@ -341,14 +341,14 @@ namespace Poly2Tri
         bool edgeEventRight;
 
         
-        internal unsafe static bool IsPointInPolygon(float3 right, float3 forward, NativeListArray<Chisel.Core.Edge>.NativeList indices1, NativeListArray<Chisel.Core.Edge>.NativeList indices2, HashedVertices vertices)
+        internal unsafe static bool IsPointInPolygon(float3 right, float3 forward, UnsafeList<Edge> indices1, UnsafeList<Edge> indices2, HashedVertices vertices)
         {
             int index = 0;
-            while (index < indices2.Count &&
+            while (index < indices2.Length &&
                 indices1.Contains(indices2[index]))
                 index++;
 
-            if (index >= indices2.Count)
+            if (index >= indices2.Length)
                 return false;
 
             var point = vertices[indices2[index].index1];
@@ -358,12 +358,12 @@ namespace Poly2Tri
 
             float ix, iy, jx, jy;
 
-            var vert = vertices[indices1[indices1.Count - 1].index1];
+            var vert = vertices[indices1[indices1.Length - 1].index1];
             ix = math.dot(right, vert);
             iy = math.dot(forward, vert);
 
             bool result = false;
-            for (int i = 0; i < indices1.Count; i++)
+            for (int i = 0; i < indices1.Length; i++)
             {
                 jx = ix;
                 jy = iy;
@@ -389,9 +389,9 @@ namespace Poly2Tri
         public void Execute()
         {
             surfaceIndicesArray.Clear();
-            if (inputEdges.Count < 4)
+            if (inputEdges.Length < 4)
             {
-                Triangulate(inputEdges.ToList(Allocator.Temp), surfaceIndicesArray);
+                Triangulate(ref inputEdges, surfaceIndicesArray);
                 return;
             }
 
@@ -413,9 +413,15 @@ namespace Poly2Tri
                 {
                     edgeLookupIndex = edgeLookupEdges.Length;
                     edgeLookups[inputEdgesCopy[i].index1] = edgeLookupIndex;
-                    edgeLookupEdges.AddAndAllocateWithCapacity(inputEdgesCopy.Length);
+                    var edges = new UnsafeList<Edge>(inputEdgesCopy.Length, Allocator.Temp);
+                    edges.AddNoResize(inputEdgesCopy[i]);
+                    edgeLookupEdges.Add(edges);
+                } else
+                {
+                    var edges = edgeLookupEdges[edgeLookupIndex];
+                    edges.AddNoResize(inputEdgesCopy[i]);
+                    edgeLookupEdges[edgeLookupIndex] = edges;
                 }
-                edgeLookupEdges[edgeLookupIndex].AddNoResize(inputEdgesCopy[i]);
             }
 
             var edgeCount = edgeLookups.Count();
@@ -424,13 +430,15 @@ namespace Poly2Tri
             {
                 var lastIndex   = inputEdgesCopy.Length - 1;
                 var edge        = inputEdgesCopy[lastIndex];
-                var newLoops    = foundLoops.AddAndAllocateWithCapacity(1 + (2 * edgeCount)); // TODO: figure out a more sensible max size
+                var newLoops    = new UnsafeList<Edge>(1 + (2 * edgeCount), Allocator.Temp); // TODO: figure out a more sensible max size
                 newLoops.AddNoResize(edge);
 
                 var edgesStartingAtVertex = edgeLookupEdges[edgeLookups[edge.index1]];
                 if (edgesStartingAtVertex.Length > 1)
+                {
                     edgesStartingAtVertex.Remove(edge);
-                else
+                    edgeLookupEdges[edgeLookups[edge.index1]] = edgesStartingAtVertex;
+                } else
                     edgeLookups.Remove(edge.index1);
 
                 inputEdgesCopy.RemoveAt(lastIndex);
@@ -456,6 +464,7 @@ namespace Poly2Tri
                             }
                         }
                         nextEdges.Remove(nextEdge);
+                        edgeLookupEdges[edgeLookups[edge.index2]] = nextEdges;
                     } else
                         edgeLookups.Remove(edge.index2);
                     newLoops.AddNoResize(nextEdge);
@@ -464,41 +473,50 @@ namespace Poly2Tri
                     if (edge.index2 == firstIndex)
                         break;
                 }
+                foundLoops.Add(newLoops);
             }
 
-            if (foundLoops.Count == 0)
+            if (foundLoops.Length == 0)
                 return;
 
-            if (foundLoops.Count == 1)
+            if (foundLoops.Length == 1)
             {
-                if (foundLoops[0].Count == 0)
+                var foundLoop = foundLoops[0];
+                if (foundLoop.Length == 0)
                     return;
-                Triangulate(foundLoops[0].ToList(Allocator.Temp), surfaceIndicesArray);
+                Triangulate(ref foundLoop, surfaceIndicesArray);
+                foundLoops[0] = foundLoop;
                 return;
             }
 
             children.Clear();
-            children.ResizeExact(foundLoops.Count);
+            children.Resize(foundLoops.Length, NativeArrayOptions.ClearMemory);
 
-            for (int l1 = 0; l1 < children.Count; l1++)
-                children.AllocateWithCapacityForIndex(l1, 1 + (children.Count * 2));
+            for (int l1 = 0; l1 < children.Length; l1++)
+            {
+                children[l1] = new UnsafeList<int>(1 + (children.Length * 2), Allocator.Temp);
+            }
 
             MathExtensions.CalculateTangents(normal, out float3 right, out float3 forward);
-            for (int l1 = foundLoops.Count - 1; l1 >= 0; l1--)
+            for (int l1 = foundLoops.Length - 1; l1 >= 0; l1--)
             {
-                if (foundLoops[l1].Count == 0)
+                if (foundLoops[l1].Length == 0)
                     continue;
                 for (int l2 = l1 - 1; l2 >= 0; l2--)
                 {
-                    if (foundLoops[l2].Count == 0)
+                    if (foundLoops[l2].Length == 0)
                         continue;
                     if (IsPointInPolygon(right, forward, foundLoops[l1], foundLoops[l2], vertices))
                     {
-                        children[l1].AddNoResize(l2);
+                        var child = children[l1];
+                        child.AddNoResize(l2);
+                        children[l1] = child;
                     } else
                     if (IsPointInPolygon(right, forward, foundLoops[l2], foundLoops[l1], vertices))
                     {
-                        children[l2].AddNoResize(l1);
+                        var child = children[l1];
+                        child.AddNoResize(l1);
+                        children[l2] = child;
                         break;
                     }
                 }
@@ -506,49 +524,56 @@ namespace Poly2Tri
 
             for (int l1 = children.Length - 1; l1 >= 0; l1--)
             {
-                if (children[l1].Count > 0) children[l1].Remove(l1); // just in case
-                if (children[l1].Count > 0)
+                var child = children[l1];
+                if (child.Length > 0) child.Remove(l1); // just in case
+                if (child.Length > 0)
                 {
                     int startOffset = 0;
-                    while (startOffset < children[l1].Count)
+                    while (startOffset < child.Length)
                     {
-                        var nextOffset = children[l1].Count;
+                        var nextOffset = child.Length;
                         for (int l2 = nextOffset - 1; l2 >= startOffset; l2--)
                         {
-                            var index = children[l1][l2];
-                            if (children[index].Count > 0)
+                            var index = child[l2];
+                            if (children[index].Length > 0)
                             {
-                                children[l1].AddRangeNoResize(children[index]);
-                                children[l1].Remove(l1); // just in case
+                                child.AddRangeNoResize(children[index]);
+                                child.Remove(l1); // just in case
                                 children[index].Clear();
                             }
                         }
                         startOffset = nextOffset;
                     }
 
-                    for (int l2 = 0; l2 < children[l1].Count; l2++)
+                    for (int l2 = 0; l2 < child.Length; l2++)
                     {
-                        var index = children[l1][l2];
-                        foundLoops[l1].AddRangeNoResize(foundLoops[index]);
-                        foundLoops[index].Clear();
+                        var index = child[l2];
+                        var edges = foundLoops[l1];
+                        edges.AddRangeNoResize(foundLoops[index]);
+                        foundLoops[l1] = edges;
+
+                        var edges2 = foundLoops[index];
+                        edges2.Clear();
+                        foundLoops[index] = edges2;
                     }
                 }
+                children[l1] = child;
             }
 
 
-            for (int l1 = foundLoops.Count - 1; l1 >= 0; l1--)
+            for (int l1 = foundLoops.Length - 1; l1 >= 0; l1--)
             {
                 var subLoop = foundLoops[l1];
-                if (subLoop.Count == 0)
+                if (subLoop.Length == 0)
                     continue;
-                Triangulate(subLoop.ToList(Allocator.Temp), surfaceIndicesArray);
+                Triangulate(ref subLoop, surfaceIndicesArray);
             }
         }
 
         /// <summary>
         /// Triangulate simple polygon with holes
         /// </summary>
-        public void Triangulate(NativeList<Chisel.Core.Edge> inputEdgesList, NativeList<int> triangleIndices)
+        public void Triangulate(ref UnsafeList<Edge> inputEdgesList, NativeList<int> triangleIndices)
         {
             var startIndex = triangleIndices.Length;
             int prevEdgeCount = inputEdgesList.Length;
@@ -605,7 +630,6 @@ namespace Poly2Tri
                     goto AddMoreTriangles;
                 }
             }
-            inputEdgesList.Dispose();
         }
 
 
@@ -838,7 +862,7 @@ namespace Poly2Tri
         }
 
 
-        void PrepareTriangulation(NativeList<Chisel.Core.Edge> inputEdgesArray)
+        void PrepareTriangulation(UnsafeList<Edge> inputEdgesArray)
         {
             var min = new float2(float.PositiveInfinity, float.PositiveInfinity);
             var max = new float2(float.NegativeInfinity, float.NegativeInfinity);

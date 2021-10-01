@@ -502,45 +502,6 @@ namespace Chisel.Core
             list.RemoveRange(index, 1);
         }
 
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void RemoveRange<T>(this NativeListArray<T>.NativeList list, int index, int count) where T : unmanaged
-        {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            AtomicSafetyHandle.CheckWriteAndThrow(list.m_Safety);
-#endif
-            if (count == 0)
-                return;
-            if (index < 0 || index + count > list.Length)
-            {
-                LogRangeError();
-                return;
-            }
-            if (index == 0 && count == list.Length)
-            {
-                list.Clear();
-                return;
-            }
-
-            if (index + count < list.Length)
-                list.MemMove(index, index + count, list.Length - (index + count));
-            list.Resize(list.Length - count, NativeArrayOptions.ClearMemory);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool Remove(this NativeListArray<int>.NativeList list, int item) 
-        {
-            for (int index = 0; index < list.Length; index++)
-            {
-                if (list[index] == item)
-                {
-                    RemoveRange(list, index, 1);
-                    return true;
-                }
-            }
-            return false;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Remove<T>(ref this UnsafeList<T> list, T item)
             where T : unmanaged
@@ -555,13 +516,14 @@ namespace Chisel.Core
             }
             return false;
         }
-
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool Remove(ref this UnsafeList<int> list, int item)
+        internal static bool Remove(ref this UnsafeList<Edge> list, Edge item)
         {
             for (int index = 0; index < list.Length; index++)
             {
-                if (list[index] == item)
+                if (list[index].index1 == item.index1 &&
+                    list[index].index2 == item.index2)
                 {
                     list.RemoveRange(index, 1);
                     return true;
@@ -571,14 +533,13 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool Remove(this NativeListArray<Edge>.NativeList list, Edge item) 
+        public static bool Remove(ref this UnsafeList<int> list, int item)
         {
             for (int index = 0; index < list.Length; index++)
             {
-                if (list[index].index1 == item.index1 &&
-                    list[index].index2 == item.index2)
+                if (list[index] == item)
                 {
-                    RemoveRange(list, index, 1);
+                    list.RemoveRange(index, 1);
                     return true;
                 }
             }
@@ -634,18 +595,6 @@ namespace Chisel.Core
             for (int i = 0; i < array.Length; i++)
             {
                 if (array[i].Equals(value))
-                    return true;
-            }
-            return false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool Contains(this NativeListArray<Edge>.NativeList array, Edge item)
-        {
-            for (int index = 0; index < array.Length; index++)
-            {
-                if (array[index].index1 == item.index1 &&
-                    array[index].index2 == item.index2)
                     return true;
             }
             return false;
