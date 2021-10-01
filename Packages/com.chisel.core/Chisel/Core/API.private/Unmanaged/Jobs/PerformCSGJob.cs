@@ -40,7 +40,7 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<LoopSegment>       allSegments;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<Edge>              allCombinedEdges;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<int>          holeIndices;
-        [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<int>          surfaceLoopIndices;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<UnsafeList<int>>   surfaceLoopIndices;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<Edge>         allEdges;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<Edge>         intersectionLoops;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<Edge>         basePolygonEdges;
@@ -107,7 +107,7 @@ namespace Chisel.Core
         
         void IntersectLoops([NoAlias] in HashedVertices                   hashedTreeSpaceVertices,
 
-                            [NoAlias] ref NativeListArray<int>.NativeList loopIndices, 
+                            [NoAlias] ref UnsafeList<int>                 loopIndices, 
                             int                                           surfaceLoopIndex,
 
                             [NoAlias] ref NativeListArray<int>            holeIndices,
@@ -351,7 +351,7 @@ namespace Chisel.Core
             return normal;
         }
 
-        void CleanUp(in NativeList<IndexSurfaceInfo> allInfos, in NativeListArray<Edge> allEdges, in HashedVertices brushVertices, ref NativeListArray<int>.NativeList loopIndices, in NativeListArray<int> holeIndices)
+        void CleanUp(in NativeList<IndexSurfaceInfo> allInfos, in NativeListArray<Edge> allEdges, in HashedVertices brushVertices, ref UnsafeList<int> loopIndices, ref NativeListArray<int> holeIndices)
         {
             for (int l = loopIndices.Length - 1; l >= 0; l--)
             {
@@ -894,8 +894,8 @@ namespace Chisel.Core
                 var maxAllocation       = 1 + (2 * (routingLookupsLength + allEdges.Length)); // TODO: find a more reliable "max"
                 var maxEdgeAllocation   = 1 + (hashedTreeSpaceVertices.Length * 2);
 
-                var loopIndices = surfaceLoopIndices.AllocateWithCapacityForIndex(surfaceIndex, maxAllocation);
-
+                var loopIndices = new UnsafeList<int>(maxAllocation, Allocator.Temp);
+                
                 loopIndices.AddNoResize(allEdges.Length);                
                 holeIndices.AddAndAllocateWithCapacity(maxAllocation);
                 allInfos   .AddNoResize(info);
@@ -963,7 +963,8 @@ namespace Chisel.Core
                         }
                     }
                 }
-                CleanUp(in allInfos, in allEdges, in hashedTreeSpaceVertices, ref loopIndices, in holeIndices);
+                CleanUp(in allInfos, in allEdges, in hashedTreeSpaceVertices, ref loopIndices, ref holeIndices);
+                surfaceLoopIndices[surfaceIndex] = loopIndices;
             }
 
             output.BeginForEachIndex(index);
@@ -975,7 +976,7 @@ namespace Chisel.Core
             output.Write(surfaceLoopIndices.Length);
             for (int o = 0; o < surfaceLoopIndices.Length; o++)
             {
-                if (!surfaceLoopIndices.IsIndexCreated(o))
+                if (!surfaceLoopIndices[o].IsCreated)
                 {
                     output.Write(0);
                     continue;
