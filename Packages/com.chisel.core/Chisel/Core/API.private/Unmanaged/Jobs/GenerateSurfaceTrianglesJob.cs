@@ -34,7 +34,7 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeList<int>                   loops;
         [NativeDisableContainerSafetyRestriction] NativeList<ChiselQuerySurface>    querySurfaceList;
         [NativeDisableContainerSafetyRestriction] HashedVertices                    brushVertices;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<int>              surfaceLoopIndices;
+        [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<int>>       surfaceLoopIndices;
         [NativeDisableContainerSafetyRestriction] NativeArray<SurfaceInfo>          surfaceLoopAllInfos;
         [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>             surfaceLoopAllEdges;
         [NativeDisableContainerSafetyRestriction] NativeList<int>                   surfaceIndexList;
@@ -92,16 +92,18 @@ namespace Chisel.Core
             NativeCollectionHelpers.EnsureSizeAndClear(ref surfaceLoopIndices, surfaceOuterCount);
             for (int o = 0; o < surfaceOuterCount; o++)
             {
+                UnsafeList<int> inner = default;
                 var surfaceInnerCount = input.Read<int>();
                 if (surfaceInnerCount > 0)
                 {
-                    var inner = surfaceLoopIndices.AllocateWithCapacityForIndex(o, surfaceInnerCount);
+                    inner = new UnsafeList<int>(surfaceInnerCount, Allocator.Temp);
                     //inner.ResizeUninitialized(surfaceInnerCount);
                     for (int i = 0; i < surfaceInnerCount; i++)
                     {
                         inner.AddNoResize(input.Read<int>());
                     }
                 }
+                surfaceLoopIndices[o] = inner;
             }
 
             var surfaceLoopCount = input.Read<int>();
@@ -132,7 +134,7 @@ namespace Chisel.Core
             var maxIndices = 0;
             for (int s = 0; s < surfaceLoopIndices.Length; s++)
             {
-                if (!surfaceLoopIndices.IsIndexCreated(s))
+                if (!surfaceLoopIndices[s].IsCreated)
                     continue;
                 var length = surfaceLoopIndices[s].Length;
                 maxIndices += length;
@@ -173,7 +175,7 @@ namespace Chisel.Core
                 var surfaceIndex = s;
                 surfaceRenderBuffer.surfaceIndex = surfaceIndex;
 
-                if (!surfaceLoopIndices.IsIndexCreated(s))
+                if (!surfaceLoopIndices[s].IsCreated)
                     continue;
 
                 loops.Clear();
