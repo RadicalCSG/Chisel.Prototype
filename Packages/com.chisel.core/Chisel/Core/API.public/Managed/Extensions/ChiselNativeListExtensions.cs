@@ -1,4 +1,4 @@
-﻿using Chisel.Core.LowLevel.Unsafe;
+using Chisel.Core.LowLevel.Unsafe;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -252,6 +252,18 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CopyFrom<T>(this UnsafeList<T> list, NativeList<T> elements, int start, int count) where T : unmanaged
+        {
+            if (count == 0)
+                return;
+            CheckCreated(elements.IsCreated);
+            CheckLengthInRange(count, list.Capacity);
+            CheckIndexInRangeInc(start, elements.Length - count);
+
+            list.Clear();
+            list.AddRangeNoResize((T*)elements.GetUnsafeReadOnlyPtr() + start, count);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyFrom<T>(this NativeListArray<T>.NativeList list, NativeList<T> elements, int start, int count) where T : unmanaged
         {
             if (count == 0)
@@ -294,6 +306,23 @@ namespace Chisel.Core
 
             var srcPtr  = (T*)srcArray.GetUnsafeReadOnlyPtr() + srcIndex;
             var dstPtr  = (T*)dstArray.GetUnsafePtr();
+
+            UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CopyFrom<T>(this NativeArray<T> dstArray, UnsafeList<T> srcList, int srcIndex, int srcCount) where T : unmanaged
+        {
+            if (srcCount == 0)
+                return;
+            CheckCreated(dstArray.IsCreated);
+            CheckCreated(srcList.IsCreated);
+            CheckLengthInRange(srcCount, srcList.Length);
+            CheckLengthInRange(srcCount, dstArray.Length);
+            CheckIndexInRangeInc(srcIndex, srcList.Length - srcCount);
+
+            var srcPtr = (T*)srcList.Ptr + srcIndex;
+            var dstPtr = (T*)dstArray.GetUnsafePtr();
 
             UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
         }

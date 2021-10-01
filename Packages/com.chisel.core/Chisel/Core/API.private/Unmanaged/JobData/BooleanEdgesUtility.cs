@@ -67,6 +67,18 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static int IndexOf([NoAlias] in UnsafeList<Edge> edges, Edge edge, out bool inverted)
+        {
+            for (int e = 0; e < edges.Length; e++)
+            {
+                if (edges[e].index1 == edge.index1 && edges[e].index2 == edge.index2) { inverted = false; return e; }
+                if (edges[e].index1 == edge.index2 && edges[e].index2 == edge.index1) { inverted = true; return e; }
+            }
+            inverted = false;
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static unsafe EdgeCategory IsOutsidePlanes([NoAlias] in NativeList<float4> planes, int planesOffset, int planesLength, float4 localVertex)
         {
             var planePtr = (float4*)planes.GetUnsafeReadOnlyPtr();
@@ -163,10 +175,43 @@ namespace Chisel.Core
             return EdgeCategory.Inside;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static EdgeCategory CategorizeEdge(Edge edge, [NoAlias] ref ChiselBlobArray<float4> planes, [NoAlias] in UnsafeList<Edge> edges, [NoAlias] in HashedVertices vertices)
+        {
+            // TODO: use something more clever than looping through all edges
+            if (IndexOf(in edges, edge, out bool inverted) != -1)
+                return (inverted) ? EdgeCategory.ReverseAligned : EdgeCategory.Aligned;
+            var midPoint = (vertices[edge.index1] + vertices[edge.index2]) * 0.5f;
+
+            if (IsOutsidePlanes(ref planes, new float4(midPoint, 1)))
+                return EdgeCategory.Outside;
+            return EdgeCategory.Inside;
+        }
+
 
         // Note: Assumes polygons are convex
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static bool AreLoopsOverlapping([NoAlias] in NativeListArray<Edge>.NativeList polygon1, [NoAlias] in NativeListArray<Edge>.NativeList polygon2)
+        {
+            if (polygon1.Length < 3 ||
+                polygon2.Length < 3)
+                return false;
+
+            if (polygon1.Length != polygon2.Length)
+                return false;
+
+            for (int i = 0; i < polygon1.Length; i++)
+            {
+                if (IndexOf(in polygon2, polygon1[i], out bool _) == -1)
+                    return false;
+            }
+            return true;
+        }
+        
+
+        // Note: Assumes polygons are convex
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static bool AreLoopsOverlapping([NoAlias] in UnsafeList<Edge> polygon1, [NoAlias] in UnsafeList<Edge> polygon2)
         {
             if (polygon1.Length < 3 ||
                 polygon2.Length < 3)

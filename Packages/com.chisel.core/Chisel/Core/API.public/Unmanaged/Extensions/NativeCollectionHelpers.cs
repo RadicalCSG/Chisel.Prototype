@@ -46,6 +46,15 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void EnsureSizeAndClear<T>(ref NativeList<UnsafeList<T>> list, int exactSize, Allocator allocator = Allocator.Temp)
+            where T : unmanaged
+        {
+            if (!list.IsCreated)
+                list = new NativeList<UnsafeList<T>>(exactSize, allocator);
+            list.Resize(exactSize, NativeArrayOptions.ClearMemory);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void EnsureConstantSizeAndClear<T>(ref NativeListArray<T> array, int constantSize, Allocator allocator = Allocator.Temp)
             where T : unmanaged
         {
