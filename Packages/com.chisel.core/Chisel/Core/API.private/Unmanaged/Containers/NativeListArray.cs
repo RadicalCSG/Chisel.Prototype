@@ -895,6 +895,12 @@ namespace Chisel.Core
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void AddRangeNoResize(UnsafeList<T> list)
+            {
+                AddRangeNoResize(list.Ptr, list.Length);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void RemoveAtSwapBack(int index)
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS

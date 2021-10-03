@@ -46,7 +46,7 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<Edge>         basePolygonEdges;
         [NativeDisableContainerSafetyRestriction, NoAlias] HashedVertices                hashedTreeSpaceVertices;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<ushort>           indexRemap;
-        [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<Edge>         intersectionEdges;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<UnsafeList<Edge>>  intersectionEdges;
 
         [BurstDiscard]
         private static void NotUniqueEdgeException() 
@@ -757,7 +757,7 @@ namespace Chisel.Core
             {
                 var indexSurfaceInfo = input.Read<IndexSurfaceInfo>();
                 var edgesLength = input.Read<int>();
-                var edgesInner  = intersectionEdges.AllocateWithCapacityForIndex(polygonIndex, edgesLength);
+                var edgesInner  = new UnsafeList<Edge>(edgesLength, Allocator.Temp);
                 //edgesInner.ResizeUninitialized(edgesLength);
                 for (int e = 0; e < edgesLength; e++)
                 {
@@ -773,12 +773,16 @@ namespace Chisel.Core
                 if (edgesInner.Length >= 3)
                 {
                     intersectionSurfaceInfos[polygonIndex] = indexSurfaceInfo;
+                    intersectionEdges[polygonIndex] = edgesInner;
                     polygonIndex++;
                 } else
+                {
                     edgesInner.Clear();
+                    intersectionEdges[polygonIndex] = edgesInner;
+                }
             }
             intersectionSurfaceInfos.ResizeUninitialized(polygonIndex);
-            intersectionEdges.ResizeExact(polygonIndex);
+            intersectionEdges.Resize(polygonIndex, NativeArrayOptions.ClearMemory);
             input.EndForEachIndex();
 
             //int brushNodeIndex = treeBrushNodeIndices[index];
