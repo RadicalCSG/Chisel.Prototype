@@ -207,7 +207,26 @@ namespace Chisel.Core
             }
             return true;
         }
-        
+
+        // Note: Assumes polygons are convex
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static bool AreLoopsOverlapping([NoAlias] in UnsafeList<Edge> polygon1, [NoAlias] in NativeListArray<Edge>.NativeList polygon2)
+        {
+            if (polygon1.Length < 3 ||
+                polygon2.Length < 3)
+                return false;
+
+            if (polygon1.Length != polygon2.Length)
+                return false;
+
+            for (int i = 0; i < polygon1.Length; i++)
+            {
+                if (IndexOf(in polygon2, polygon1[i], out bool _) == -1)
+                    return false;
+            }
+            return true;
+        }
+
         /*
         // Note: Assumes polygons are convex
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

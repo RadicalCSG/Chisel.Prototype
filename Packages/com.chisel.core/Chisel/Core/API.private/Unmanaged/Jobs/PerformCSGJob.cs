@@ -39,9 +39,9 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<float4>            alltreeSpacePlanes;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<LoopSegment>       allSegments;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<Edge>              allCombinedEdges;
-        [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<int>          holeIndices;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<UnsafeList<int>>   holeIndices;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<UnsafeList<int>>   surfaceLoopIndices;
-        [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<Edge>         allEdges;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<UnsafeList<Edge>>  allEdges;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<Edge>         intersectionLoops;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<Edge>         basePolygonEdges;
         [NativeDisableContainerSafetyRestriction, NoAlias] HashedVertices                hashedTreeSpaceVertices;
@@ -52,6 +52,43 @@ namespace Chisel.Core
         private static void NotUniqueEdgeException() 
         {
             throw new Exception("Edge is not unique");
+        }
+        
+        static bool AddEdgesNoResize(ref UnsafeList<Edge> dstEdges, in UnsafeList<Edge> srcEdges)
+        {
+            if (srcEdges.Length == 0)  
+                return false;
+
+            for (int ae = srcEdges.Length - 1; ae >= 0; ae--)
+            {
+                var addEdge = srcEdges[ae];
+                for (int e = dstEdges.Length - 1; e >= 0; )
+                {
+                    if (addEdge.Equals(dstEdges[e]))
+                    {
+                        NotUniqueEdgeException();
+                        dstEdges.RemoveAtSwapBack(e);
+                    } else
+                        e--;
+                }
+            }
+
+            bool duplicates = false;
+
+            for (int v = 0; v < srcEdges.Length;v++)
+            {
+                var addEdge = srcEdges[v];
+                var index = IndexOf(dstEdges, addEdge, out bool _);
+                if (index != -1)
+                {
+                    //Debug.Log($"Duplicate edge {inverted}  {values[v].index1}/{values[v].index2} {edges[index].index1}/{edges[index].index2}");
+                    duplicates = true;
+                    continue;
+                }
+                dstEdges.AddNoResize(addEdge);
+            }
+
+            return duplicates;
         }
 
         static bool AddEdgesNoResize(NativeListArray<Edge>.NativeList dstEdges, NativeListArray<Edge>.NativeList srcEdges)
@@ -104,15 +141,28 @@ namespace Chisel.Core
             inverted = false;
             return -1;
         }
-        
+        static int IndexOf(UnsafeList<Edge> edges, Edge edge, out bool inverted)
+        {
+            //var builder = new System.Text.StringBuilder();
+            for (int e = 0; e < edges.Length; e++)
+            {
+                //builder.AppendLine($"{e}/{edges.Count}: {edges[e]} {edge}");
+                if (edges[e].index1 == edge.index1 && edges[e].index2 == edge.index2) { inverted = false; return e; }
+                if (edges[e].index1 == edge.index2 && edges[e].index2 == edge.index1) { inverted = true; return e; }
+            }
+            //Debug.Log(builder.ToString());
+            inverted = false;
+            return -1;
+        }
+
         void IntersectLoops([NoAlias] in HashedVertices                   hashedTreeSpaceVertices,
 
                             [NoAlias] ref UnsafeList<int>                 loopIndices, 
                             int                                           surfaceLoopIndex,
 
-                            [NoAlias] ref NativeListArray<int>            holeIndices,
+                            [NoAlias] ref NativeList<UnsafeList<int>>     holeIndices,
                             [NoAlias] ref NativeList<IndexSurfaceInfo>    allInfos,
-                            [NoAlias] ref NativeListArray<Edge>           allEdges,
+                            [NoAlias] ref NativeList<UnsafeList<Edge>>    allEdges,
 
                             [NoAlias] in NativeListArray<Edge>.NativeList intersectionLoop, 
                             CategoryGroupIndex                            intersectionCategory,
@@ -267,11 +317,14 @@ namespace Chisel.Core
                     {
                         intersectedHoleIndices[intersectedHoleIndicesLength] = allEdges.Length;
                         intersectedHoleIndicesLength++;
-                        holeIndices.AddAndAllocateWithCapacity(1);
-                        if (allInfos.Capacity < allInfos.Length + 1)
-                            allInfos.Capacity = allInfos.Length + 16;
-                        allInfos.AddNoResize(holeInfo);
-                        allEdges.AllocateItemAndAddValues(holeEdges);
+                        holeIndices.Add(new UnsafeList<int>(1, Allocator.Temp));
+                        //if (allInfos.Capacity < allInfos.Length + 1)
+                        //    allInfos.Capacity = allInfos.Length + 16;
+                        //allInfos.AddNoResize(holeInfo);
+                        allInfos.Add(holeInfo);
+                        var newHoleEdges = new UnsafeList<Edge>(holeEdges.Length, Allocator.Temp);
+                        newHoleEdges.AddRangeNoResize(holeEdges);
+                        allEdges.Add(newHoleEdges);
                         //Debug.Assert(allEdges.Length == allInfos.Length);
                         //Debug.Assert(allInfos.Length == holeIndices.Length);
                         //Debug.Assert(holeIndices.IsAllocated(allInfos.Length - 1));
@@ -279,52 +332,71 @@ namespace Chisel.Core
                 }
 
                 // This loop is a hole 
-                if (currentHoleIndices.Capacity < currentHoleIndices.Length + 1) // TODO: figure out why capacity is sometimes not enough
-                    currentHoleIndices.Capacity = currentHoleIndices.Length + 16;
-                currentHoleIndices.AddNoResize(allEdges.Length);
-                holeIndices.AddAndAllocateWithCapacity(1);
-                if (allInfos.Capacity < allInfos.Length + 1)
-                    allInfos.Capacity = allInfos.Length + 16; 
-                allInfos.AddNoResize(intersectionInfo);
-                allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
+                //if (currentHoleIndices.Capacity < currentHoleIndices.Length + 1) // TODO: figure out why capacity is sometimes not enough
+                //    currentHoleIndices.Capacity = currentHoleIndices.Length + 16;
+                //currentHoleIndices.AddNoResize(allEdges.Length);
+                currentHoleIndices.Add(allEdges.Length);
+                holeIndices[surfaceLoopIndex] = currentHoleIndices;
+                holeIndices.Add(new UnsafeList<int>(1, Allocator.Temp));
+                //if (allInfos.Capacity < allInfos.Length + 1)
+                //    allInfos.Capacity = allInfos.Length + 16; 
+                //allInfos.AddNoResize(intersectionInfo);
+                allInfos.Add(intersectionInfo);
+                var newOutEdges = new UnsafeList<Edge>(outEdgesLength, Allocator.Temp);
+                newOutEdges.AddRangeNoResize(outEdges, outEdgesLength);
+                allEdges.Add(newOutEdges);
                 //Debug.Assert(allEdges.Length == allInfos.Length);
                 //Debug.Assert(allInfos.Length == holeIndices.Length);
                 //Debug.Assert(holeIndices.IsAllocated(allInfos.Length - 1));
 
                 // But also a polygon on its own
-                if (loopIndices.Capacity < loopIndices.Length + 1) // TODO: figure out why capacity is sometimes not enough
-                    loopIndices.Capacity = loopIndices.Length + 16;
-                loopIndices.AddNoResize(allEdges.Length);
-                holeIndices.AllocateItemAndAddValues(intersectedHoleIndices, intersectedHoleIndicesLength);
-                if (allInfos.Capacity < allInfos.Length + 1)
-                    allInfos.Capacity = allInfos.Length + 16; 
-                allInfos.AddNoResize(intersectionInfo);
-                allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
+                //if (loopIndices.Capacity < loopIndices.Length + 1) // TODO: figure out why capacity is sometimes not enough
+                //    loopIndices.Capacity = loopIndices.Length + 16;
+                //loopIndices.AddNoResize(allEdges.Length);
+                loopIndices.Add(allEdges.Length);
+                var newHoleIndices = new UnsafeList<int>(intersectedHoleIndicesLength, Allocator.Temp);
+                newHoleIndices.AddRangeNoResize(intersectedHoleIndices, intersectedHoleIndicesLength);
+                holeIndices.Add(newHoleIndices);
+                //if (allInfos.Capacity < allInfos.Length + 1)
+                //    allInfos.Capacity = allInfos.Length + 16; 
+                //allInfos.AddNoResize(intersectionInfo);
+                allInfos.Add(intersectionInfo);
+                newOutEdges = new UnsafeList<Edge>(outEdgesLength, Allocator.Temp);
+                newOutEdges.AddRangeNoResize(outEdges, outEdgesLength);
+                allEdges.Add(newOutEdges);
                 //Debug.Assert(allEdges.Length == allInfos.Length);
                 //Debug.Assert(allInfos.Length == holeIndices.Length);
                 //Debug.Assert(holeIndices.IsAllocated(allEdges.Length - 1));
             } else
             {
                 // This loop is a hole 
-                currentHoleIndices.AddNoResize(allEdges.Length);
-                holeIndices.AddAndAllocateWithCapacity(1);
-                if (allInfos.Capacity < allInfos.Length + 1)
-                    allInfos.Capacity = allInfos.Length + 16;
-                allInfos.AddNoResize(intersectionInfo);
-                allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
+                //currentHoleIndices.AddNoResize(allEdges.Length);
+                currentHoleIndices.Add(allEdges.Length);
+                holeIndices[surfaceLoopIndex] = currentHoleIndices;
+                holeIndices.Add(new UnsafeList<int>(1, Allocator.Temp));
+                //if (allInfos.Capacity < allInfos.Length + 1)
+                //    allInfos.Capacity = allInfos.Length + 16;
+                //allInfos.AddNoResize(intersectionInfo);
+                allInfos.Add(intersectionInfo);
+                var newOutEdges = new UnsafeList<Edge>(outEdgesLength, Allocator.Temp);
+                newOutEdges.AddRangeNoResize(outEdges, outEdgesLength);
+                allEdges.Add(newOutEdges);
                 //Debug.Assert(allEdges.Length == allInfos.Length);
                 //Debug.Assert(allInfos.Length == holeIndices.Length);
                 //Debug.Assert(holeIndices.IsAllocated(allInfos.Length - 1));
 
                 // But also a polygon on its own
-                if (loopIndices.Capacity < loopIndices.Length + 1) // TODO: figure out why capacity is sometimes not enough
-                    loopIndices.Capacity = loopIndices.Length + 16;
-                loopIndices.AddNoResize(allEdges.Length);
-                holeIndices.AddAndAllocateWithCapacity(1);
+                //if (loopIndices.Capacity < loopIndices.Length + 1) // TODO: figure out why capacity is sometimes not enough
+                //    loopIndices.Capacity = loopIndices.Length + 16;
+                //loopIndices.AddNoResize(allEdges.Length);
+                loopIndices.Add(allEdges.Length);
+                holeIndices.Add(new UnsafeList<int>(1, Allocator.Temp));
                 if (allInfos.Capacity < allInfos.Length + 1)
                     allInfos.Capacity = allInfos.Length + 16;
                 allInfos.AddNoResize(intersectionInfo);
-                allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
+                newOutEdges = new UnsafeList<Edge>(outEdgesLength, Allocator.Temp);
+                newOutEdges.AddRangeNoResize(outEdges, outEdgesLength);
+                allEdges.Add(newOutEdges);
                 //Debug.Assert(allEdges.Length == allInfos.Length);
                 //Debug.Assert(allInfos.Length == holeIndices.Length);
                 //Debug.Assert(holeIndices.IsAllocated(allInfos.Length - 1));
@@ -351,7 +423,27 @@ namespace Chisel.Core
             return normal;
         }
 
-        void CleanUp(in NativeList<IndexSurfaceInfo> allInfos, in NativeListArray<Edge> allEdges, in HashedVertices brushVertices, ref UnsafeList<int> loopIndices, ref NativeListArray<int> holeIndices)
+        internal static float3 CalculatePlaneNormal(in UnsafeList<Edge> edges, in HashedVertices hashedVertices)
+        {
+            // Newell's algorithm to create a plane for concave polygons.
+            // NOTE: doesn't work well for self-intersecting polygons
+            var normal = float3.zero;
+            var vertices = hashedVertices;
+            for (int n = 0; n < edges.Length; n++)
+            {
+                var edge = edges[n];
+                var prevVertex = vertices[(int)edge.index1];
+                var currVertex = vertices[(int)edge.index2];
+                normal.x = normal.x + ((prevVertex.y - currVertex.y) * (prevVertex.z + currVertex.z));
+                normal.y = normal.y + ((prevVertex.z - currVertex.z) * (prevVertex.x + currVertex.x));
+                normal.z = normal.z + ((prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y));
+            }
+            normal = math.normalizesafe(normal);
+
+            return normal;
+        }
+
+        void CleanUp(in NativeList<IndexSurfaceInfo> allInfos, ref NativeList<UnsafeList<Edge>> allEdges, in HashedVertices brushVertices, ref UnsafeList<int> loopIndices, ref NativeList<UnsafeList<int>> holeIndices)
         {
             for (int l = loopIndices.Length - 1; l >= 0; l--)
             {
@@ -382,6 +474,7 @@ namespace Chisel.Core
                 if (baseLoopEdges.Length < 3)
                 {
                     baseLoopEdges.Clear();
+                    allEdges[baseloopIndex] = baseLoopEdges;
                     continue;
                 }
 
@@ -391,6 +484,7 @@ namespace Chisel.Core
                     interiorCategory != CategoryIndex.ValidReverseAligned)
                 {
                     baseLoopEdges.Clear();
+                    allEdges[baseloopIndex] = baseLoopEdges;
                     continue;
                 }
 
@@ -398,9 +492,11 @@ namespace Chisel.Core
                 if (math.all(baseLoopNormal == float3.zero))
                 {
                     baseLoopEdges.Clear();
+                    allEdges[baseloopIndex] = baseLoopEdges;
                     continue;
                 }
 
+                allEdges[baseloopIndex] = baseLoopEdges;
                 var holeIndicesList = holeIndices[baseloopIndex];
                 if (holeIndicesList.Length == 0)
                     continue;
@@ -431,9 +527,11 @@ namespace Chisel.Core
                         }
                     }
 
+                    allEdges[holeIndex] = holeEdges;
                     if (holeEdges.Length < 3)
                     {
                         holeIndicesList.RemoveAtSwapBack(h);
+                        holeIndices[baseloopIndex] = holeIndicesList;
                         continue;
                     }
 
@@ -441,9 +539,11 @@ namespace Chisel.Core
                     if (math.all(holeNormal == float3.zero))
                     {
                         holeIndicesList.RemoveAtSwapBack(h);
+                        holeIndices[baseloopIndex] = holeIndicesList;
                         continue;
                     }
                 }
+
                 if (holeIndicesList.Length == 0)
                     continue;
 
@@ -492,6 +592,7 @@ namespace Chisel.Core
                                 holeEdge.index2 = i1;
                                 holeEdges[n] = holeEdge;
                             }
+                            allEdges[holeIndex] = holeEdges;
                         }
 
                         int brushNodeOrder = allInfos[holeIndex].brushIndexOrder.nodeOrder;
@@ -619,6 +720,7 @@ namespace Chisel.Core
                                     continue;
                                 baseLoopEdges.RemoveAtSwapBack(e);
                             }
+                            allEdges[baseloopIndex] = baseLoopEdges;
                         }
 
                         for (int h1 = holeIndicesList.Length - 1; h1 >= 0; h1--)
@@ -632,6 +734,7 @@ namespace Chisel.Core
                                     continue;
                                 holeEdges1.RemoveAtSwapBack(e);
                             }
+                            allEdges[holeIndex1] = holeEdges1;
                         }
                     }
                 }
@@ -651,10 +754,12 @@ namespace Chisel.Core
 
                     // Note: can have duplicate edges when multiple holes share an edge
                     //          (only edges between holes and base-loop are guaranteed to not be duplciate)
-                    AddEdgesNoResize(baseLoopEdges, holeEdges);
+                    AddEdgesNoResize(ref baseLoopEdges, in holeEdges);
                 }
 
+                allEdges[baseloopIndex] = baseLoopEdges;
                 holeIndicesList.Clear();
+                holeIndices[baseloopIndex] = holeIndicesList;
             }
 
             // TODO: remove the need for this
@@ -877,10 +982,10 @@ namespace Chisel.Core
 
             var maxLoops            = (routingLookupsLength + routingLookupsLength) * (surfaceCount + surfaceCount); // TODO: find a more reliable "max"
 
-            NativeCollectionHelpers.EnsureConstantSizeAndClear(ref holeIndices, maxLoops);
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref holeIndices, maxLoops);
             NativeCollectionHelpers.EnsureSizeAndClear(ref surfaceLoopIndices, surfaceCount);
             NativeCollectionHelpers.EnsureCapacityAndClear(ref allInfos, maxLoops);
-            NativeCollectionHelpers.EnsureConstantSizeAndClear(ref allEdges, maxLoops);
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref allEdges, maxLoops);
 
 
             ref var routingTable = ref routingTableRef.Value;
@@ -898,15 +1003,15 @@ namespace Chisel.Core
                 var maxAllocation       = 1 + (2 * (routingLookupsLength + allEdges.Length)); // TODO: find a more reliable "max"
                 var maxEdgeAllocation   = 1 + (hashedTreeSpaceVertices.Length * 2);
 
-                var loopIndices = new UnsafeList<int>(maxAllocation, Allocator.Temp);
-                
+                var loopIndices = new UnsafeList<int>(maxAllocation, Allocator.Temp);                
                 loopIndices.AddNoResize(allEdges.Length);                
-                holeIndices.AddAndAllocateWithCapacity(maxAllocation);
+                holeIndices.Add(new UnsafeList<int>(maxAllocation, Allocator.Temp));
                 allInfos   .AddNoResize(info);
                 //Debug.Assert(holeIndices.IsAllocated(allInfos.Length - 1));
 
-                var basePolygonDst = allEdges.AddAndAllocateWithCapacity(basePolygonSrc.Length + maxEdgeAllocation);// TODO: find a more reliable "max"
+                var basePolygonDst = new UnsafeList<Edge>(basePolygonSrc.Length + maxEdgeAllocation, Allocator.Temp);// TODO: find a more reliable "max"
                 basePolygonDst.AddRangeNoResize(basePolygonSrc);
+                allEdges.Add(basePolygonDst);
 
                 //Debug.Assert(allEdges.Length == allInfos.Length);
                 //Debug.Assert(allInfos.Length == holeIndices.Length);
@@ -964,10 +1069,11 @@ namespace Chisel.Core
                                            in intersectionLoop, 
                                            intersectionCategory, 
                                            intersectionInfo);
+                            surfaceLoopIndices[surfaceIndex] = loopIndices;
                         }
                     }
                 }
-                CleanUp(in allInfos, in allEdges, in hashedTreeSpaceVertices, ref loopIndices, ref holeIndices);
+                CleanUp(in allInfos, ref allEdges, in hashedTreeSpaceVertices, ref loopIndices, ref holeIndices);
                 surfaceLoopIndices[surfaceIndex] = loopIndices;
             }
 
@@ -980,12 +1086,12 @@ namespace Chisel.Core
             output.Write(surfaceLoopIndices.Length);
             for (int o = 0; o < surfaceLoopIndices.Length; o++)
             {
-                if (!surfaceLoopIndices[o].IsCreated)
+                var inner = surfaceLoopIndices[o];
+                if (!inner.IsCreated)
                 {
                     output.Write(0);
                     continue;
                 }
-                var inner = surfaceLoopIndices[o];
                 output.Write(inner.Length);
                 for (int i = 0; i < inner.Length; i++)
                     output.Write(inner[i]);
@@ -997,7 +1103,7 @@ namespace Chisel.Core
                 var surfaceInfo = allInfos[l];
                 output.Write(new SurfaceInfo { basePlaneIndex = surfaceInfo.basePlaneIndex, interiorCategory = surfaceInfo.interiorCategory//, nodeIndex = surfaceInfo.brushIndexOrder.nodeIndex 
                                 });
-                var edges = allEdges[l].AsArray();
+                var edges = allEdges[l];
                 output.Write(edges.Length);
                 for (int e = 0; e < edges.Length; e++)
                     output.Write(edges[e]);
