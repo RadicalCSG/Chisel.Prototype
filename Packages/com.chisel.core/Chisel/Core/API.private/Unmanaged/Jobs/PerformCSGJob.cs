@@ -43,7 +43,7 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<UnsafeList<int>>   surfaceLoopIndices;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<UnsafeList<Edge>>  allEdges;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<UnsafeList<Edge>>  intersectionLoops;
-        [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<Edge>         basePolygonEdges;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<UnsafeList<Edge>>  basePolygonEdges;
         [NativeDisableContainerSafetyRestriction, NoAlias] HashedVertices                hashedTreeSpaceVertices;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<ushort>           indexRemap;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<UnsafeList<Edge>>  intersectionEdges;
@@ -826,13 +826,13 @@ namespace Chisel.Core
                 {
                     //if (l >= basePolygonEdges.Length)
                     //    Debug.Log("C");
-                    if (basePolygonEdges.IsIndexCreated(l))
+                    if (basePolygonEdges[l].IsCreated)
                         basePolygonEdges[l].Clear();
                     continue;
                 }
                 //if (l >= basePolygonEdges.Length)
                 //    Debug.Log($"D {l} {basePolygonEdges.Length} {basePolygonSurfaceInfos.Length} {basePolygonEdgesLength} {basePolygonEdges.Length}");
-                var edgesInner      = basePolygonEdges.AllocateWithCapacityForIndex(l, edgesLength);
+                var edgesInner = new UnsafeList<Edge>(edgesLength, Allocator.Temp);
                 //Debug.Log("E");
                 //edgesInner.ResizeUninitialized(edgesLength);
                 for (int e = 0; e < edgesLength; e++)
@@ -850,6 +850,7 @@ namespace Chisel.Core
                 }
                 if (edgesInner.Length < 3)
                     edgesInner.Clear();
+                basePolygonEdges[l] = edgesInner;
             }
             //basePolygonSurfaceInfos.ResizeUninitialized(polygonIndex);
             //basePolygonEdges.ResizeExact(polygonIndex);
@@ -992,7 +993,7 @@ namespace Chisel.Core
             ref var routingTable = ref routingTableRef.Value;
             for (int surfaceIndex = 0; surfaceIndex < surfaceCount; surfaceIndex++)
             {
-                if (!basePolygonEdges.IsIndexCreated(surfaceIndex))
+                if (!basePolygonEdges[surfaceIndex].IsCreated)
                     continue;
                 var basePolygonSrc = basePolygonEdges[surfaceIndex];
                 if (basePolygonSrc.Length < 3)
