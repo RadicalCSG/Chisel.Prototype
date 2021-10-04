@@ -91,56 +91,6 @@ namespace Chisel.Core
             return duplicates;
         }
 
-        static bool AddEdgesNoResize(NativeListArray<Edge>.NativeList dstEdges, NativeListArray<Edge>.NativeList srcEdges)
-        {
-            if (srcEdges.Length == 0)  
-                return false;
-
-            for (int ae = srcEdges.Length - 1; ae >= 0; ae--)
-            {
-                var addEdge = srcEdges[ae];
-                for (int e = dstEdges.Length - 1; e >= 0; )
-                {
-                    if (addEdge.Equals(dstEdges[e]))
-                    {
-                        NotUniqueEdgeException();
-                        dstEdges.RemoveAtSwapBack(e);
-                    } else
-                        e--;
-                }
-            }
-
-            bool duplicates = false;
-
-            for (int v = 0; v < srcEdges.Length;v++)
-            {
-                var addEdge = srcEdges[v];
-                var index = IndexOf(dstEdges, addEdge, out bool _);
-                if (index != -1)
-                {
-                    //Debug.Log($"Duplicate edge {inverted}  {values[v].index1}/{values[v].index2} {edges[index].index1}/{edges[index].index2}");
-                    duplicates = true;
-                    continue;
-                }
-                dstEdges.AddNoResize(addEdge);
-            }
-
-            return duplicates;
-        }
-
-        static int IndexOf(NativeListArray<Edge>.NativeList edges, Edge edge, out bool inverted)
-        {
-            //var builder = new System.Text.StringBuilder();
-            for (int e = 0; e < edges.Length; e++)
-            {
-                //builder.AppendLine($"{e}/{edges.Count}: {edges[e]} {edge}");
-                if (edges[e].index1 == edge.index1 && edges[e].index2 == edge.index2) { inverted = false; return e; }
-                if (edges[e].index1 == edge.index2 && edges[e].index2 == edge.index1) { inverted = true;  return e; }
-            }
-            //Debug.Log(builder.ToString());
-            inverted = false;
-            return -1;
-        }
         static int IndexOf(UnsafeList<Edge> edges, Edge edge, out bool inverted)
         {
             //var builder = new System.Text.StringBuilder();
@@ -308,7 +258,7 @@ namespace Chisel.Core
                         continue;
 
                     var holeInfo            = allInfos[holeIndex];
-                    var holeBrushNodeID     = holeInfo.brushIndexOrder.compactNodeID;/**/
+                    var holeBrushNodeID     = holeInfo.brushIndexOrder.compactNodeID;
 
                     bool touches = brushesTouchedByBrushRef.Get(holeBrushNodeID) != IntersectionType.NoIntersection;
                     
@@ -401,26 +351,6 @@ namespace Chisel.Core
                 //Debug.Assert(allInfos.Length == holeIndices.Length);
                 //Debug.Assert(holeIndices.IsAllocated(allInfos.Length - 1));
             }
-        }
-
-        internal static float3 CalculatePlaneNormal(in NativeListArray<Edge>.NativeList edges, in HashedVertices hashedVertices)
-        {
-            // Newell's algorithm to create a plane for concave polygons.
-            // NOTE: doesn't work well for self-intersecting polygons
-            var normal      = float3.zero;
-            var vertices    = hashedVertices;
-            for (int n = 0; n < edges.Length; n++)
-            {
-                var edge = edges[n];
-                var prevVertex = vertices[(int)edge.index1];
-                var currVertex = vertices[(int)edge.index2];
-                normal.x = normal.x + ((prevVertex.y - currVertex.y) * (prevVertex.z + currVertex.z));
-                normal.y = normal.y + ((prevVertex.z - currVertex.z) * (prevVertex.x + currVertex.x));
-                normal.z = normal.z + ((prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y));
-            }
-            normal = math.normalizesafe(normal);
-
-            return normal;
         }
 
         internal static float3 CalculatePlaneNormal(in UnsafeList<Edge> edges, in HashedVertices hashedVertices)
@@ -642,13 +572,8 @@ namespace Chisel.Core
                         planeOffset += planesLength;
                     }
 
-                    //*
                     NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref destroyedEdges, edgeOffset);
-                    /*/
-                    var destroyedEdges = stackalloc byte[edgeOffset];
-                    UnsafeUtility.MemSet(destroyedEdges, 0, edgeOffset);
-                    //*/
-
+                    
                     var allCombinedEdgesArray = allCombinedEdges.AsArray();
 
                     {

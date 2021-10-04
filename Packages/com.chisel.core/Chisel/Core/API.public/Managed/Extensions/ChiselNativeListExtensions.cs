@@ -1,4 +1,3 @@
-using Chisel.Core.LowLevel.Unsafe;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -158,26 +157,6 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddRangeNoResize<T>(ref this UnsafeList<T> list, NativeListArray<T>.NativeList elements, int length) where T : unmanaged
-        {
-            if (length == 0)
-                return;
-            CheckCreated(list.IsCreated);
-            CheckLengthInRange(length, list.Capacity);
-            list.AddRangeNoResize(elements.GetUnsafePtr(), length);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddRangeNoResize<T>(ref this UnsafeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
-        {
-            if (elements.Length == 0)
-                return;
-            CheckCreated(list.IsCreated);
-            CheckLengthInRange(elements.Length, list.Capacity);
-            list.AddRangeNoResize(elements.GetUnsafePtr(), elements.Length);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRangeNoResize<T>(this NativeList<T> list, UnsafeList<T> elements) where T : unmanaged
         {
             if (elements.Length == 0)
@@ -226,25 +205,7 @@ namespace Chisel.Core
                 return 0;
             return math.hash(list.GetUnsafeReadOnlyPtr(), length * sizeof(T));
         }
-        /*
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddRangeNoResize<T>(ref this UnsafeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
-        {
-            if (elements.Length == 0)
-                return;
-            CheckCreated(list.IsCreated);
-            list.AddRangeNoResize(elements.GetUnsafeReadOnlyPtr(), elements.Length);
-        }*/
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddRangeNoResize<T>(this NativeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
-        {
-            if (elements.Length == 0)
-                return;
-            CheckCreated(list.IsCreated);
-            list.AddRangeNoResize(elements.GetUnsafeReadOnlyPtr(), elements.Length);
-        }
-
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRange<T>(this NativeList<T> list, T[] elements) where T : unmanaged
         {
@@ -657,16 +618,6 @@ namespace Chisel.Core
                     return true;
             }
             return false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void* GetUnsafePtr<T>(this NativeListArray<T>.NativeList list) 
-            where T : unmanaged
-        {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            AtomicSafetyHandle.CheckWriteAndThrow(list.m_Safety);
-#endif
-            return list.m_ListData->Ptr;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
