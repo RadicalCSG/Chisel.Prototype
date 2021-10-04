@@ -51,6 +51,7 @@ namespace Chisel.Core
         {
             if (!list.IsCreated)
                 list = new NativeList<UnsafeList<T>>(exactSize, allocator);
+            list.Clear();
             list.Resize(exactSize, NativeArrayOptions.ClearMemory);
         }
 

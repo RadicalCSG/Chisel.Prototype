@@ -42,7 +42,7 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<UnsafeList<int>>   holeIndices;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<UnsafeList<int>>   surfaceLoopIndices;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<UnsafeList<Edge>>  allEdges;
-        [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<Edge>         intersectionLoops;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<UnsafeList<Edge>>  intersectionLoops;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<Edge>         basePolygonEdges;
         [NativeDisableContainerSafetyRestriction, NoAlias] HashedVertices                hashedTreeSpaceVertices;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<ushort>           indexRemap;
@@ -155,18 +155,18 @@ namespace Chisel.Core
             return -1;
         }
 
-        void IntersectLoops([NoAlias] in HashedVertices                   hashedTreeSpaceVertices,
+        void IntersectLoops([NoAlias] in HashedVertices                 hashedTreeSpaceVertices,
 
-                            [NoAlias] ref UnsafeList<int>                 loopIndices, 
-                            int                                           surfaceLoopIndex,
+                            [NoAlias] ref UnsafeList<int>               loopIndices, 
+                            int                                         surfaceLoopIndex,
 
-                            [NoAlias] ref NativeList<UnsafeList<int>>     holeIndices,
-                            [NoAlias] ref NativeList<IndexSurfaceInfo>    allInfos,
-                            [NoAlias] ref NativeList<UnsafeList<Edge>>    allEdges,
+                            [NoAlias] ref NativeList<UnsafeList<int>>   holeIndices,
+                            [NoAlias] ref NativeList<IndexSurfaceInfo>  allInfos,
+                            [NoAlias] ref NativeList<UnsafeList<Edge>>  allEdges,
 
-                            [NoAlias] in NativeListArray<Edge>.NativeList intersectionLoop, 
-                            CategoryGroupIndex                            intersectionCategory,
-                            IndexSurfaceInfo                              intersectionInfo)
+                            [NoAlias] in UnsafeList<Edge>               intersectionLoop, 
+                            CategoryGroupIndex                          intersectionCategory,
+                            IndexSurfaceInfo                            intersectionInfo)
         {
             if (intersectionLoop.Length == 0)
                 return;
@@ -973,9 +973,10 @@ namespace Chisel.Core
                     int offset          = routingTableIndex + (surfaceIndex * routingLookupsLength);
 
                     var srcEdges = intersectionEdges[i];
-                    var loops = intersectionLoops.AllocateWithCapacityForIndex(offset, srcEdges.Length);
+                    var loops = new UnsafeList<Edge>(srcEdges.Length, Allocator.Temp);
                     loops.AddRangeNoResize(srcEdges);
                     intersectionSurfaceInfo[offset] = surfaceInfo;
+                    intersectionLoops[offset] = loops;
                 }
             }
 
@@ -1020,7 +1021,7 @@ namespace Chisel.Core
                 {
                     int offset              = routingTableIndex + (surfaceIndex * routingLookupsLength);
                     ref var routingLookup   = ref routingLookups[routingTableIndex];
-                    var intersectionLoop    = intersectionLoops.SafeGet(offset);
+                    var intersectionLoop    = intersectionLoops[offset];
                     var intersectionInfo    = intersectionSurfaceInfo[offset];
                     for (int l = loopIndices.Length - 1; l >= 0; l--)
                     {
@@ -1039,7 +1040,7 @@ namespace Chisel.Core
                             continue;
                         }
 
-                        bool overlap = intersectionLoop.Length != 0 &&
+                        bool overlap = intersectionLoop.IsCreated && intersectionLoop.Length != 0 &&
                                         BooleanEdgesUtility.AreLoopsOverlapping(in surfaceLoopEdges, in intersectionLoop);
 
                         if (overlap)
@@ -1055,7 +1056,7 @@ namespace Chisel.Core
                         }
 
                         // Add all holes that share the same plane to the polygon
-                        if (intersectionLoop.Length != 0)
+                        if (intersectionLoop.IsCreated && intersectionLoop.Length != 0)
                         {
                             // Categorize between original surface & intersection
                             var intersectionCategory = routingRow[(int)intersectionInfo.interiorCategory];
