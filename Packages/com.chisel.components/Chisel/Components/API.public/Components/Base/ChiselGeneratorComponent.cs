@@ -46,13 +46,15 @@ namespace Chisel.Components
             return definition.GetHashCode();
         }
 
+
+        const Allocator defaultAllocator = Allocator.TempJob;
         protected override void UpdateGeneratorNodesInternal(in CSGTree tree, ref CSGTreeNode node)
         {
             var brush = (CSGTreeBrush)node;
             if (!brush.Valid)
                 return;
 
-            var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.TempJob);
+            var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, defaultAllocator);
             if (!surfaceDefinitionBlob.IsCreated)
                 return;
 
@@ -93,13 +95,14 @@ namespace Chisel.Components
             return definition.GetHashCode();
         }
 
+        const Allocator defaultAllocator = Allocator.TempJob;
         protected override void UpdateGeneratorNodesInternal(in CSGTree tree, ref CSGTreeNode node)
         {
             var branch = (CSGTreeBranch)node;
             if (!branch.Valid)
                 return;
 
-            var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.TempJob);
+            var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, defaultAllocator);
             if (!surfaceDefinitionBlob.IsCreated)
                 return;
 

@@ -100,7 +100,6 @@ namespace Chisel.Core
         }
         #endregion
         */
-        const Allocator persistentAllocator = Allocator.Persistent;
         const Allocator tempAllocator       = Allocator.TempJob;
 
         internal unsafe struct TreeUpdate
@@ -503,11 +502,11 @@ namespace Chisel.Core
                 var chiselLookupValues = ChiselTreeLookup.Value[this.tree];
                 ref var compactHierarchy = ref CompactHierarchyManager.GetHierarchy(this.treeCompactNodeID);
 
-                Temporaries.parameterCounts                = new NativeArray<int>(chiselLookupValues.parameters.Length, persistentAllocator);
-                Temporaries.transformTreeBrushIndicesList  = new NativeList<NodeOrderNodeID>(persistentAllocator);
-                Temporaries.brushBoundsUpdateList          = new NativeList<NodeOrderNodeID>(persistentAllocator);
-                Temporaries.nodes                          = new NativeList<CompactNodeID>(persistentAllocator);
-                Temporaries.brushes                        = new NativeList<CompactNodeID>(persistentAllocator);
+                Temporaries.parameterCounts                = new NativeArray<int>(chiselLookupValues.parameters.Length, tempAllocator);
+                Temporaries.transformTreeBrushIndicesList  = new NativeList<NodeOrderNodeID>(tempAllocator);
+                Temporaries.brushBoundsUpdateList          = new NativeList<NodeOrderNodeID>(tempAllocator);
+                Temporaries.nodes                          = new NativeList<CompactNodeID>(tempAllocator);
+                Temporaries.brushes                        = new NativeList<CompactNodeID>(tempAllocator);
 
                 compactHierarchy.GetTreeNodes(Temporaries.nodes, Temporaries.brushes);
                     
@@ -519,47 +518,47 @@ namespace Chisel.Core
                 this.maxNodeOrder = this.brushCount;
 
                 Temporaries.meshDataArray   = default;
-                Temporaries.meshDatas       = new NativeList<UnityEngine.Mesh.MeshData>(persistentAllocator);
+                Temporaries.meshDatas       = new NativeList<UnityEngine.Mesh.MeshData>(tempAllocator);
 
-                Temporaries.brushesThatNeedIndirectUpdateHashMap = new NativeHashSet<IndexOrder>(brushCount, persistentAllocator);
-                Temporaries.brushesThatNeedIndirectUpdate   = new NativeList<IndexOrder>(brushCount, persistentAllocator);
+                Temporaries.brushesThatNeedIndirectUpdateHashMap = new NativeHashSet<IndexOrder>(brushCount, tempAllocator);
+                Temporaries.brushesThatNeedIndirectUpdate   = new NativeList<IndexOrder>(brushCount, tempAllocator);
 
                 // TODO: find actual vertex count
-                Temporaries.outputSurfaceVertices           = new NativeList<float3>(65535 * 10, persistentAllocator);
+                Temporaries.outputSurfaceVertices           = new NativeList<float3>(65535 * 10, tempAllocator);
 
-                Temporaries.outputSurfaces                  = new NativeList<BrushIntersectionLoop>(brushCount * 16, persistentAllocator);
-                Temporaries.brushIntersectionsWith          = new NativeList<BrushIntersectWith>(brushCount, persistentAllocator);
+                Temporaries.outputSurfaces                  = new NativeList<BrushIntersectionLoop>(brushCount * 16, tempAllocator);
+                Temporaries.brushIntersectionsWith          = new NativeList<BrushIntersectWith>(brushCount, tempAllocator);
 
-                Temporaries.nodeIDValueToNodeOrderOffsetRef = new NativeReference<int>(persistentAllocator);
-                Temporaries.surfaceCountRef                 = new NativeReference<int>(persistentAllocator);
-                Temporaries.compactTreeRef                  = new NativeReference<ChiselBlobAssetReference<CompactTree>>(persistentAllocator);
-                Temporaries.needRemappingRef                = new NativeReference<bool>(persistentAllocator);
+                Temporaries.nodeIDValueToNodeOrderOffsetRef = new NativeReference<int>(tempAllocator);
+                Temporaries.surfaceCountRef                 = new NativeReference<int>(tempAllocator);
+                Temporaries.compactTreeRef                  = new NativeReference<ChiselBlobAssetReference<CompactTree>>(tempAllocator);
+                Temporaries.needRemappingRef                = new NativeReference<bool>(tempAllocator);
 
-                Temporaries.uniqueBrushPairs                = new NativeList<BrushPair2>(brushCount * 16, persistentAllocator);
+                Temporaries.uniqueBrushPairs                = new NativeList<BrushPair2>(brushCount * 16, tempAllocator);
 
-                Temporaries.rebuildTreeBrushIndexOrders     = new NativeList<IndexOrder>(brushCount, persistentAllocator);
-                Temporaries.allUpdateBrushIndexOrders       = new NativeList<IndexOrder>(brushCount, persistentAllocator);
-                Temporaries.allBrushMeshIDs                 = new NativeArray<int>(brushCount, persistentAllocator);
-                Temporaries.brushRenderData                 = new NativeList<BrushData>(brushCount, persistentAllocator);
-                Temporaries.allTreeBrushIndexOrders         = new NativeList<IndexOrder>(brushCount, persistentAllocator);
+                Temporaries.rebuildTreeBrushIndexOrders     = new NativeList<IndexOrder>(brushCount, tempAllocator);
+                Temporaries.allUpdateBrushIndexOrders       = new NativeList<IndexOrder>(brushCount, tempAllocator);
+                Temporaries.allBrushMeshIDs                 = new NativeArray<int>(brushCount, tempAllocator);
+                Temporaries.brushRenderData                 = new NativeList<BrushData>(brushCount, tempAllocator);
+                Temporaries.allTreeBrushIndexOrders         = new NativeList<IndexOrder>(brushCount, tempAllocator);
                 Temporaries.allTreeBrushIndexOrders.Clear();
                 Temporaries.allTreeBrushIndexOrders.Resize(brushCount, NativeArrayOptions.ClearMemory);
 
-                Temporaries.outputSurfacesRange             = new NativeArray<int2>(brushCount, persistentAllocator);
-                Temporaries.brushIntersectionsWithRange     = new NativeArray<int2>(brushCount, persistentAllocator);
-                Temporaries.nodeIDValueToNodeOrderArray     = new NativeList<int>(brushCount, persistentAllocator);
-                Temporaries.brushMeshLookup                 = new NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>(brushCount, persistentAllocator);
+                Temporaries.outputSurfacesRange             = new NativeArray<int2>(brushCount, tempAllocator);
+                Temporaries.brushIntersectionsWithRange     = new NativeArray<int2>(brushCount, tempAllocator);
+                Temporaries.nodeIDValueToNodeOrderArray     = new NativeList<int>(brushCount, tempAllocator);
+                Temporaries.brushMeshLookup                 = new NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>(brushCount, tempAllocator);
 
-                Temporaries.brushBrushIntersections         = new NativeArray<UnsafeList<BrushIntersectWith>>(brushCount, persistentAllocator);
+                Temporaries.brushBrushIntersections         = new NativeArray<UnsafeList<BrushIntersectWith>>(brushCount, tempAllocator);
 
-                Temporaries.subMeshCounts              = new NativeList<SubMeshCounts>(persistentAllocator);
+                Temporaries.subMeshCounts                   = new NativeList<SubMeshCounts>(tempAllocator);
 
-                Temporaries.colliderMeshUpdates        = new NativeList<ChiselMeshUpdate>(persistentAllocator);
-                Temporaries.debugHelperMeshes          = new NativeList<ChiselMeshUpdate>(persistentAllocator);
-                Temporaries.renderMeshes               = new NativeList<ChiselMeshUpdate>(persistentAllocator);
+                Temporaries.colliderMeshUpdates             = new NativeList<ChiselMeshUpdate>(tempAllocator);
+                Temporaries.debugHelperMeshes               = new NativeList<ChiselMeshUpdate>(tempAllocator);
+                Temporaries.renderMeshes                    = new NativeList<ChiselMeshUpdate>(tempAllocator);
 
 
-                Temporaries.loopVerticesLookup          = new NativeArray<UnsafeList<float3>>(this.brushCount, persistentAllocator);
+                Temporaries.loopVerticesLookup              = new NativeArray<UnsafeList<float3>>(this.brushCount, tempAllocator);
 
                 Temporaries.vertexBufferContents.EnsureInitialized();
 
@@ -570,15 +569,13 @@ namespace Chisel.Core
 
                 #region MeshQueries
                 // TODO: have more control over the queries
-                Temporaries.meshQueries         = MeshQuery.DefaultQueries.ToNativeArray(persistentAllocator);
+                Temporaries.meshQueries         = MeshQuery.DefaultQueries.ToNativeArray(tempAllocator);
                 Temporaries.meshQueriesLength   = Temporaries.meshQueries.Length;
                 Temporaries.meshQueries.Sort(meshQueryComparer);
                 #endregion
 
-                Temporaries.subMeshSurfaces = new NativeArray<UnsafeList<SubMeshSurface>>(Temporaries.meshQueriesLength, persistentAllocator);
-                for (int i = 0; i < Temporaries.meshQueriesLength; i++)
-                    Temporaries.subMeshSurfaces[i] = new UnsafeList<SubMeshSurface>(1000, persistentAllocator);
-
+                Temporaries.subMeshSurfaces = new NativeArray<UnsafeList<SubMeshSurface>>(Temporaries.meshQueriesLength, tempAllocator);
+                
                 Temporaries.subMeshCounts.Clear();
 
                 // Workaround for the incredibly dumb "can't create a stream that is zero sized" when the value is determined at runtime. Yeah, thanks
@@ -609,12 +606,12 @@ namespace Chisel.Core
                 if (chiselLookupValues.brushesTouchedByBrushCache.Length < newBrushCount)
                     chiselLookupValues.brushesTouchedByBrushCache.Resize(newBrushCount, NativeArrayOptions.ClearMemory);
 
-                Temporaries.basePolygonDisposeList             = new NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>(chiselLookupValues.basePolygonCache.Length, persistentAllocator);
-                Temporaries.treeSpaceVerticesDisposeList       = new NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>(chiselLookupValues.treeSpaceVerticesCache.Length, persistentAllocator);
-                Temporaries.brushesTouchedByBrushDisposeList   = new NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>(chiselLookupValues.brushesTouchedByBrushCache.Length, persistentAllocator);
-                Temporaries.routingTableDisposeList            = new NativeList<ChiselBlobAssetReference<RoutingTable>>(chiselLookupValues.routingTableCache.Length, persistentAllocator);
-                Temporaries.brushTreeSpacePlaneDisposeList     = new NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>(chiselLookupValues.brushTreeSpacePlaneCache.Length, persistentAllocator);
-                Temporaries.brushRenderBufferDisposeList       = new NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>(chiselLookupValues.brushRenderBufferCache.Length, persistentAllocator);
+                Temporaries.basePolygonDisposeList             = new NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>(chiselLookupValues.basePolygonCache.Length, tempAllocator);
+                Temporaries.treeSpaceVerticesDisposeList       = new NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>(chiselLookupValues.treeSpaceVerticesCache.Length, tempAllocator);
+                Temporaries.brushesTouchedByBrushDisposeList   = new NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>(chiselLookupValues.brushesTouchedByBrushCache.Length, tempAllocator);
+                Temporaries.routingTableDisposeList            = new NativeList<ChiselBlobAssetReference<RoutingTable>>(chiselLookupValues.routingTableCache.Length, tempAllocator);
+                Temporaries.brushTreeSpacePlaneDisposeList     = new NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>(chiselLookupValues.brushTreeSpacePlaneCache.Length, tempAllocator);
+                Temporaries.brushRenderBufferDisposeList       = new NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>(chiselLookupValues.brushRenderBufferCache.Length, tempAllocator);
 
                 #endregion
             }
@@ -1034,7 +1031,7 @@ namespace Chisel.Core
                             rebuildTreeBrushIndexOrders = Temporaries.rebuildTreeBrushIndexOrders.AsArray(),
 
                             // Read / Write
-                            allocator = persistentAllocator,
+                            allocator = tempAllocator,
                             brushBrushIntersections = Temporaries.brushBrushIntersections,
 
                             // Write
@@ -1159,7 +1156,7 @@ namespace Chisel.Core
                             brushesThatNeedIndirectUpdate = Temporaries.brushesThatNeedIndirectUpdate.AsJobArray(runInParallel),
 
                             // Read / Write
-                            allocator = persistentAllocator,
+                            allocator = tempAllocator,
                             brushBrushIntersections = Temporaries.brushBrushIntersections
                         };
                         findAllIndirectBrushIntersectionPairsJob.Schedule(runInParallel, Temporaries.brushesThatNeedIndirectUpdate, 1,
@@ -1429,7 +1426,7 @@ namespace Chisel.Core
                             basePolygonCache = chiselLookupValues.basePolygonCache.AsJobArray(runInParallel),
 
                             // Read Write
-                            allocator = persistentAllocator,
+                            allocator = tempAllocator,
                             loopVerticesLookup = Temporaries.loopVerticesLookup,
 
                             // Write
@@ -1655,7 +1652,7 @@ namespace Chisel.Core
                             brushRenderData = Temporaries.brushRenderData.AsJobArray(runInParallel),
 
                             // Write
-                            allocator = persistentAllocator,
+                            allocator = tempAllocator,
                             subMeshSurfaces = Temporaries.subMeshSurfaces,
                         };
                         prepareSubSectionsJob.Schedule(runInParallel, Temporaries.meshQueriesLength, 1,
@@ -1718,7 +1715,7 @@ namespace Chisel.Core
                             subMeshSections = Temporaries.vertexBufferContents.subMeshSections.AsJobArray(runInParallel),
 
                             // Read Write
-                            allocator = persistentAllocator,
+                            allocator = tempAllocator,
                             triangleBrushIndices = Temporaries.vertexBufferContents.triangleBrushIndices
                         };
                         allocateVertexBuffersJob.Schedule(runInParallel,
@@ -2132,6 +2129,7 @@ namespace Chisel.Core
                 finalJobHandle.AddDependency(dependencies);
 
                 lastJobHandle.AddDependency(dependencies);
+                lastJobHandle.AddDependency(NativeCollection.DisposeDeep(Temporaries.subMeshSurfaces,   dependencies));
                 lastJobHandle.AddDependency(Temporaries.allTreeBrushIndexOrders .Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.colliderMeshUpdates     .Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.debugHelperMeshes       .Dispose(dependencies));
@@ -2139,7 +2137,6 @@ namespace Chisel.Core
                 lastJobHandle.AddDependency(Temporaries.meshDatas               .Dispose(dependencies));                
                 lastJobHandle.AddDependency(Temporaries.vertexBufferContents    .Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.subMeshCounts           .Dispose(dependencies));
-                lastJobHandle.AddDependency(NativeCollection.DisposeDeep(Temporaries.subMeshSurfaces,   dependencies));
 
                 return lastJobHandle;
             }

@@ -135,7 +135,7 @@ namespace Chisel.Core
             base.Validate(); 
         }
 
-        const Allocator defaultAllocator = Allocator.Persistent; //Allocator.TempJob;
+        const Allocator defaultAllocator = Allocator.TempJob;
         public override ChiselPathedStairs GetBranchGenerator()
         {
             settings.curveBlob = ChiselCurve2DBlob.Convert(shape, defaultAllocator);

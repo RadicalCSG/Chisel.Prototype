@@ -145,7 +145,13 @@ namespace Chisel.Core
             //              => this whole job could be removed
             // TODO: store surface info and its vertices/indices separately, both sequentially in arrays
             // TODO: store surface vertices/indices sequentially in a big array, *somehow* make ordering work
-                
+
+            if (subMeshSurfaces[t].IsCreated)
+            {
+                // should not happen
+                subMeshSurfaces[t].Dispose();
+                subMeshSurfaces[t] = default;
+            }
             var subMeshSurfaceList = new UnsafeList<SubMeshSurface>(requiredSurfaceCount, allocator);
 
             for (int b = 0, count_b = brushRenderData.Length; b < count_b; b++)

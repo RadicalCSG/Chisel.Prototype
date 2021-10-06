@@ -265,7 +265,7 @@ namespace Chisel.Core
             }
         }
 
-        const Allocator defaultAllocator = Allocator.Persistent; //Allocator.TempJob;
+        const Allocator defaultAllocator = Allocator.TempJob;
         public unsafe static void ConvertBrushMeshesToBrushMeshInstances(List<CSGTreeBrush> rebuildTreeBrushes, List<BrushMesh> rebuildTreeBrushOutlines, List<ChiselSurfaceDefinition> surfaceDefinitions)
         {
             Profiler.BeginSample("ConvertBrushMeshesToBrushMeshInstances");

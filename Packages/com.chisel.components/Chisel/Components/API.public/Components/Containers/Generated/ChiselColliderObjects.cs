@@ -79,19 +79,19 @@ namespace Chisel.Components
             meshCollider.sharedMaterial = physicsMaterial;
         }
 
-        //*
-        [BurstCompile(CompileSynchronously = true)]
-        struct BakeColliderJobParallel : IJobParallelFor
+        /*
+        [BurstCompile]
+        struct BakeColliderJobParallel : IJob
         {
             [NoAlias, ReadOnly] public NativeArray<BakeData> bakingSettings;
-            public void Execute(int index)
+            public void Execute()
             {
                 if (bakingSettings[index].instanceID != 0)
                     Physics.BakeMesh(bakingSettings[index].instanceID, bakingSettings[index].convex);
             }
         }
-        /*
-        [BurstCompile(CompileSynchronously = true)]
+        /*/
+        [BurstCompile]
         struct BakeColliderJob : IJob
         {
             [NoAlias, ReadOnly] public BakeData bakingSettings;
@@ -101,7 +101,7 @@ namespace Chisel.Components
                     Physics.BakeMesh(bakingSettings.instanceID, bakingSettings.convex);
             }
         }
-        */
+        //*/
         struct BakeData
         {
             public bool convex;
@@ -135,13 +135,15 @@ namespace Chisel.Components
             }
         }
 
+        const Allocator defaultAllocator = Allocator.TempJob;
+
         public static void ScheduleColliderBake(ChiselModel model, ChiselColliderObjects[] colliders)
         {
             var colliderSettings = model.ColliderSettings;
             //*
             // TODO: find all the instanceIDs before we start doing CSG, then we can do the Bake's in the same job that sets the meshes
             //          hopefully that will make it easier for Unity to not screw up the scheduling
-            var bakingSettings = new NativeArray<BakeData>(colliders.Length, Allocator.TempJob);
+            var bakingSettings = new NativeArray<BakeData>(colliders.Length, defaultAllocator);
             for (int i = 0; i < colliders.Length; i++)
             {
                 var meshCollider = colliders[i].meshCollider;
@@ -161,7 +163,7 @@ namespace Chisel.Components
                     instanceID  = sharedMesh.GetInstanceID()
                 };
             }
-            /*
+            //*
             var allJobHandles = default(JobHandle);
             for (int i = 0; i < bakingSettings.Length; i++)
             {
