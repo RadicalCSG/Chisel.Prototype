@@ -522,6 +522,25 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void MoveNodeIDs(ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, UnsafeList<CompactChildNode> compactNodes, int offset, int count)
+        {
+            for (int i = offset, lastIndex = (offset + count); i < lastIndex; i++)
+            {
+                var nodeID          = compactNodes[i].nodeID;
+                if (nodeID == NodeID.Invalid)
+                    //throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
+                    continue;
+
+                if (!nodeIDLookup.IsValidIDUnsafe(nodeID.value, nodeID.generation, out var index))
+                    //throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
+                    continue;
+
+                var compactNodeID = compactNodes[i].compactNodeID;
+                nodes[index] = compactNodeID;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static CompactNodeID GetCompactNodeIDNoError(ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, NodeID nodeID, out int index)
         {
             index = -1;
@@ -1100,9 +1119,13 @@ namespace Chisel.Core
 
             ref var sourceNode = ref sourceHierarchy.GetNodeRef(compactNodeID);
             if (recursive)
-                return DeepMove(Int32.MaxValue, CompactNodeID.Invalid, ref destinationHierarchy, ref sourceHierarchy, ref sourceNode);
+            {
+                var result = DeepMove(Int32.MaxValue, CompactNodeID.Invalid, ref destinationHierarchy, ref sourceHierarchy, ref sourceNode);
+                return result;
+            }
 
-            return destinationHierarchy.CreateNode(sourceNode.nodeID, sourceNode.nodeInformation);
+            var result2 = destinationHierarchy.CreateNode(sourceNode.nodeID, sourceNode.nodeInformation);
+            return result2;
         }
 
         // Move nodes from one hierarchy to another
@@ -1393,10 +1416,8 @@ namespace Chisel.Core
             if (newParentHierarchyID == CompactHierarchyID.Invalid)
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(parent)} (value: {newParentCompactNodeID.value}, generation: {newParentCompactNodeID.generation}) is invalid", nameof(parent));
 
-            UnityEngine.Profiling.Profiler.BeginSample("Detach");
             ref var hierarchy = ref GetHierarchy(newParentCompactNodeID);
             hierarchy.DetachAllChildrenFromParent(newParentCompactNodeID);
-            UnityEngine.Profiling.Profiler.EndSample();
 
             if (arrayLength == 0)
                 return true;
@@ -1405,7 +1426,8 @@ namespace Chisel.Core
 
             using (var newChildren = new NativeList<CompactNodeID>(arrayLength, Allocator.Temp))
             {
-                UnityEngine.Profiling.Profiler.BeginSample("Check");
+                newParentHierarchy.ReserveChildren(arrayLength);
+
                 using (var usedTreeNodes = new NativeHashSet<CSGTreeNode>(arrayLength, Allocator.Temp))
                 {
                     for (int i = 0; i < arrayLength; i++)
@@ -1459,56 +1481,47 @@ namespace Chisel.Core
                             return false;
                         }
 
-                        UnityEngine.Profiling.Profiler.BeginSample("ParentOf");
                         var oldParentNodeID = oldParentHierarchy.ParentOf(childCompactNodeID);
-                        UnityEngine.Profiling.Profiler.EndSample();
                         if (currParentHierarchyID != newParentHierarchyID)
                         {
-                            UnityEngine.Profiling.Profiler.BeginSample("MoveChildNode");
                             // Create new copy of item in new hierarchy
                             var newCompactNodeID = MoveChildNode(childCompactNodeID, ref oldParentHierarchy, ref newParentHierarchy, true);
-                            UnityEngine.Profiling.Profiler.EndSample();
 
                             nodes[childIndex] = newCompactNodeID;
 
                             // Delete item in old hierarchy
-                            UnityEngine.Profiling.Profiler.BeginSample("DeleteRecursive");
                             oldParentHierarchy.DeleteRecursive(childCompactNodeID);
                             childCompactNodeID = newCompactNodeID;
-                            UnityEngine.Profiling.Profiler.EndSample();
 
                             SetDirty(oldParentHierarchy.RootID);
                         } else
                         {
                             if (oldParentHierarchy.GetTypeOfNode(childCompactNodeID) != CSGNodeType.Brush)
                             {
-                                UnityEngine.Profiling.Profiler.BeginSample("IsDescendant");
                                 // We cannot add a child to its own descendant (would create a loop)
                                 if (oldParentHierarchy.IsDescendant(childCompactNodeID, newParentCompactNodeID))
                                 {
                                     Debug.LogError("Cannot add child to one of its ancestors (would create infinite loop)");
                                     return false;
                                 }
-                                UnityEngine.Profiling.Profiler.EndSample();
                             }
                         }
 
                         if (oldParentNodeID != CompactNodeID.Invalid)
+                        {
                             oldParentHierarchy.SetDirty(oldParentNodeID);
+                        }
 
-                        newChildren.Add(childCompactNodeID);
+                        newChildren.AddNoResize(childCompactNodeID);
 
                         SetDirty(childNode);
                     }
                 }
-                UnityEngine.Profiling.Profiler.EndSample();
 
                 if (newChildren.Length == 0)
                     return true;
 
-                UnityEngine.Profiling.Profiler.BeginSample("AttachToParent");
                 newParentHierarchy.SetChildrenUnchecked(ref hierarchyIDLookup, hierarchies, ref nodeIDLookup, nodes, newParentCompactNodeID, newChildren, ignoreBrushMeshHashes: true);
-                UnityEngine.Profiling.Profiler.EndSample();
             }
 
             SetDirty(newParentHierarchy.RootID);
@@ -1684,7 +1697,6 @@ namespace Chisel.Core
             hierarchy.DestroyAllChildrenFromParent(parentCompactNodeID);
             SetDirty(parentCompactNodeID);
         }
-
     }
 
     // TODO: create "ReadOnlyCompact...Manager" wrapper can be used in jobs
@@ -1925,6 +1937,9 @@ namespace Chisel.Core
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void MoveNodeID(ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, NodeID nodeID, CompactNodeID compactNodeID) { CompactHierarchyManagerInstance.MoveNodeID(ref nodeIDLookup, nodes, nodeID, compactNodeID); }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void MoveNodeIDs(ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, UnsafeList<CompactChildNode> compactNodes, int offset, int count) { CompactHierarchyManagerInstance.MoveNodeIDs(ref nodeIDLookup, nodes, compactNodes, offset, count); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static CompactNodeID GetCompactNodeIDNoError(ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, NodeID nodeID, out int index) { return CompactHierarchyManagerInstance.GetCompactNodeIDNoError(ref nodeIDLookup, nodes, nodeID, out index); }

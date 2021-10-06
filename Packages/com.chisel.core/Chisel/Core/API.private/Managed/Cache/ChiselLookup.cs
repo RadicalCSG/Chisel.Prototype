@@ -337,6 +337,7 @@ namespace Chisel.Core
 
         static ChiselMeshLookup _singleton;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void UpdateValue()
         {
             if (_singleton == null)
@@ -348,6 +349,7 @@ namespace Chisel.Core
 
         public static Data Value
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 if (_singleton == null)

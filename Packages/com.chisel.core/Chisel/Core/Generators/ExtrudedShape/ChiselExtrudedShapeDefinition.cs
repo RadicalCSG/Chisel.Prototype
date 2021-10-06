@@ -132,10 +132,11 @@ namespace Chisel.Core
             base.Validate();
         }
 
+        const Allocator defaultAllocator = Allocator.Persistent; //Allocator.TempJob;
         public override ChiselExtrudedShape GetBranchGenerator()
         {
-            settings.pathBlob = ChiselPathBlob.Convert(path, Allocator.TempJob);
-            settings.curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob);
+            settings.pathBlob = ChiselPathBlob.Convert(path, defaultAllocator);
+            settings.curveBlob = ChiselCurve2DBlob.Convert(shape, defaultAllocator);
             return base.GetBranchGenerator();
         }
 

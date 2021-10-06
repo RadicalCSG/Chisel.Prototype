@@ -135,9 +135,10 @@ namespace Chisel.Core
             base.Validate(); 
         }
 
+        const Allocator defaultAllocator = Allocator.Persistent; //Allocator.TempJob;
         public override ChiselPathedStairs GetBranchGenerator()
         {
-            settings.curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob);
+            settings.curveBlob = ChiselCurve2DBlob.Convert(shape, defaultAllocator);
             settings.closed = shape.closed;
             return base.GetBranchGenerator();
         }

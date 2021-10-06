@@ -9,7 +9,7 @@ using Unity.Mathematics;
 using UnityEngine;
 
 namespace Chisel.Core
-{
+{/*
     public struct CSGHierarchy
     {
         public bool Valid { get { return compactHierarchyID != CompactHierarchyID.Invalid && CompactHierarchyManager.IsValidHierarchyID(compactHierarchyID); } }
@@ -43,4 +43,5 @@ namespace Chisel.Core
 
         [SerializeField] internal CompactHierarchyID compactHierarchyID;
     }
+    */
 }

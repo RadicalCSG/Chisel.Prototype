@@ -15,7 +15,6 @@ namespace Chisel.Core
     { 
         public const int kMaxVertexCount        = short.MaxValue;
         const float kSqrVertexEqualEpsilon      = CSGConstants.kSqrVertexEqualEpsilon;
-        const float kEdgeIntersectionEpsilon    = CSGConstants.kEdgeIntersectionEpsilon;
         const float kFatPlaneWidthEpsilon       = CSGConstants.kFatPlaneWidthEpsilon;
 
         // Read

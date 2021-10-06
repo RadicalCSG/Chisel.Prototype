@@ -151,7 +151,13 @@ namespace Chisel.Core
         /// <remarks>By modifying the <see cref="Chisel.Core.BrushMeshInstance"/> you can change the shape of the <see cref="Chisel.Core.CSGTreeBrush"/>
         /// <note><see cref="Chisel.Core.BrushMeshInstance"/>s can be shared between <see cref="Chisel.Core.CSGTreeBrush"/>es.</note></remarks>
         /// <seealso cref="Chisel.Core.BrushMesh" />
-        public BrushMeshInstance    BrushMesh		{ set { CompactHierarchyManager.SetBrushMeshID(nodeID, value.brushMeshHash); } get { return new BrushMeshInstance { brushMeshHash = CompactHierarchyManager.GetBrushMeshID(nodeID) }; } }
+        public BrushMeshInstance    BrushMesh		
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set { CompactHierarchyManager.SetBrushMeshID(nodeID, value.brushMeshHash); }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return new BrushMeshInstance { brushMeshHash = CompactHierarchyManager.GetBrushMeshID(nodeID) }; } 
+        }
         
         public ref BrushOutline     Outline         { get { return ref CompactHierarchyManager.GetBrushOutline(this.nodeID); } }
         #endregion

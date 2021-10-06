@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 
@@ -66,15 +67,22 @@ namespace Chisel.Core
         public int                          localPlaneCount;    // number of surface planes
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override unsafe int GetHashCode()
+        [BurstCompile(CompileSynchronously = true, DisableDirectCall = false)]
+        public static unsafe int CalculateHashCode(ref BrushMeshBlob blob)
         {
             unchecked
             {
                 return (int)math.hash(
-                            new uint3(polygons     .Length == 0 ? 0 : math.hash(polygons     .GetUnsafePtr(), UnsafeUtility.SizeOf<Polygon>()  * polygons.Length),
-                                      localVertices.Length == 0 ? 0 : math.hash(localVertices.GetUnsafePtr(), UnsafeUtility.SizeOf<float3>()   * localVertices.Length),
-                                      halfEdges    .Length == 0 ? 0 : math.hash(halfEdges    .GetUnsafePtr(), UnsafeUtility.SizeOf<HalfEdge>() * halfEdges.Length)));
+                            new uint3(blob.polygons.Length      == 0 ? 0 : math.hash(blob.polygons.GetUnsafePtr(), UnsafeUtility.SizeOf<Polygon>() * blob.polygons.Length),
+                                      blob.localVertices.Length == 0 ? 0 : math.hash(blob.localVertices.GetUnsafePtr(), UnsafeUtility.SizeOf<float3>() * blob.localVertices.Length),
+                                      blob.halfEdges.Length     == 0 ? 0 : math.hash(blob.halfEdges.GetUnsafePtr(), UnsafeUtility.SizeOf<HalfEdge>() * blob.halfEdges.Length)));
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override int GetHashCode()
+        {
+            return CalculateHashCode(ref this);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

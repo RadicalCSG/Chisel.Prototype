@@ -251,33 +251,37 @@ namespace Chisel.Core
         where T : unmanaged, IDisposable
     {
         // Read / Write
-        [NativeDisableParallelForRestriction]
         [NoAlias] public NativeList<T> list;
 
         public void Execute()
         {
             if (!list.IsCreated)
                 return;
+
             for (int i = 0; i < list.Length; i++)
                 list[i].Dispose();
+
             list.Clear();
         }
     }
 
-    [BurstCompile(CompileSynchronously = true)]
+    [BurstCompile]
     public struct DisposeArrayChildrenJob<T> : IJob
         where T : unmanaged, IDisposable
     {
         // Read / Write
-        [NativeDisableParallelForRestriction]
         [NoAlias] public NativeArray<T> array;
 
         public void Execute()
         {
             if (!array.IsCreated)
                 return;
+
             for (int i = 0; i < array.Length; i++)
+            {
                 array[i].Dispose();
+                array[i] = default;
+            }
         }
     }
 

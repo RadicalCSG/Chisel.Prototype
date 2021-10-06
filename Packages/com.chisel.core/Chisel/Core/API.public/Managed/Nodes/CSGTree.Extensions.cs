@@ -62,12 +62,10 @@ namespace Chisel.Core
             for (int i = 0; i < list.Count; i++)
                 childNodes[i] = list[i];
 
-            UnityEngine.Profiling.Profiler.BeginSample("Set");
             using (childNodes)
             {
                 success = CompactHierarchyManager.SetChildNodes(treeNode.nodeID, (CSGTreeNode*)childNodes.GetUnsafePtr(), childNodes.Length);
             }
-            UnityEngine.Profiling.Profiler.EndSample();
             return success;
         }
 

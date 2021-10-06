@@ -7,6 +7,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using Debug = UnityEngine.Debug;
 using System.Runtime.CompilerServices;
+using System.Collections.Generic;
 
 namespace Chisel.Core
 {
@@ -21,7 +22,7 @@ namespace Chisel.Core
         // Read
         [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpacePlanes>>        brushTreeSpacePlaneCache;
         [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesCache;
-        [NoAlias, ReadOnly] public NativeStream.Reader                                          intersectingBrushesStream;
+        [NoAlias, ReadOnly] public NativeStream.Reader                                  intersectingBrushesStream;
 
         // Write
         [NoAlias, WriteOnly] public NativeListExtensions.ParallelWriterExt<float3>      outputSurfaceVertices;
@@ -31,7 +32,7 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>                   localVertices;
         [NativeDisableContainerSafetyRestriction] NativeArray<ushort>                   usedVertexIndices;
         [NativeDisableContainerSafetyRestriction] NativeArray<PlaneIndexOffsetLength>   planeIndexOffsets;
-        [NativeDisableContainerSafetyRestriction] NativeArray<ushort>                   uniqueIndices;
+        [NativeDisableContainerSafetyRestriction] NativeList<ushort>                    uniqueIndices;
         [NativeDisableContainerSafetyRestriction] NativeArray<int2>                     sortedStack;        
         [NativeDisableContainerSafetyRestriction] NativeArray<PlaneVertexIndexPair>     foundIndices0;
         [NativeDisableContainerSafetyRestriction] NativeArray<PlaneVertexIndexPair>     foundIndices1;
@@ -39,7 +40,7 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeArray<IntersectionEdge>         foundEdges;
         [NativeDisableContainerSafetyRestriction] NativeArray<IntersectionPlanes>       foundIntersections;
         [NativeDisableContainerSafetyRestriction] NativeArray<float3>                   temporaryVertices;
-        [NativeDisableContainerSafetyRestriction] HashedVertices                        hashedVertices;
+        [NativeDisableContainerSafetyRestriction] HashedVertices                        hashedTreeSpaceVertices;
         [NativeDisableContainerSafetyRestriction] HashedVertices                        snapHashedVertices;
                 
         struct PlaneVertexIndexPair
@@ -205,7 +206,7 @@ namespace Chisel.Core
                                 int                                 intersectingPlanesAndEdges1Length,
                                 float4x4                            nodeToTreeSpaceMatrix1,
                                 float4x4                            vertexToLocal0,
-                                [NoAlias] ref HashedVertices        hashedVertices,
+                                [NoAlias] ref HashedVertices        hashedTreeSpaceVertices,
                                 [NoAlias] ref HashedVertices        snapHashedVertices,
                                 [NoAlias] NativeArray<PlaneVertexIndexPair> foundIndices0,
                                 ref int                                     foundIndices0Length)
@@ -243,7 +244,7 @@ namespace Chisel.Core
 
                 var treeSpaceVertex         = math.mul(nodeToTreeSpaceMatrix1, localVertices[j]).xyz;
                 treeSpaceVertex             = snapHashedVertices[snapHashedVertices.AddNoResize(treeSpaceVertex)];
-                var treeSpaceVertexIndex    = hashedVertices.AddNoResize(treeSpaceVertex);
+                var treeSpaceVertexIndex    = hashedTreeSpaceVertices.AddNoResize(treeSpaceVertex);
                 for (int i = segment.x; i < segment.x + segment.y; i++)
                 {
                     var planeIndex = vertexIntersectionPlanes[i];
@@ -294,7 +295,7 @@ skipMe:
                                       ref NativeArray<int>              intersectingPlaneIndices0,
                                       int                               intersectingPlaneIndices0Length,
                                       float4x4                          nodeToTreeSpaceMatrix0,
-                                      ref HashedVertices                hashedVertices,
+                                      ref HashedVertices                hashedTreeSpaceVertices,
                                       ref HashedVertices                snapHashedVertices,
                                       NativeArray<PlaneVertexIndexPair> foundIndices0,
                                       ref int                           foundIndices0Length,
@@ -397,7 +398,7 @@ skipMe:
                 //       to ensure they are identical
                 var treeSpaceVertex         = math.mul(nodeToTreeSpaceMatrix0, localVertex).xyz;
                 treeSpaceVertex             = snapHashedVertices[snapHashedVertices.AddNoResize(treeSpaceVertex)];
-                var treeSpaceVertexIndex    = hashedVertices.AddNoResize(treeSpaceVertex);
+                var treeSpaceVertexIndex    = hashedTreeSpaceVertices.AddNoResize(treeSpaceVertex);
 
                 { 
                     // TODO: optimize
@@ -448,7 +449,26 @@ skipMe:
                 }
             }
         }
+        /*
+        struct Comparer : IComparer<PlaneVertexIndexPair>
+        {
+            public int Compare(PlaneVertexIndexPair x, PlaneVertexIndexPair y)
+            {
+                if (x.planeIndex > y.planeIndex)
+                    continue;
+                if (x.planeIndex == y.planeIndex)
+                {
+                    if (x.vertexIndex <= y.vertexIndex)
+                        continue;
+                }
 
+                var t = x;
+                foundIndices0[i] = foundIndices0[j];
+                foundIndices0[j] = t;
+            }
+        }
+        static readonly Comparer comparer = new Comparer();
+        */
         [MethodImpl(MethodImplOptions.NoInlining)]
         void GenerateLoop(IndexOrder brushIndexOrder0,
                           IndexOrder brushIndexOrder1,
@@ -462,6 +482,8 @@ skipMe:
                           [NoAlias] NativeList<BrushIntersectionLoop>.ParallelWriter outputSurfaces)
         {
             // Why is the unity NativeSort slower than bubble sort?
+            // TODO: revisit this assumption
+            //*
             for (int i = 0; i < foundIndices0Length - 1; i++)
             {
                 for (int j = i + 1; j < foundIndices0Length; j++)
@@ -481,21 +503,21 @@ skipMe:
                     foundIndices0[j] = t;
                 }
             }
-
+            /*/
+            foundIndices0.Sort(comparer);
+            //*/
 
             NativeCollectionHelpers.EnsureMinimumSize(ref planeIndexOffsets, foundIndices0Length);
-            NativeCollectionHelpers.EnsureMinimumSize(ref uniqueIndices, foundIndices0Length);
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref uniqueIndices, foundIndices0Length);
 
             var planeIndexOffsetsLength = 0;
             //var planeIndexOffsets       = stackalloc PlaneIndexOffsetLength[foundIndices0Length];
-            var uniqueIndicesLength     = 0;
             //var uniqueIndices           = stackalloc ushort[foundIndices0Length];
 
             // Now that our indices are sorted by planeIndex, we can segment them by start/end offset
             var previousPlaneIndex  = foundIndices0[0].planeIndex;
             var previousVertexIndex = foundIndices0[0].vertexIndex;
-            uniqueIndices[uniqueIndicesLength] = previousVertexIndex;
-            uniqueIndicesLength++;
+            uniqueIndices.Add(previousVertexIndex);
             var loopStart = 0;
             for (int i = 1; i < foundIndices0Length; i++)
             {
@@ -511,7 +533,8 @@ skipMe:
 
                 if (planeIndex != previousPlaneIndex)
                 {
-                    var currLength = (uniqueIndicesLength - loopStart);
+                    var currLength = RemoveDuplicateEdges(ref uniqueIndices, loopStart, uniqueIndices.Length);
+                    //var currLength = (uniqueIndices.Length - loopStart);
                     if (currLength > 2)
                     {
                         planeIndexOffsets[planeIndexOffsetsLength] = new PlaneIndexOffsetLength
@@ -522,16 +545,16 @@ skipMe:
                         };
                         planeIndexOffsetsLength++;
                     }
-                    loopStart = uniqueIndicesLength;
+                    loopStart = uniqueIndices.Length;
                 }
 
-                uniqueIndices[uniqueIndicesLength] = vertexIndex;
-                uniqueIndicesLength++;
+                uniqueIndices.Add(vertexIndex);
                 previousVertexIndex = vertexIndex;
                 previousPlaneIndex = planeIndex;
             }
             {
-                var currLength = (uniqueIndicesLength - loopStart);
+                var currLength = RemoveDuplicateEdges(ref uniqueIndices, loopStart, uniqueIndices.Length);
+                //var currLength = (uniqueIndices.Length - loopStart);
                 if (currLength > 2)
                 {
                     planeIndexOffsets[planeIndexOffsetsLength] = new PlaneIndexOffsetLength
@@ -550,10 +573,13 @@ skipMe:
 
             NativeCollectionHelpers.EnsureMinimumSize(ref sortedStack, maxLength * 2);
 
+
+            var uniqueIndicesArray = uniqueIndices.AsArray();
+
             // For each segment, we now sort our vertices within each segment, 
             // making the assumption that they are convex
             //var sortedStack = stackalloc int2[maxLength * 2];
-            var vertices = hashedTreeSpaceVertices;//.GetUnsafeReadOnlyPtr();
+            ref var vertices = ref hashedTreeSpaceVertices;//.GetUnsafeReadOnlyPtr();
             for (int n = planeIndexOffsetsLength - 1; n >= 0; n--)
             {
                 var planeIndexOffset    = planeIndexOffsets[n];
@@ -564,7 +590,7 @@ skipMe:
                 float3 normal = brushTreeSpacePlanes0.treeSpacePlanes[planeIndex].xyz * (invertedTransform ? 1 : -1);
 
                 // TODO: use plane information instead
-                SortIndices(vertices, sortedStack, uniqueIndices, offset, length, normal);
+                SortIndices(vertices, sortedStack, uniqueIndicesArray, offset, length, normal);
             }
 
             
@@ -577,7 +603,7 @@ skipMe:
                 totalSize += (loopLength * UnsafeUtility.SizeOf<float3>()); 
             }
 
-            var srcVertices = hashedTreeSpaceVertices;
+            ref var srcVertices = ref hashedTreeSpaceVertices;
             for (int j = 0; j < planeIndexOffsetsLength; j++)
             { 
                 var planeIndexLength    = planeIndexOffsets[j];
@@ -588,7 +614,7 @@ skipMe:
 
                 NativeCollectionHelpers.EnsureMinimumSize(ref temporaryVertices, loopLength);
                 for (int d = 0; d < loopLength; d++)
-                    temporaryVertices[d] = srcVertices[uniqueIndices[offset + d]];
+                    temporaryVertices[d] = srcVertices[uniqueIndicesArray[offset + d]];
 
                 outputSurfaces.AddNoResize(new BrushIntersectionLoop
                 {
@@ -600,6 +626,67 @@ skipMe:
                 });
             }
 
+        }
+
+        // Handles situation where a vertex leads back to itself, could potentially happen when planes graze edges
+        private int RemoveDuplicateEdges(ref NativeList<ushort> uniqueIndices, int start, int end)
+        {
+            int length = end - start;
+            if (length <= 2)
+                return 0;
+
+            // UNTESTED
+            for (int indexA = end - 1, indexB = start, indexC = start + 1; indexA >= start; )
+            {
+                var vertexIndexA = uniqueIndices[indexA];
+                //var vertexIndexB = uniqueIndices[indexB];
+                var vertexIndexC = uniqueIndices[indexC];
+
+                //    B
+                //    *
+                //    |
+                //  A * C
+
+                if (vertexIndexA != vertexIndexC)
+                {
+                    indexC = indexB;
+                    indexB = indexA;
+                    indexA --;
+                    continue;
+                }
+
+                // TODO: test this
+                Debug.Log("Untested condition occured, please share scene");
+                length -=2;
+                if (length <= 2)
+                    return 0;
+
+                if (indexC > end - 2)
+                {
+                    // 0 1 2 3 5 6 1
+                    // B C         A 
+                    uniqueIndices.MemMove(start, indexC + 1, end - (indexC + 1));
+                    indexA -= 2;
+                    end -= 2;
+                } else
+                if (indexC < end - 2)
+                {
+                    // 0 1 2 3 4 5 6
+                    //   A B C
+                    uniqueIndices.MemMove(indexA, indexC + 1, end - (indexC + 1));
+                    end -= 2;
+                } else
+                if (indexC == end - 2)
+                {
+                    // 0 1 2 3 4 5 6
+                    //         A B C
+                    end -= 2;
+                }
+
+                indexB = indexA + 1; if (indexB >= end) indexB = start;
+                indexC = indexB + 1; if (indexC >= end) indexC = start;
+            }
+            return length;
         }
 
         // Note: Temporary BlobAssetReference that only exists during a single frame
@@ -707,7 +794,7 @@ skipMe:
             var foundIndices1Length     = 0;
 
             var desiredVertexCapacity = math.max(foundIndices0Capacity, foundIndices1Capacity);
-            NativeCollectionHelpers.EnsureCapacityAndClear(ref hashedVertices, desiredVertexCapacity);
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref hashedTreeSpaceVertices, desiredVertexCapacity);
             NativeCollectionHelpers.EnsureCapacityAndClear(ref snapHashedVertices, desiredVertexCapacity);
 
             // TODO: fill them with original brush vertices so that they're always snapped to these
@@ -746,7 +833,7 @@ skipMe:
                                              ref brushPairIntersection0.localSpacePlaneIndices0,
                                                  brushPairIntersection0.localSpacePlaneIndices0Length,
                                              brushPairIntersection0.nodeToTreeSpace,
-                                             ref hashedVertices,
+                                             ref hashedTreeSpaceVertices,
                                              ref snapHashedVertices,
                                              foundIndices0, ref foundIndices0Length,
                                              foundIndices1, ref foundIndices1Length);
@@ -765,7 +852,7 @@ skipMe:
                                              ref brushPairIntersection1.localSpacePlaneIndices0,
                                                  brushPairIntersection1.localSpacePlaneIndices0Length,
                                              brushPairIntersection0.nodeToTreeSpace,
-                                             ref hashedVertices,
+                                             ref hashedTreeSpaceVertices,
                                              ref snapHashedVertices,
                                              foundIndices1, ref foundIndices1Length,
                                              foundIndices0, ref foundIndices0Length);
@@ -787,7 +874,7 @@ skipMe:
                                    brushPairIntersection1.localSpacePlanesAndEdges0Length,
                                    brushPairIntersection0.nodeToTreeSpace,
                                    float4x4.identity,
-                                   ref hashedVertices,
+                                   ref hashedTreeSpaceVertices,
                                    ref snapHashedVertices,
                                    foundIndices0, ref foundIndices0Length);
             }
@@ -807,7 +894,7 @@ skipMe:
                                    brushPairIntersection0.localSpacePlanesAndEdges0Length,
                                    brushPairIntersection0.nodeToTreeSpace,
                                    brushPairIntersection1.toOtherBrushSpace,
-                                   ref hashedVertices,
+                                   ref hashedTreeSpaceVertices,
                                    ref snapHashedVertices,
                                    foundIndices1, ref foundIndices1Length);
             }
@@ -831,7 +918,7 @@ skipMe:
                                  brushPairIntersection0.surfaceInfosLength,
                                  ref brushTreeSpacePlanes0,
                                  foundIndices0, ref foundIndices0Length,
-                                 ref hashedVertices,
+                                 ref hashedTreeSpaceVertices,
                                  outputSurfaces);
                 } else
                 {
@@ -854,7 +941,7 @@ skipMe:
                                  ref brushTreeSpacePlanes1,
                                  foundIndices1, 
                                  ref foundIndices1Length,
-                                 ref hashedVertices,
+                                 ref hashedTreeSpaceVertices,
                                  outputSurfaces);
                 } else
                 {

@@ -182,6 +182,8 @@ namespace Chisel.Components
             //*/
 
             bakingSettings.Dispose(allJobHandles);
+            allJobHandles.Complete();
+
             //*/
             //*
             // TODO: is there a way to defer forcing the collider to update?

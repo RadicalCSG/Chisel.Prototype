@@ -128,6 +128,22 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void MemClear<T>(ref this UnsafeList<T> list, int index, int count)
+            where T : unmanaged
+        {
+            if (index < 0)
+                throw new ArgumentOutOfRangeException($"{nameof(index)} must be positive.", nameof(index));
+            if (count < 0)
+                throw new ArgumentOutOfRangeException($"{nameof(count)} must be positive.", nameof(count));
+            if (index + count > list.Length)
+                throw new ArgumentOutOfRangeException($"{nameof(index)} + {nameof(count)} must be within bounds of list ({list.Length}).", nameof(count));
+            if (count <= 0)
+                return;
+            var dataPtr = list.Ptr;
+            UnsafeUtility.MemSet(dataPtr + index, 0, count * sizeof(T));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void MemMove<T>(ref this UnsafeList<T> list, int destIndex, int sourceIndex, int count)
             where T : unmanaged
         {
@@ -144,8 +160,6 @@ namespace Chisel.Core
             if (sourceIndex + count > list.Length)
                 throw new ArgumentOutOfRangeException($"{nameof(sourceIndex)} + {nameof(count)} must be within bounds of list ({list.Length}).", nameof(count));
             if (count <= 0)
-                return;
-            if (destIndex == sourceIndex)
                 return;
             var dataPtr = list.Ptr;
             UnsafeUtility.MemMove(dataPtr + destIndex, dataPtr + sourceIndex, count * sizeof(T));

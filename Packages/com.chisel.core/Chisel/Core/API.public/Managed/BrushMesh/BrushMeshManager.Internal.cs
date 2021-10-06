@@ -255,11 +255,23 @@ namespace Chisel.Core
             public ulong                halfEdgesGCHandle;
         }
 
+        [BurstCompile]
+        static void RegisterBrushMeshes(in NativeList<BrushMeshPointers> brushMeshPointers, in NativeArray<CSGTreeBrush> nativeTreeBrushes, in NativeArray<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshBlobs)
+        {
+            for (int i = 0; i < brushMeshPointers.Length; i++)
+            {
+                var brush = nativeTreeBrushes[brushMeshPointers[i].index];
+                brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshBlobs[i]) };
+            }
+        }
+
+        const Allocator defaultAllocator = Allocator.Persistent; //Allocator.TempJob;
         public unsafe static void ConvertBrushMeshesToBrushMeshInstances(List<CSGTreeBrush> rebuildTreeBrushes, List<BrushMesh> rebuildTreeBrushOutlines, List<ChiselSurfaceDefinition> surfaceDefinitions)
         {
             Profiler.BeginSample("ConvertBrushMeshesToBrushMeshInstances");
-            var brushMeshPointers   = new NativeList<BrushMeshPointers>(rebuildTreeBrushes.Count, Allocator.TempJob);
-            var brushMeshBlobs      = new NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>(rebuildTreeBrushes.Count, Allocator.TempJob);
+            var brushMeshPointers   = new NativeList<BrushMeshPointers>(rebuildTreeBrushes.Count, defaultAllocator);
+            var brushMeshBlobs      = new NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>(rebuildTreeBrushes.Count, defaultAllocator);
+            var nativeTreeBrushes   = rebuildTreeBrushes.ToNativeArray(defaultAllocator);
             try
             {
                 const Allocator allocator = Allocator.Persistent;
@@ -343,7 +355,7 @@ namespace Chisel.Core
                 finally { Profiler.EndSample(); }
 
                 Profiler.BeginSample("ConvertSurfaces");
-                var surfaces = new NativeList<NativeChiselSurface>(surfacesOffset, Allocator.TempJob);
+                var surfaces = new NativeList<NativeChiselSurface>(surfacesOffset, defaultAllocator);
                 surfaces.ResizeUninitialized(surfacesOffset);
                 var materialManager = ChiselMaterialManager.Instance;
                 for (int i = 0; i < brushMeshPointers.Length; i++)
@@ -394,11 +406,7 @@ namespace Chisel.Core
                     Profiler.BeginSample("RegisterBrushMeshes");
                     try
                     {
-                        for (int i = 0; i < brushMeshPointers.Length; i++)
-                        {
-                            var brush = rebuildTreeBrushes[brushMeshPointers[i].index];
-                            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshBlobs[i]) };
-                        }
+                        RegisterBrushMeshes(in brushMeshPointers, in nativeTreeBrushes, in brushMeshBlobs);
                     } finally { Profiler.EndSample(); }
                 }
                 finally
@@ -417,6 +425,7 @@ namespace Chisel.Core
             }
             finally
             {
+                nativeTreeBrushes.Dispose();
                 brushMeshPointers.Dispose();
                 brushMeshBlobs.Dispose(); 
                 Profiler.EndSample(); 
@@ -740,7 +749,7 @@ namespace Chisel.Core
             if (edgeCount < 12 || polygonCount < 4 || vertexCount < 4)
                 return 0;
 
-            int brushMeshHash = brushMeshBlob.GetHashCode();
+            int brushMeshHash = BrushMeshBlob.CalculateHashCode(ref brushMeshBlob);
             if (oldBrushMeshHash != 0)
             {
                 if (oldBrushMeshHash == brushMeshHash) return oldBrushMeshHash;
@@ -755,11 +764,13 @@ namespace Chisel.Core
             return brushMeshHash;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Int32 RegisterBrushMesh(ChiselBlobAssetReference<BrushMeshBlob> brushMeshBlobRef, Int32 oldBrushMeshHash = 0)
         {
             return RegisterBrushMesh(ChiselMeshLookup.Value.brushMeshBlobCache, brushMeshBlobRef, oldBrushMeshHash);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool DecreaseRefCount(Int32 brushMeshHash)
         {
             return DecreaseRefCount(ChiselMeshLookup.Value.brushMeshBlobCache, brushMeshHash);

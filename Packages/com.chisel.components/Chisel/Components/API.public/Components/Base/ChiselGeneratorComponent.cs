@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using AOT;
 using Chisel.Core;
 using Unity.Burst;
@@ -174,16 +175,35 @@ namespace Chisel.Components
         [SerializeField, HideInInspector] protected CSGOperationType    operation;		    // NOTE: do not rename, name is directly used in editors
         [SerializeField] protected Vector3                              pivotOffset         = Vector3.zero;
 
-        public override CSGTreeNode TopTreeNode { get { if (!ValidNodes) return CSGTreeNode.Invalid; return Node; } protected set { Node = value; } }
-        bool ValidNodes { get { return Node.Valid; } }
+        public override CSGTreeNode TopTreeNode 
+        { 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] get 
+            { 
+                if (!ValidNodes) return CSGTreeNode.Invalid; return Node; 
+            } 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] protected set 
+            { 
+                Node = value; 
+            } 
+        }
+        
+        bool ValidNodes 
+        { 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] get 
+            { 
+                return Node.Valid; 
+            } 
+        }
         
 
         public CSGOperationType Operation
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 return operation;
             }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
                 if (value == operation)
@@ -379,6 +399,7 @@ namespace Chisel.Components
         [HideInInspector] int prevMaterialHash;
         [HideInInspector] int prevDefinitionHash;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ClearHashes()
         {
             prevMaterialHash = 0;
@@ -398,13 +419,8 @@ namespace Chisel.Components
 
                 var treeRoot = model.Node;
                 var instanceID = GetInstanceID();
-                Profiler.BeginSample("EnsureTopNodeCreated");
-                try
-                {
-                    if (EnsureTopNodeCreatedInternal(in treeRoot, ref Node, userID: instanceID))
-                        ClearHashes();
-                }
-                finally { Profiler.EndSample(); }
+                if (EnsureTopNodeCreatedInternal(in treeRoot, ref Node, userID: instanceID))
+                    ClearHashes();
 
                 if (!Node.Valid)
                     return;
@@ -414,9 +430,7 @@ namespace Chisel.Components
 
             if (ValidNodes)
             {
-                Profiler.BeginSample("UpdateBrushMeshInstances");
-                try { UpdateBrushMeshInstances(); }
-                finally { Profiler.EndSample(); }
+                UpdateBrushMeshInstances();
 
                 if (Node.Operation != operation)
                     Node.Operation = operation;
@@ -445,13 +459,8 @@ namespace Chisel.Components
                 prevMaterialHash    = currMaterialHash;
                 prevDefinitionHash  = currDefinitionHash;
 
-                Profiler.BeginSample("UpdateGeneratorNodes");
-                try
-                {
-                    var treeRoot = this.hierarchyItem.Model.Node;
-                    UpdateGeneratorNodesInternal(in treeRoot, ref Node);
-                }
-                finally { Profiler.EndSample(); }
+                var treeRoot = this.hierarchyItem.Model.Node;
+                UpdateGeneratorNodesInternal(in treeRoot, ref Node);
             }
         }
 
@@ -477,6 +486,7 @@ namespace Chisel.Components
             UpdateInternalTransformation();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override void UpdateBrushMeshInstances()
         {
             // Update the Node (if it exists)

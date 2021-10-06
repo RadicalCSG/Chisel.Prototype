@@ -81,6 +81,7 @@ namespace Chisel.Core
             }
         }
 
+        const Allocator defaultAllocator = Allocator.TempJob;
 
         static readonly List<GeneratorJobPool> generatorJobs = new List<GeneratorJobPool>();
 
@@ -102,66 +103,77 @@ namespace Chisel.Core
                 combinedJobHandle = JobHandle.CombineDependencies(combinedJobHandle, pool.ScheduleGenerateJob(runInParallel, dependsOn));
             Profiler.EndSample();
 
-            Profiler.BeginSample("GenPool_UpdateHierarchy");
-            var totalCounts = new NativeArray<int>(generatorJobs.Count, Allocator.TempJob);
+            NativeList<GeneratedNodeDefinition> generatedNodeDefinitions = default;
+            NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshBlobs = default;
+            NativeArray<int> totalCounts = default;
             var lastJobHandle = combinedJobHandle;
-            int index = 0;
-            foreach (var pool in generatorJobs)
+            var allocateJobHandle = default(JobHandle);
+            try
             {
-                lastJobHandle = pool.ScheduleUpdateHierarchyJob(runInParallel, lastJobHandle, index, totalCounts);
-                index++;
-            }
-            Profiler.EndSample();
+                Profiler.BeginSample("GenPool_UpdateHierarchy");
+                totalCounts = new NativeArray<int>(generatorJobs.Count, defaultAllocator);
+                int index = 0;
+                foreach (var pool in generatorJobs)
+                {
+                    lastJobHandle = pool.ScheduleUpdateHierarchyJob(runInParallel, lastJobHandle, index, totalCounts);
+                    index++;
+                }
+                Profiler.EndSample();
 
-            Profiler.BeginSample("GenPool_Allocator"); 
-            var generatedNodeDefinitions    = new NativeList<GeneratedNodeDefinition>(Allocator.TempJob);
-            var brushMeshBlobs              = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(Allocator.TempJob);
+                Profiler.BeginSample("GenPool_Allocator"); 
+                generatedNodeDefinitions    = new NativeList<GeneratedNodeDefinition>(defaultAllocator);
+                brushMeshBlobs              = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(defaultAllocator);
+                var resizeTempLists = new ResizeTempLists
+                {
+                    // Read
+                    totalCounts                 = totalCounts,
 
-            var resizeTempLists = new ResizeTempLists
-            {
-                // Read
-                totalCounts                 = totalCounts,
-
-                // Read / Write
-                generatedNodeDefinitions    = generatedNodeDefinitions,
-                brushMeshBlobs              = brushMeshBlobs
-            };
-            var allocateJobHandle = resizeTempLists.Schedule(runInParallel, lastJobHandle);
-            totalCounts.Dispose(allocateJobHandle);
-            Profiler.EndSample();
+                    // Read / Write
+                    generatedNodeDefinitions    = generatedNodeDefinitions,
+                    brushMeshBlobs              = brushMeshBlobs
+                };
+                allocateJobHandle = resizeTempLists.Schedule(runInParallel, lastJobHandle);
+                Profiler.EndSample();
             
-            Profiler.BeginSample("GenPool_Complete");
-            allocateJobHandle.Complete(); // TODO: get rid of this somehow
-            Profiler.EndSample();
+                Profiler.BeginSample("GenPool_Complete");
+                allocateJobHandle.Complete(); // TODO: get rid of this somehow
+                Profiler.EndSample();
 
-            Profiler.BeginSample("GenPool_Schedule");
-            lastJobHandle = default;
-            combinedJobHandle = allocateJobHandle;
-            foreach (var pool in generatorJobs)
+                Profiler.BeginSample("GenPool_Schedule");
+                lastJobHandle = default;
+                combinedJobHandle = allocateJobHandle;
+                foreach (var pool in generatorJobs)
+                {
+                    var scheduleJobHandle = pool.ScheduleInitializeArraysJob(runInParallel, 
+                                                                             // Read
+                                                                             hierarchyList, 
+                                                                             // Write
+                                                                             generatedNodeDefinitions,
+                                                                             brushMeshBlobs,
+                                                                             // Dependency
+                                                                             JobHandle.CombineDependencies(allocateJobHandle, lastJobHandle));
+                    lastJobHandle = scheduleJobHandle;
+                    combinedJobHandle = JobHandle.CombineDependencies(combinedJobHandle, scheduleJobHandle);
+                }
+
+                lastJobHandle = JobHandle.CombineDependencies(allocateJobHandle, combinedJobHandle);
+                lastJobHandle = BrushMeshManager.ScheduleBrushRegistration(runInParallel, brushMeshBlobs, generatedNodeDefinitions, lastJobHandle);
+                lastJobHandle = ScheduleAssignMeshesJob(runInParallel, hierarchyList, generatedNodeDefinitions, lastJobHandle);
+                previousJobHandle = lastJobHandle;
+                Profiler.EndSample();
+            }
+            finally
             {
-                var scheduleJobHandle = pool.ScheduleInitializeArraysJob(runInParallel, 
-                                                                         // Read
-                                                                         hierarchyList, 
-                                                                         // Write
-                                                                         generatedNodeDefinitions,
-                                                                         brushMeshBlobs,
-                                                                         // Dependency
-                                                                         JobHandle.CombineDependencies(allocateJobHandle, lastJobHandle));
-                lastJobHandle = scheduleJobHandle;
-                combinedJobHandle = JobHandle.CombineDependencies(combinedJobHandle, scheduleJobHandle);
+                Profiler.BeginSample("GenPool_Dispose");
+                var totalCountsDisposeJobHandle                 = totalCounts.Dispose(allocateJobHandle);
+                var generatedNodeDefinitionsDisposeJobHandle    = generatedNodeDefinitions.Dispose(lastJobHandle);
+                var brushMeshBlobsDisposeJobHandle              = brushMeshBlobs.Dispose(lastJobHandle);
+                var allDisposes = JobHandle.CombineDependencies(totalCountsDisposeJobHandle,
+                                                                generatedNodeDefinitionsDisposeJobHandle,
+                                                                brushMeshBlobsDisposeJobHandle);
+                Profiler.EndSample();
             }
 
-            lastJobHandle = JobHandle.CombineDependencies(allocateJobHandle, combinedJobHandle);
-            lastJobHandle = BrushMeshManager.ScheduleBrushRegistration(runInParallel, brushMeshBlobs, generatedNodeDefinitions, lastJobHandle);
-            lastJobHandle = ScheduleAssignMeshesJob(runInParallel, hierarchyList, generatedNodeDefinitions, lastJobHandle);
-            previousJobHandle = lastJobHandle;
-
-            var generatedNodeDefinitionsDisposeJobHandle    = generatedNodeDefinitions.Dispose(lastJobHandle);
-            var brushMeshBlobsDisposeJobHandle              = brushMeshBlobs.Dispose(lastJobHandle);
-            var allDisposes = JobHandle.CombineDependencies(generatedNodeDefinitionsDisposeJobHandle,
-                                                            brushMeshBlobsDisposeJobHandle);
-
-            Profiler.EndSample();
             return lastJobHandle;
         }
         
@@ -734,7 +746,9 @@ namespace Chisel.Core
                 }
             }
         }
-        
+
+        const Allocator defaultAllocator = Allocator.TempJob;
+
         public JobHandle ScheduleGenerateJob(bool runInParallel, JobHandle dependsOn = default)
         {
             previousJobHandle.Complete(); // <- make sure we've completed the previous schedule
@@ -765,7 +779,7 @@ namespace Chisel.Core
             generatorNodeRanges.Clear();
             generatorNodeRanges.Resize(generators.Length, NativeArrayOptions.ClearMemory);
 
-            var brushCounts = new NativeArray<int>(generators.Length, Allocator.TempJob);
+            var brushCounts = new NativeArray<int>(generators.Length, defaultAllocator);
             var countBrushesJob = new PrepareAndCountBrushesJob
             {
                 settings            = generators.AsArray(),

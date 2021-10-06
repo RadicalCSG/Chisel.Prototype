@@ -61,24 +61,6 @@ namespace Chisel.Core
 
             //throw new Exception($"{previousOrder} {range.x} {range.y} / {brushBrushIntersections.Length}");
             outputSurfacesRange[previousOrder] = range;
-            /*
-            var blobBuilder = new BlobBuilder(Allocator.Temp);
-            ref var root = ref blobBuilder.ConstructRoot<BrushIntersectionLoops>();
-
-            var outputLoops = blobBuilder.Allocate(ref root.loops, outputSurfaces.Length);
-            for (int i = 0; i < outputSurfaces.Length; i++)
-            {
-                ref var outputSurface = ref outputSurfaces[i].Value;
-                outputLoops[i].indexOrder0 = outputSurface.indexOrder0;
-                outputLoops[i].indexOrder1 = outputSurface.indexOrder1;
-                outputLoops[i].surfaceInfo = outputSurface.surfaceInfo;
-                blobBuilder.Construct<float3>(ref outputLoops[i].loopVertices, ref outputSurface.loopVertices);
-            }
-            blobBuilder.Construct(ref root.ranges, outputSurfacesRange);
-
-
-            outputSurfaceLoops.Value = blobBuilder.CreateBlobAssetReference<BrushIntersectionLoops>(Allocator.TempJob);
-            */
         }
     }
 }
