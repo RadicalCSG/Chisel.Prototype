@@ -196,6 +196,8 @@ namespace Chisel.Components
             updateChildrenQueueList.Clear();
             sortChildrenQueue.Clear();
             hierarchyUpdateQueue.Clear();
+
+            rebuildBrushMeshes.Clear();
         }
 
         static void ClearTemporaries()
@@ -1161,19 +1163,13 @@ namespace Chisel.Components
                         continue;
                     }
 
-                    Profiler.BeginSample("UpdateTrampoline.hierarchyUpdateQueue.reset");
                     hierarchyItem.Component.ResetTreeNodes();
-                    Profiler.EndSample();
-
+                    
                     //Debug.Log($"addToHierarchyQueue {hierarchyItem.Component}", hierarchyItem.Component);
-                    Profiler.BeginSample("UpdateTrampoline.hierarchyUpdateQueue.GetSceneHierarchyForScene");
                     var sceneHierarchy = GetSceneHierarchyForScene(hierarchyItem.Scene);
                     hierarchyItem.sceneHierarchy = sceneHierarchy;
-                    Profiler.EndSample();
-
-                    Profiler.BeginSample("UpdateTrampoline.hierarchyUpdateQueue.UpdateSiblingIndices");
+                    
                     hierarchyItem.parentComponent = UpdateSiblingIndices(hierarchyItem);
-                    Profiler.EndSample();
                     if (hierarchyItem.parentComponent != null &&
                         hierarchyItem.parentComponent.hierarchyItem != null)
                     {
@@ -1183,12 +1179,10 @@ namespace Chisel.Components
                 }
                 foreach(var parent in parentUpdateQueue)
                 {
-                    Profiler.BeginSample("UpdateTrampoline.hierarchyUpdateQueue.AddChildren");
                     var children = parent.Children;
                     siblingIndexUpdateQueue.EnsureCapacity(siblingIndexUpdateQueue.Count + children.Count);
                     for (int c = 0; c < children.Count; c++)
                         siblingIndexUpdateQueue.Add(children[c]);
-                    Profiler.EndSample();
                 }
                 foreach (var node in addToHierarchyQueue)
                     hierarchyUpdateQueue.Add(node.Component);

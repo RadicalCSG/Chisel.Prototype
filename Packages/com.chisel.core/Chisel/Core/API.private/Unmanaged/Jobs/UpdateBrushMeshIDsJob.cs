@@ -22,7 +22,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public CompactHierarchy*                            compactHierarchyPtr;
         [NoAlias, ReadOnly] public NativeHashMap<int, RefCountedBrushMeshBlob>  brushMeshBlobs;
         [NoAlias, ReadOnly] public int                                          brushCount;
-        [NoAlias, ReadOnly] public NativeList<CompactNodeID>                    brushes;
+        [NoAlias, ReadOnly] public NativeArray<CompactNodeID>                   brushes;
 
         // Read/Write
         [NoAlias] public NativeHashSet<int>                                     allKnownBrushMeshIndices;

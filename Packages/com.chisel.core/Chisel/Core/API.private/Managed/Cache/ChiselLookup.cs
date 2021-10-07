@@ -14,6 +14,8 @@ namespace Chisel.Core
     {
         public unsafe class Data
         {
+            public JobHandle                                lastJobHandle;
+
             public NativeList<CompactNodeID>                brushIDValues;
             public NativeArray<ChiselLayerParameters>       parameters;
             public NativeHashSet<int>                       allKnownBrushMeshIndices;

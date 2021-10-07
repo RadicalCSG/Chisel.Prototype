@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -12,6 +13,7 @@ namespace Chisel.Core
     [BurstCompile]
     unsafe struct InvalidateBrushesJob : IJob
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void InitializeHierarchy(ref CompactHierarchy hierarchy)
         {
             compactHierarchyPtr = (CompactHierarchy*)UnsafeUtility.AddressOf(ref hierarchy);

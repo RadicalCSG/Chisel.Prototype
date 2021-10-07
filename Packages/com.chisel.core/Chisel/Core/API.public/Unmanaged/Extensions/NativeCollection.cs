@@ -30,7 +30,8 @@ namespace Chisel.Core
             var dependencies = JobHandleExtensions.CombineDependencies(readDependencies.Handles, writeDependencies.Handles);
             JobExtensions.CheckDependencies(runInParallel, dependencies);
             var currentJobHandle = ScheduleConstruct(runInParallel, out dataStream, forEachCountFromList, allocator, dependencies);
-            writeDependencies.AddWriteDependency(currentJobHandle);
+            writeDependencies.AddDependency(currentJobHandle);
+            readDependencies.AddDependency(currentJobHandle);
             return currentJobHandle;
         }
 
@@ -68,7 +69,8 @@ namespace Chisel.Core
             var dependencies = JobHandleExtensions.CombineDependencies(readDependencies.Handles, writeDependencies.Handles);
             JobExtensions.CheckDependencies(runInParallel, dependencies);
             var currentJobHandle = ScheduleEnsureCapacity(runInParallel, ref list, forEachCountFromList, allocator, dependencies);
-            writeDependencies.AddWriteDependency(currentJobHandle);
+            writeDependencies.AddDependency(currentJobHandle);
+            readDependencies.AddDependency(currentJobHandle);
             return currentJobHandle;
         }
 
@@ -103,7 +105,8 @@ namespace Chisel.Core
             var dependencies = JobHandleExtensions.CombineDependencies(readDependencies.Handles, writeDependencies.Handles);
             JobExtensions.CheckDependencies(runInParallel, dependencies);
             var currentJobHandle = ScheduleEnsureCapacity(runInParallel, ref list, capacity, allocator, dependencies);
-            writeDependencies.AddWriteDependency(currentJobHandle);
+            writeDependencies.AddDependency(currentJobHandle);
+            readDependencies.AddDependency(currentJobHandle);
             return currentJobHandle;
         }
 

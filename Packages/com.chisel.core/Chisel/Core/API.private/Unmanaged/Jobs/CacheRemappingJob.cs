@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -26,7 +27,9 @@ namespace Chisel.Core
         }
         static readonly IndexOrderComparer indexOrderComparer = new IndexOrderComparer();
         #endregion
-        
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void InitializeHierarchy(ref CompactHierarchy hierarchy)
         {
             compactHierarchyPtr = (CompactHierarchy*)UnsafeUtility.AddressOf(ref hierarchy);
@@ -36,7 +39,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public CompactHierarchy*                    compactHierarchyPtr;
         [NoAlias, ReadOnly] public NativeList<int>                      nodeIDValueToNodeOrderArray;
         [NoAlias, ReadOnly] public NativeReference<int>                 nodeIDValueToNodeOrderOffsetRef;
-        [NoAlias, ReadOnly] public NativeList<CompactNodeID>            brushes;
+        [NoAlias, ReadOnly] public NativeArray<CompactNodeID>           brushes;
         [NoAlias, ReadOnly] public int                                  brushCount;
         [NoAlias, ReadOnly] public NativeList<IndexOrder>               allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeList<CompactNodeID>            brushIDValues;

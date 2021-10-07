@@ -67,7 +67,6 @@ namespace Chisel.Core
         public int                          localPlaneCount;    // number of surface planes
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [BurstCompile(CompileSynchronously = true, DisableDirectCall = false)]
         public static unsafe int CalculateHashCode(ref BrushMeshBlob blob)
         {
             unchecked

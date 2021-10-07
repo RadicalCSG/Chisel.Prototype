@@ -778,10 +778,7 @@ namespace Chisel.Core
 
         internal static bool DecreaseRefCount(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash)
         {
-            if (!AssertBrushMeshIDValid(brushMeshBlobCache, brushMeshHash))
-                return false;
-
-            if (brushMeshBlobCache.TryGetValue(brushMeshHash, out var refCountedBrushMeshBlob))
+            if (brushMeshBlobCache.IsCreated && brushMeshBlobCache.TryGetValue(brushMeshHash, out var refCountedBrushMeshBlob))
             {
                 refCountedBrushMeshBlob.refCount--;
                 if (refCountedBrushMeshBlob.refCount <= 0)
@@ -789,9 +786,12 @@ namespace Chisel.Core
                     refCountedBrushMeshBlob.refCount = 0;
                     //Chisel.Core.CompactHierarchyManager.NotifyBrushMeshRemoved(brushMeshHash);
                     refCountedBrushMeshBlob.brushMeshBlob.Dispose();
-                    Debug.Log($"REMOVE {brushMeshHash}");
                     brushMeshBlobCache.Remove(brushMeshHash);
                 }
+            } else
+            {
+                Debug.LogError($"Invalid ID {brushMeshHash}");
+                return false;
             }
             return true;
         }

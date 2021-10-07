@@ -11,11 +11,12 @@ namespace Chisel.Core
     [BurstCompile]
     unsafe struct BuildLookupTablesJob : IJob
     {
-        [NoAlias, ReadOnly] public NativeList<CompactNodeID> brushes;
-        [NoAlias, ReadOnly] public int brushCount;
+        // Read
+        [NoAlias, ReadOnly] public NativeArray<CompactNodeID>   brushes;
+        [NoAlias, ReadOnly] public int                          brushCount;
 
         // Read/Write
-        [NoAlias] public NativeList<int>           nodeIDValueToNodeOrderArray;
+        [NoAlias] public NativeList<int>                        nodeIDValueToNodeOrderArray;
 
         // Write
         [NoAlias, WriteOnly] public NativeReference<int>        nodeIDValueToNodeOrderOffsetRef;
@@ -60,7 +61,8 @@ namespace Chisel.Core
     [BurstCompile]
     unsafe struct UpdateBrushIDValuesJob : IJob
     {
-        [NoAlias, ReadOnly] public NativeList<CompactNodeID> brushes;
+        // Read 
+        [NoAlias, ReadOnly] public NativeArray<CompactNodeID> brushes;
         [NoAlias, ReadOnly] public int brushCount;
 
         // Read/Write
