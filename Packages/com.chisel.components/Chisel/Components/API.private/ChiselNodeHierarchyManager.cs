@@ -950,6 +950,8 @@ namespace Chisel.Components
                 rebuildBrushMeshes.Count == 0)
                 return;
 
+ForceRerun:
+            bool forceRerun = false;
             TransformNodeLookupClear();
             __registerNodes   .Clear();
             __unregisterNodes .Clear();
@@ -1301,7 +1303,8 @@ namespace Chisel.Components
                     {
                         if (!(hierarchyItem.Component is ChiselModel))
                         {
-                            hierarchyItem.parentComponent = hierarchyItem.sceneHierarchy.GetOrCreateDefaultModel();
+                            hierarchyItem.parentComponent = hierarchyItem.sceneHierarchy.GetOrCreateDefaultModel(out var created);
+                            if (created) forceRerun = true;
                         }
                     }
                 }
@@ -1330,7 +1333,8 @@ namespace Chisel.Components
                 {
                     if (!(hierarchyItem.Component is ChiselModel))
                     {
-                        hierarchyItem.parentComponent = sceneHierarchy.GetOrCreateDefaultModel();
+                        hierarchyItem.parentComponent = sceneHierarchy.GetOrCreateDefaultModel(out var created);
+                        if (created) forceRerun = true;
                     }
                 }
 
@@ -1605,6 +1609,14 @@ namespace Chisel.Components
                 __registerNodes.Clear();
             }
             Profiler.EndSample();
+
+            // When we're forced to create a default model during this loop, this creates changes. 
+            // This forces us to go through everything again, to ensure those changes are properly handled.
+            if (forceRerun)
+            {
+                forceRerun = false;
+                goto ForceRerun;
+            }
 
             UpdateBrushMeshes();
 
