@@ -6,17 +6,20 @@ Author:  Daniel Cornelius
 Static class for textures commonly used within Chisel
 * * * * * * * * * * * * * * * * * * * * * */
 
+
 using System;
 using UnityEditor;
 using UnityEngine;
 
+
 namespace Chisel.Editors
 {
     // color space adjusted texture utilities
+    // $TODO: move this to a class with other embedded resources, e.g. "ChiselEmbeddedResources"
     internal static class ChiselEmbeddedTextures
     {
-        private static Texture2D m_BlackTexture     = null;
-        private static Texture2D m_UnityDarkBGTex   = null;
+        private static Texture2D m_BlackTexture   = null;
+        private static Texture2D m_UnityDarkBGTex = null;
 
         private static bool IsGamma => PlayerSettings.colorSpace == ColorSpace.Gamma;
 

@@ -99,7 +99,7 @@ namespace Chisel.Editors
             // assemble preview tiles
             foreach( string id in guids )
             {
-                ChiselAssetPreviewTile<Material> browserTile = new ChiselAssetPreviewTile<Material>( id );
+                ChiselAssetPreviewTile<Material> browserTile = new ( id );
 
                 if( labels != null )
                 {

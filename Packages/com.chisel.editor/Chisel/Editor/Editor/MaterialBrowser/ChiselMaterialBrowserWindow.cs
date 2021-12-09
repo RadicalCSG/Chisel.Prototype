@@ -6,7 +6,10 @@ Author:  Daniel Cornelius
 Core class of the material browser component for chisel.
 Various comments are left throughout the file noting
 anything important or needing change.
+
+$TODO: add context menus for each tile to eliminate the need for the side bar. This will simplify a lot of the code and make things more consistent.
 * * * * * * * * * * * * * * * * * * * * * */
+
 
 using System;
 using System.Collections.Generic;
@@ -16,6 +19,7 @@ using UnityEditor;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 
+
 namespace Chisel.Editors
 {
     internal sealed partial class ChiselMaterialBrowserWindow : EditorWindow
@@ -24,10 +28,10 @@ namespace Chisel.Editors
         private const string TILE_LABEL_PREF_KEY   = "chisel_matbrowser_pviewShowLabel";
         private const string TILE_LAST_TAB_OPT_KEY = "chisel_matbrowser_currentTileTab";
 
-        private static List<ChiselAssetPreviewTile<Material>> m_Tiles     = new List<ChiselAssetPreviewTile<Material>>();
-        private static List<ChiselAssetPreviewTile<Material>> m_UsedTiles = new List<ChiselAssetPreviewTile<Material>>();
-        private static List<string>                           m_Labels    = new List<string>();
-        private static List<ChiselModel>                      m_Models    = new List<ChiselModel>();
+        private static List<ChiselAssetPreviewTile<Material>> m_Tiles     = new();
+        private static List<ChiselAssetPreviewTile<Material>> m_UsedTiles = new();
+        private static List<string>                           m_Labels    = new();
+        private static List<ChiselModel>                      m_Models    = new();
 
         private static ChiselMaterialBrowserTab m_CurrentTilesTab = 0;
 
@@ -38,11 +42,12 @@ namespace Chisel.Editors
         private static bool    showNameLabels            = false;
         private static string  searchText                = string.Empty;
 
-        private readonly GUIContent m_PropsAreaToggleContent = new GUIContent( "", "" );
+        private readonly GUIContent m_PropsAreaToggleContent = new( "", "" );
 
         private readonly GUIContent[] m_PropsTabLabels = new GUIContent[]
         {
-            new GUIContent( "Labels\t    " ), new GUIContent( "Current Selection    " ),
+            new( "Labels\t    " ),
+            new( "Current Selection    " ),
         };
 
         // event that gets triggered on project change.
@@ -57,7 +62,7 @@ namespace Chisel.Editors
         {
             ChiselMaterialBrowserWindow window = EditorWindow.GetWindow<ChiselMaterialBrowserWindow>( false, "Material Browser" );
             window.maxSize = new Vector2( 3840, 2160 );
-            window.minSize = new Vector2( 420,  342 );
+            window.minSize = new Vector2( 420, 342 );
         }
 
         // set any prefs and then clean up memory when the window closes.
@@ -69,25 +74,28 @@ namespace Chisel.Editors
 
             m_Tiles.ForEach
             (
-                    e =>
-                    {
-                        e.Dispose();
-                        e = null;
-                    }
+                e =>
+                {
+                    e.Dispose();
+                    e = null;
+                }
             );
 
             m_UsedTiles.ForEach
             (
-                    e =>
-                    {
-                        e.Dispose();
-                        e = null;
-                    }
+                e =>
+                {
+                    e.Dispose();
+                    e = null;
+                }
             );
 
             m_Tiles.Clear();
             m_UsedTiles.Clear();
             m_Labels.Clear();
+
+            // $BUG: always make sure styles are refreshed... prevents bug where the background texture for preview labels dont persist through domain reload
+            ResetStyles();
 
             // we do the following 3 method calls below to release any memory that was used for thumbnails that no longer are used.
             AssetDatabase.ReleaseCachedFileHandles();
@@ -128,7 +136,7 @@ namespace Chisel.Editors
                 previewMaterial = GetPreviewMaterial( lastSelectedMaterialIndex );
 
             // notification layout
-            m_NotifRect.x      = ( position.width  * 0.5f ) - 200;
+            m_NotifRect.x      = ( position.width * 0.5f ) - 200;
             m_NotifRect.y      = ( position.height * 0.5f ) - 60;
             m_NotifRect.width  = 400;
             m_NotifRect.height = 150;
@@ -159,10 +167,13 @@ namespace Chisel.Editors
                 // refresh button
                 m_ToolbarRect.y     = 2;
                 m_ToolbarRect.width = 60;
+
                 if( GUI.Button( m_ToolbarRect, "Refresh", EditorStyles.toolbarButton ) )
                 {
+                    // $BUG: when in used materials mode, refresh just appends new tiles for some reason. maybe isnt context aware...
                     ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_UsedTiles, ref m_Labels, ref m_Models, false );
                     previewEditor = Editor.CreateEditor( previewMaterial = GetPreviewMaterial( lastSelectedMaterialIndex = 0 ) );
+                    searchText    = string.Empty;
 
                     ResetStyles();
                 }
@@ -179,19 +190,21 @@ namespace Chisel.Editors
 
                 EditorGUI.BeginChangeCheck();
                 searchText = EditorGUI.DelayedTextField( m_ToolbarRect, string.Empty, searchText, EditorStyles.toolbarSearchField );
+
                 if( EditorGUI.EndChangeCheck() )
                 {
                     ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_UsedTiles, ref m_Labels, ref m_Models, false, searchText: searchText );
                 }
 
                 // all/used material filter
-                m_ToolbarRect.x      = position.width  - ( m_ShowPropsArea ? 372 : 135 );
+                m_ToolbarRect.x      = position.width - ( m_ShowPropsArea ? 372 : 135 );
                 m_ToolbarRect.y      = m_ToolbarRect.y + ( position.width < 600 ? 28 : 0 );
                 m_ToolbarRect.width  = 100;
                 m_ToolbarRect.height = 22;
 
                 EditorGUI.BeginChangeCheck();
                 m_CurrentTilesTab = (ChiselMaterialBrowserTab) EditorGUI.EnumPopup( m_ToolbarRect, m_CurrentTilesTab, EditorStyles.toolbarDropDown );
+
                 if( EditorGUI.EndChangeCheck() )
                 {
                     EditorPrefs.SetInt( TILE_LAST_TAB_OPT_KEY, (int) m_CurrentTilesTab );
@@ -238,6 +251,7 @@ namespace Chisel.Editors
                                 m_LabelScrollViewArea.height = 0;
 
                                 m_LabelScrollPositon = GUI.BeginScrollView( m_PropsAreaRect, m_LabelScrollPositon, m_LabelScrollViewArea );
+
                                 {
                                     m_PropsAreaRect.height = 24;
 
@@ -251,7 +265,17 @@ namespace Chisel.Editors
                                         // label button, filters search to the specified label when clicked
                                         if( GUI.Button( m_PropsAreaRect, m_Labels[i] ) )
                                         {
-                                            ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_UsedTiles, ref m_Labels, ref m_Models, true, m_Labels[i], searchText );
+                                            ChiselMaterialBrowserUtilities.GetMaterials
+                                            (
+                                                ref m_Tiles,
+                                                ref m_UsedTiles,
+                                                ref m_Labels,
+                                                ref m_Models,
+                                                true,
+                                                m_Labels[i],
+                                                searchText
+                                            );
+
                                             lastSelectedMaterialIndex = 0;
 
                                             previewEditor = Editor.CreateEditor( previewMaterial = GetPreviewMaterial( 0 ) );
@@ -274,6 +298,7 @@ namespace Chisel.Editors
                                 m_PropsAreaRect.height = position.height - 50;
 
                                 GUI.BeginGroup( m_PropsAreaRect, propsSectionBG );
+
                                 {
                                     // header label
                                     m_PropsAreaRect.x      = 0;
@@ -289,7 +314,7 @@ namespace Chisel.Editors
 
                                     if( m_Tiles[lastSelectedMaterialIndex] != null && previewMaterial != null )
                                     {
-                                        if( previewEditor == null ) previewEditor = Editor.CreateEditor( previewMaterial, typeof( MaterialEditor ) );
+                                        if( previewEditor == null ) previewEditor = Editor.CreateEditor( previewMaterial, typeof(MaterialEditor) );
                                         previewEditor.OnInteractivePreviewGUI( m_PropsAreaRect, EditorStyles.whiteLabel );
                                         previewEditor.Repaint();
                                     }
@@ -303,13 +328,15 @@ namespace Chisel.Editors
                                         m_PropsAreaRect.width  = 256;
 
                                         GUI.BeginGroup( m_PropsAreaRect );
+
                                         {
                                             m_PropsAreaRect.x      = 0;
                                             m_PropsAreaRect.y      = 0;
                                             m_PropsAreaRect.height = 22;
-                                            GUI.Label( m_PropsAreaRect, $"Material", EditorStyles.toolbarButton );
+                                            GUI.Label( m_PropsAreaRect, "Material", EditorStyles.toolbarButton );
 
                                             m_PropsAreaRect.y += 24;
+
                                             if( GUI.Button( m_PropsAreaRect, "Select In Project", "largebutton" ) )
                                             {
                                                 EditorGUIUtility.PingObject( Selection.activeObject = GetPreviewMaterial( lastSelectedMaterialIndex ) );
@@ -318,6 +345,7 @@ namespace Chisel.Editors
                                             if( m_CurrentTilesTab > 0 )
                                             {
                                                 m_PropsAreaRect.y += 24;
+
                                                 if( GUI.Button( m_PropsAreaRect, "Select In Scene", "largebutton" ) )
                                                 {
                                                     ChiselMaterialBrowserUtilities.SelectMaterialInScene( GetPreviewMaterial( lastSelectedMaterialIndex )?.name );
@@ -325,6 +353,7 @@ namespace Chisel.Editors
                                             }
 
                                             m_PropsAreaRect.y += 24;
+
                                             if( GUI.Button( m_PropsAreaRect, applyToSelectedFaceLabelContent, "largebutton" ) )
                                             {
                                                 ApplySelectedMaterial();
@@ -341,6 +370,7 @@ namespace Chisel.Editors
                                             m_PropsAreaRect.height = 200;
 
                                             GUI.BeginGroup( m_PropsAreaRect );
+
                                             {
                                                 m_PropsAreaRect.x      = 0;
                                                 m_PropsAreaRect.y      = 0;
@@ -356,17 +386,30 @@ namespace Chisel.Editors
                                                     float xOffset = 2;
                                                     float yOffset = 22;
                                                     int   row     = 0;
+
                                                     for( int i = 0; i < ( m_PropsAreaRect.width / btnWidth ); i++ )
                                                     {
                                                         if( idx == m_Tiles[lastSelectedMaterialIndex].labels.Length ) break;
 
                                                         xOffset = ( 40 * i ) + 2;
+
                                                         if( GUI.Button( new Rect( xOffset, yOffset, btnWidth, 22 ), new GUIContent( l, $"Click to filter for label \"{l}\"" ), assetLabelStyle ) )
                                                         {
-                                                            ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_UsedTiles, ref m_Labels, ref m_Models, true, l, searchText );
+                                                            ChiselMaterialBrowserUtilities.GetMaterials
+                                                            (
+                                                                ref m_Tiles,
+                                                                ref m_UsedTiles,
+                                                                ref m_Labels,
+                                                                ref m_Models,
+                                                                true,
+                                                                l,
+                                                                searchText
+                                                            );
+
                                                             lastSelectedMaterialIndex = 0;
 
                                                             previewEditor = Editor.CreateEditor( previewMaterial = GetPreviewMaterial( 0 ) );
+                                                            searchText    = $"l:{l}";
                                                         }
 
                                                         idx++;
@@ -406,16 +449,16 @@ namespace Chisel.Editors
 
                     // $TODO: change styling on this... its fugly. Also needs tooltips.
                     EditorGUI.BeginChangeCheck();
-                    showNameLabels = GUI.Toggle( m_ToolbarRect, showNameLabels, ( showNameLabels ) ? "Hide Labels" : "Show Labels", "ToolbarButton" );
+                    showNameLabels = EditorGUI.ToggleLeft( m_ToolbarRect, "Show Labels", showNameLabels );
                     if( EditorGUI.EndChangeCheck() ) EditorPrefs.SetBool( TILE_LABEL_PREF_KEY, showNameLabels );
 
-                    DrawTileArea( (ChiselMaterialBrowserTab) m_CurrentTilesTab );
+                    DrawTileArea( m_CurrentTilesTab );
                 }
 
                 // search has no results, show notification to convey this
                 else
                 {
-                    m_NotifRect.x      = ( position.width  * 0.5f ) - 200;
+                    m_NotifRect.x      = ( position.width * 0.5f ) - 200;
                     m_NotifRect.y      = ( position.height * 0.5f ) - 80;
                     m_NotifRect.width  = 400;
                     m_NotifRect.height = 130;
@@ -429,7 +472,7 @@ namespace Chisel.Editors
         private Rect  m_TileContentRect = Rect.zero;
         private Rect  m_ScrollViewRect  = Rect.zero;
 
-        private readonly GUIContent m_TileContentText = new GUIContent();
+        private readonly GUIContent m_TileContentText = new();
 
         private void DrawTileArea( ChiselMaterialBrowserTab selectedTab )
         {
@@ -441,7 +484,7 @@ namespace Chisel.Editors
             {
                 m_ScrollViewRect.x      = 0;
                 m_ScrollViewRect.y      = 52;
-                m_ScrollViewRect.width  = position.width  - 260;
+                m_ScrollViewRect.width  = position.width - 260;
                 m_ScrollViewRect.height = position.height - 72;
 
                 m_TileContentRect.x      = 0;
@@ -465,6 +508,7 @@ namespace Chisel.Editors
 
             // tile scroll area
             tileScrollPos = GUI.BeginScrollView( m_ScrollViewRect, tileScrollPos, m_TileContentRect, false, true );
+
             {
                 float xOffset = 0;
                 float yOffset = 0;
@@ -481,7 +525,7 @@ namespace Chisel.Editors
                 foreach( ChiselAssetPreviewTile<Material> entry in current )
                 {
                     if( current.Count == 0 ) break;
-                    if( idx           == current.Count ) break;
+                    if( idx == current.Count ) break;
 
                     // begin horizontal
                     for( int x = 0; x < numColumns; x++ )
@@ -563,14 +607,17 @@ namespace Chisel.Editors
             m_TileContentRect.height = 24;
 
             EditorGUI.BeginChangeCheck();
+
+            // $BUG: moving the slider handle too quickly causes it to lose focus. is this unity side, or a side effect of something else?
             tileSize = (int) GUI.HorizontalSlider( m_TileContentRect, tileSize, 64, 122 );
-            if( EditorGUI.EndChangeCheck() ) EditorPrefs.SetInt( PREVIEW_SIZE_PREF_KEY, tileSize );
+
+            if( EditorGUI.EndChangeCheck() )
+                EditorPrefs.SetInt( PREVIEW_SIZE_PREF_KEY, tileSize );
         }
 
         private static Material GetPreviewMaterial( int index )
         {
-            // this is done to avoid a bug where if one or the other collection had zero items in it, it would not render,
-            // even if the list requested had valid items
+            // $BUG: this is done to avoid a bug where if one or the other collection had zero items in it, it would not render, even if the list requested had valid items
             switch( m_CurrentTilesTab )
             {
                 case ChiselMaterialBrowserTab.All:
