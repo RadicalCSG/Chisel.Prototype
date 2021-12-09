@@ -43,7 +43,7 @@ namespace Chisel.Core
 
             BrushMeshFactory.Split2DPolygonAlongOriginXAxis(ref polygonVerticesList, ref polygonVerticesSegments);
 
-            return polygonVerticesSegments.Length * (pathMatrices.length - 1);
+            return polygonVerticesSegments.Length * (pathMatrices.Length - 1);
         }
 
         [BurstCompile()]

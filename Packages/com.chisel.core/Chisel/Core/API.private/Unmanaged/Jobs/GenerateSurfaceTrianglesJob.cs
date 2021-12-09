@@ -21,7 +21,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BasePolygonsBlob>>  basePolygonCache;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
         [NoAlias, ReadOnly] public NativeStream.Reader                                      input;        
-        [NoAlias, ReadOnly] public NativeArray<MeshQuery>.ReadOnly                          meshQueries;
+        [NoAlias, ReadOnly] public NativeArray<MeshQuery>                                   meshQueries;
 
         // Write
         [NativeDisableParallelForRestriction]

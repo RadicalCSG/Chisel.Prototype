@@ -55,7 +55,7 @@ namespace Chisel.Components
 
         static readonly HashSet<ChiselNode> rebuildTreeNodes = new HashSet<ChiselNode>();
 
-        static readonly Dictionary<ChiselBrushComponent,int> rebuildBrushMeshes = new Dictionary<ChiselBrushComponent, int>();
+        static readonly Dictionary<ChiselBrushComponent, int> rebuildBrushMeshes = new Dictionary<ChiselBrushComponent, int>();
         static readonly List<CSGTreeBrush> rebuildTreeBrushes = new List<CSGTreeBrush>();
         static readonly List<BrushMesh> rebuildTreeBrushOutlines = new List<BrushMesh>();
         static readonly List<ChiselSurfaceDefinition> rebuildSurfaceDefinitions = new List<ChiselSurfaceDefinition>();
@@ -161,7 +161,7 @@ namespace Chisel.Components
             hierarchyItemLookup.Clear();
             treeNodeLookup.Clear();
 
-            foreach(var item in destroyNodesList)
+            foreach (var item in destroyNodesList)
                 item.Destroy();
 
             ClearQueues();
@@ -318,10 +318,10 @@ namespace Chisel.Components
 
 
         // Let the hierarchy manager know that this/these node(s) has/have moved, so we can regenerate meshes
-        public static void RebuildTreeNodes(ChiselNode node) { rebuildTreeNodes.Add(node); }
-        public static void UpdateTreeNodeTransformation(ChiselNode node) { updateTransformationNodes.Add(node); }
-        public static void NotifyTransformationChanged(HashSet<ChiselNode> nodes) { foreach (var node in nodes) updateTransformationNodes.Add(node); }
-        public static void UpdateAllTransformations() { foreach (var node in registeredNodes) updateTransformationNodes.Add(node); }
+        public static void RebuildTreeNodes(ChiselNode node) { if (node) rebuildTreeNodes.Add(node); }
+        public static void UpdateTreeNodeTransformation(ChiselNode node) { if (node) updateTransformationNodes.Add(node); }
+        public static void NotifyTransformationChanged(HashSet<ChiselNode> nodes) { foreach (var node in nodes) if (node) updateTransformationNodes.Add(node); }
+        public static void UpdateAllTransformations() { foreach (var node in registeredNodes) if (node) updateTransformationNodes.Add(node); }
 
 
         // Let the hierarchy manager know that the contents of this node has been modified
@@ -349,7 +349,7 @@ namespace Chisel.Components
                 rebuildTreeBrushOutlines[index] = component.definition.brushOutline;
                 rebuildSurfaceDefinitions[index] = component.surfaceDefinition;
             } else
-            { 
+            {
                 rebuildBrushMeshes[component] = rebuildTreeBrushOutlines.Count;
                 rebuildTreeBrushes.Add(brush);
                 rebuildTreeBrushOutlines.Add(component.definition.brushOutline);
@@ -468,8 +468,8 @@ namespace Chisel.Components
         }
 
         // static to avoid allocations
-        static List<GameObject> __rootGameObjects = new List<GameObject>(); 
-        static Queue<Transform> __transforms = new Queue<Transform>(); 
+        static List<GameObject> __rootGameObjects = new List<GameObject>();
+        static Queue<Transform> __transforms = new Queue<Transform>();
         static void UpdateChildren(Transform rootTransform)
         {
             __transforms.Clear();
@@ -515,7 +515,7 @@ namespace Chisel.Components
         }
 
         // static to avoid allocations
-        static Queue<List<ChiselHierarchyItem>> __hierarchyQueueLists = new Queue<List<ChiselHierarchyItem>>(); 
+        static Queue<List<ChiselHierarchyItem>> __hierarchyQueueLists = new Queue<List<ChiselHierarchyItem>>();
         static void SetChildScenes(ChiselHierarchyItem hierarchyItem, Scene scene)
         {
             // Note: we're only setting the scene here.
@@ -798,7 +798,7 @@ namespace Chisel.Components
         internal static bool prevPlaying = false;
         internal static void UpdateTrampoline()
         {
-            Profiler.BeginSample("UpdateTrampoline.Setup");            
+            Profiler.BeginSample("UpdateTrampoline.Setup");
 #if UNITY_EDITOR
             // *Workaround*
             // Events are not properly called, and can be even duplicated, on entering and exiting playmode
@@ -1284,7 +1284,6 @@ namespace Chisel.Components
             }
             if (siblingIndexUpdateQueueSkip.Count > 0)
             {
-                //Debug.Log($"{siblingIndexUpdateQueueSkip.Count} {siblingIndexUpdateQueue.Count}");
                 foreach (var item in siblingIndexUpdateQueueSkip)
                     siblingIndexUpdateQueue.Remove(item);
                 siblingIndexUpdateQueueSkip.Clear();
@@ -1299,58 +1298,58 @@ namespace Chisel.Components
                     {
                         if (!(hierarchyItem.Component is ChiselModel))
                         {
-                            var sceneHierarchy = hierarchyItem.sceneHierarchy;
-                            if (!sceneHierarchy.DefaultModel)
-                            {
-                                if (sceneHierarchy.DefaultModel ||
-                                    !sceneHierarchy.Scene.IsValid() ||
-                                    !sceneHierarchy.Scene.isLoaded)
-                                    continue;
-                                sceneHierarchy.DefaultModel = ChiselGeneratedComponentManager.CreateDefaultModel(sceneHierarchy);
-                            }
+                            hierarchyItem.parentComponent = hierarchyItem.sceneHierarchy.GetOrCreateDefaultModel();
                         }
                     }
                 }
                 siblingIndexUpdateQueue.Clear();
             }
             Profiler.EndSample();
-            
-            Profiler.BeginSample("UpdateTrampoline.addToHierarchyQueue");
+
+            Profiler.BeginSample("UpdateTrampoline.addToHierarchyQueue(1)");
+            for (int i = addToHierarchyQueue.Count - 1; i >= 0; i--)
+            {
+                var hierarchyItem = addToHierarchyQueue[i];
+                if (!hierarchyItem.Component ||
+                    !hierarchyItem.Component.IsActive)
+                {
+                    addToHierarchyQueue.RemoveAt(i);
+                    continue;
+                }
+            }
+
+            for (int i = 0; i < addToHierarchyQueue.Count; i++)
+            {
+                var hierarchyItem = addToHierarchyQueue[i];
+                var sceneHierarchy = hierarchyItem.sceneHierarchy;
+                hierarchyItem.parentComponent = UpdateSiblingIndices(hierarchyItem);
+                if (ReferenceEquals(hierarchyItem.parentComponent, null))
+                {
+                    if (!(hierarchyItem.Component is ChiselModel))
+                    {
+                        hierarchyItem.parentComponent = sceneHierarchy.GetOrCreateDefaultModel();
+                    }
+                }
+
+                if (hierarchyItem.parentComponent == sceneHierarchy.DefaultModel)
+                {
+                    if (sceneHierarchy.RootItems.Contains(hierarchyItem))
+                        sceneHierarchy.RootItems.Remove(hierarchyItem);
+                }
+            }
+            Profiler.EndSample();
+
+            Profiler.BeginSample("UpdateTrampoline.addToHierarchyQueue(2)");
             if (addToHierarchyQueue.Count > 0)
             {
                 for (int i = addToHierarchyQueue.Count - 1; i >= 0; i--)
                 {
                     var hierarchyItem = addToHierarchyQueue[i];
-                    if (!hierarchyItem.Component ||
-                        !hierarchyItem.Component.IsActive)
-                    {
-                        addToHierarchyQueue.RemoveAt(i);
-                        continue;
-                    }
-
                     var sceneHierarchy = hierarchyItem.sceneHierarchy;
-
-                    var defaultModel = false;
-                    hierarchyItem.parentComponent = UpdateSiblingIndices(hierarchyItem);
-                    if (ReferenceEquals(hierarchyItem.parentComponent, null))
-                    {
-                        if (!(hierarchyItem.Component is ChiselModel))
-                        {
-                            hierarchyItem.parentComponent = sceneHierarchy.DefaultModel;
-                            defaultModel = true;
-                        }
-                    }
-
                     if (!ReferenceEquals(hierarchyItem.parentComponent, null))
                     {
                         var parentHierarchyItem = hierarchyItem.parentComponent.hierarchyItem;
                         hierarchyItem.Parent = parentHierarchyItem;
-
-                        if (defaultModel)
-                        {
-                            if (sceneHierarchy.RootItems.Contains(hierarchyItem))
-                                sceneHierarchy.RootItems.Remove(hierarchyItem);
-                        }
 
                         if (!parentHierarchyItem.Children.Contains(hierarchyItem))
                         {
@@ -1578,7 +1577,7 @@ namespace Chisel.Components
                 AddChildNodesToHashSet(updateTransformationNodes);
                 foreach (var node in updateTransformationNodes)
                 {
-                    if (!node)
+                    if (node == null)
                         continue;
                     node.UpdateTransformation();
                     node.hierarchyItem.SetBoundsDirty();

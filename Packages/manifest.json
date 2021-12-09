@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "com.unity.burst": "1.6.0-pre.2",
-    "com.unity.collections": "0.17.0-preview.18",
+    "com.unity.burst": "1.6.0",
+    "com.unity.collections": "1.0.0-pre.5",
     "com.unity.ide.visualstudio": "2.0.11",
-    "com.unity.jobs": "0.8.0-preview.23",
+    "com.unity.jobs": "0.11.0-preview.6",
     "com.unity.nuget.mono-cecil": "1.10.1",
     "com.unity.nuget.newtonsoft-json": "2.0.0",
-    "com.unity.performance.profile-analyzer": "1.0.3",
+    "com.unity.performance.profile-analyzer": "1.1.0",
     "com.unity.ugui": "1.0.0",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",

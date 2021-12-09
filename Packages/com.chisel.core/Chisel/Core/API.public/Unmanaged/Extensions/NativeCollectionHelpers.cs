@@ -74,7 +74,7 @@ namespace Chisel.Core
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void EnsureCapacityAndClear<T>(ref NativeList<T> container, int desiredCapacity, Allocator allocator = Allocator.Temp)
-            where T : struct
+            where T : unmanaged
         {
             if (!container.IsCreated)
             {
@@ -89,7 +89,7 @@ namespace Chisel.Core
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void EnsureSizeAndClear<T>(ref NativeList<T> container, int desiredSize, Allocator allocator = Allocator.Temp)
-            where T : struct
+            where T : unmanaged
         {
             if (!container.IsCreated)
             {
@@ -105,8 +105,8 @@ namespace Chisel.Core
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void EnsureCapacityAndClear<A,B>(ref NativeHashMap<A,B> container, int desiredCapacity, Allocator allocator = Allocator.Temp)
-            where A : struct, IEquatable<A>
-            where B : struct
+            where A : unmanaged, IEquatable<A>
+            where B : unmanaged
         {
             if (!container.IsCreated)
             {
@@ -121,7 +121,7 @@ namespace Chisel.Core
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void EnsureCreatedAndClear<T>(ref NativeList<T> container, Allocator allocator = Allocator.Temp)
-            where T : struct
+            where T : unmanaged
         {
             if (!container.IsCreated)
                 container = new NativeList<T>(allocator);
@@ -131,7 +131,7 @@ namespace Chisel.Core
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void EnsureConstantSizeAndClear<T>(ref NativeList<T> container, int constantSize, Allocator allocator = Allocator.Temp)
-            where T : struct
+            where T : unmanaged
         {
             if (!container.IsCreated)
                 container = new NativeList<T>(constantSize, allocator);

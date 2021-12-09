@@ -18,7 +18,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                          allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                          allUpdateBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<BrushIntersectWith>                  brushIntersectionsWith;
-        [NoAlias, ReadOnly] public NativeArray<int2>.ReadOnly                       brushIntersectionsWithRange;
+        [NoAlias, ReadOnly] public NativeArray<int2>                                brushIntersectionsWithRange;
 
         // Write
         [NativeDisableParallelForRestriction]

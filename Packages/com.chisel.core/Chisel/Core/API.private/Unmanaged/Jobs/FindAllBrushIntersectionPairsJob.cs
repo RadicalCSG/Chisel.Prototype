@@ -13,11 +13,11 @@ namespace Chisel.Core
     struct FindAllBrushIntersectionPairsJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly             allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>.ReadOnly brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                      allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshLookup;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>             transformationCache;
         [NoAlias, ReadOnly] public NativeArray<ChiselAABB>                      brushTreeSpaceBounds;
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly             rebuildTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                      rebuildTreeBrushIndexOrders;
 
         // Read (Re-alloc) / Write
         [NativeDisableParallelForRestriction]
@@ -138,9 +138,9 @@ namespace Chisel.Core
     struct AddIndirectUpdatedBrushesToListAndSortJob : IJob
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly         allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  brushesThatNeedIndirectUpdate;
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly         rebuildTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  rebuildTreeBrushIndexOrders;
 
         // Write
         [NoAlias, WriteOnly] public NativeList<IndexOrder>.ParallelWriter   allUpdateBrushIndexOrders;
@@ -155,7 +155,6 @@ namespace Chisel.Core
             NativeCollectionHelpers.EnsureCapacityAndClear(ref requiredTemporaryBullShitByDOTS, allTreeBrushIndexOrders.Length);
             NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref foundBrushes, allTreeBrushIndexOrders.Length);
 
-            //*
             for (int i = 0; i < rebuildTreeBrushIndexOrders.Length; i++)
             {
                 foundBrushes.Set(rebuildTreeBrushIndexOrders[i].nodeOrder, true);
@@ -181,8 +180,8 @@ namespace Chisel.Core
     struct FindAllIndirectBrushIntersectionPairsJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly         allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>.ReadOnly brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshLookup;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>         transformationCache;
         [NoAlias, ReadOnly] public NativeArray<ChiselAABB>                  brushTreeSpaceBounds;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  brushesThatNeedIndirectUpdate;
@@ -248,21 +247,21 @@ namespace Chisel.Core
     struct InvalidateBrushCacheJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly rebuildTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  rebuildTreeBrushIndexOrders;
 
         // Read/Write
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>               basePolygonCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>     treeSpaceVerticesCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>          brushesTouchedByBrushCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeList<ChiselBlobAssetReference<RoutingTable>>                   routingTableCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<RoutingTable>>                 routingTableCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>           brushTreeSpacePlaneCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>        brushRenderBufferCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
 
         // Write
         [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>.ParallelWriter             basePolygonDisposeList;
@@ -403,9 +402,9 @@ namespace Chisel.Core
     struct FixupBrushCacheIndicesJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<int>.ReadOnly        nodeIDValueToNodeOrderArray;
-        [NoAlias, ReadOnly] public NativeReference<int>             nodeIDValueToNodeOrderOffsetRef;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>  allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<int>         nodeIDValueToNodeOrderArray;
+        [NoAlias, ReadOnly] public NativeReference<int>     nodeIDValueToNodeOrderOffsetRef;
 
         // Read Write
         [NativeDisableParallelForRestriction]
@@ -580,7 +579,7 @@ namespace Chisel.Core
         
 
         public static IntersectionType FindIntersection(int brush0NodeOrder, int brush1NodeOrder,
-                                                        [NoAlias] ref NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>.ReadOnly brushMeshLookup,
+                                                        [NoAlias] ref NativeArray<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshLookup,
                                                         [NoAlias] ref NativeArray<ChiselAABB>          brushTreeSpaceBounds,
                                                         [NoAlias] ref NativeArray<NodeTransformations> transformations,
                                                         [NoAlias] ref NativeArray<float4>              transformedPlanes0,

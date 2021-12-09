@@ -17,8 +17,8 @@ namespace Chisel.Core
 
         // Write
         [NativeDisableUnsafePtrRestriction]
-        [NoAlias, WriteOnly] public UnsafeList*             brushIntersectionsWith;
-        [NoAlias, WriteOnly] public NativeArray<int2>       brushIntersectionsWithRange;
+        [NoAlias, WriteOnly] public UnsafeList<BrushIntersectWith>* brushIntersectionsWith;
+        [NoAlias, WriteOnly] public NativeArray<int2>               brushIntersectionsWithRange;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeList<BrushPair> intersections;
