@@ -3,6 +3,8 @@ URL:     https://github.com/RadicalCSG/Chisel.Prototype
 License: MIT (https://tldrlegal.com/license/mit-license)
 Author:  Daniel Cornelius
 
+$TODO: review this. it can most likely be simplified, moved elsewhere, or completely re-done
+
 Generic base class for getting thumbnail previews for use in IMGUI
 * * * * * * * * * * * * * * * * * * * * * */
 
@@ -10,11 +12,12 @@ Generic base class for getting thumbnail previews for use in IMGUI
 using System;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 
-namespace Chisel.Editors
+namespace Chisel.Editors.MaterialBrowser
 {
-    internal class ChiselAssetPreviewTile<T> : IDisposable where T : UnityEngine.Object
+    internal class PreviewTile<T> : Object, IDisposable where T : Object
     {
         public readonly string   path;
         public readonly string   guid;
@@ -55,7 +58,7 @@ namespace Chisel.Editors
             m_Preview = ChiselMaterialBrowserUtilities.GetAssetPreviewFromGUID( guid );
         }
 
-        public ChiselAssetPreviewTile( string instID )
+        public PreviewTile( string instID )
         {
             path = AssetDatabase.GUIDToAssetPath( instID );
 

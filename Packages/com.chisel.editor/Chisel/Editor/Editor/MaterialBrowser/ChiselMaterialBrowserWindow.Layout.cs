@@ -3,6 +3,8 @@ URL:     https://github.com/RadicalCSG/Chisel.Prototype
 License: MIT (https://tldrlegal.com/license/mit-license)
 Author:  Daniel Cornelius
 
+$TODO: can this be made its own class? would possibly simplify some things in doing so
+
 GUIContent, UI labels, and other various UI components for the
 material browser
 * * * * * * * * * * * * * * * * * * * * * */
@@ -13,7 +15,7 @@ using UnityEditor.ShortcutManagement;
 using UnityEngine;
 
 
-namespace Chisel.Editors
+namespace Chisel.Editors.MaterialBrowser
 {
     internal sealed partial class ChiselMaterialBrowserWindow
     {

@@ -7,6 +7,7 @@ Various utility methods used throughout ChiselMaterialBrowser
 and its various classes
 * * * * * * * * * * * * * * * * * * * * * */
 
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -15,7 +16,8 @@ using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Chisel.Editors
+
+namespace Chisel.Editors.MaterialBrowser
 {
     internal static class ChiselMaterialBrowserUtilities
     {
@@ -29,7 +31,7 @@ namespace Chisel.Editors
         };
 
         // checks a path and returns true/false if a material is ignored or not
-        public static bool IsValidEntry<T>( ChiselAssetPreviewTile<T> tile ) where T : UnityEngine.Object
+        public static bool IsValidEntry<T>( PreviewTile<T> tile ) where T : UnityEngine.Object
         {
             // method to add functionality that exists in .net but not in unity (string.Contains(string, StringComparison)).
             bool StringContains( string searchTerm, string source, StringComparison stringComparison = StringComparison.InvariantCultureIgnoreCase )
@@ -65,13 +67,13 @@ namespace Chisel.Editors
         // and then adds them to the list of materials to be used in this window
         internal static void GetMaterials
         (
-                ref List<ChiselAssetPreviewTile<Material>> materials,
-                ref List<ChiselAssetPreviewTile<Material>> usedMaterials,
-                ref List<string>                           labels,
-                ref List<ChiselModel>                      models,
-                bool                                       usingLabel,
-                string                                     searchLabel = "",
-                string                                     searchText  = ""
+            ref List<PreviewTile<Material>> materials,
+            ref List<PreviewTile<Material>> usedMaterials,
+            ref List<string>                           labels,
+            ref List<ChiselModel>                      models,
+            bool                                       usingLabel,
+            string                                     searchLabel = "",
+            string                                     searchText  = ""
         )
         {
             if( materials == null || usedMaterials == null || labels == null || models == null )
@@ -82,11 +84,10 @@ namespace Chisel.Editors
 
             materials.ForEach
             (
-                    e =>
-                    {
-                        e.Dispose();
-                        e = null;
-                    }
+                e =>
+                {
+                    e.Dispose();
+                }
             );
 
             materials.Clear();
@@ -99,7 +100,7 @@ namespace Chisel.Editors
             // assemble preview tiles
             foreach( string id in guids )
             {
-                ChiselAssetPreviewTile<Material> browserTile = new ( id );
+                PreviewTile<Material> browserTile = new( id );
 
                 if( labels != null )
                 {
@@ -125,15 +126,14 @@ namespace Chisel.Editors
             PopulateUsedMaterials( ref usedMaterials, ref models, searchLabel, searchText );
         }
 
-        private static void PopulateUsedMaterials( ref List<ChiselAssetPreviewTile<Material>> tiles, ref List<ChiselModel> models, string searchLabel, string searchText )
+        private static void PopulateUsedMaterials( ref List<PreviewTile<Material>> tiles, ref List<ChiselModel> models, string searchLabel, string searchText )
         {
             tiles.ForEach
             (
-                    e =>
-                    {
-                        e.Dispose();
-                        e = null;
-                    }
+                e =>
+                {
+                    e.Dispose();
+                }
             );
 
             tiles.Clear();
@@ -152,7 +152,7 @@ namespace Chisel.Editors
                                 {
                                     AssetDatabase.TryGetGUIDAndLocalFileIdentifier( mat, out string guid, out long id );
 
-                                    tiles.Add( new ChiselAssetPreviewTile<Material>( guid ) );
+                                    tiles.Add( new PreviewTile<Material>( guid ) );
                                 }
                         }
                     }
@@ -197,16 +197,26 @@ namespace Chisel.Editors
         // $TODO: can this be moved to the reflection utilities class?
         public static Texture2D GetAssetPreviewFromGUID( string guid )
         {
-            m_GetAssetPreviewMethod ??= typeof( AssetPreview ).GetMethod
+            m_GetAssetPreviewMethod ??= typeof(AssetPreview).GetMethod
             (
-                    "GetAssetPreviewFromGUID",
-                    BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.InvokeMethod,
-                    null,
-                    new[] { typeof( string ) },
-                    null
+                "GetAssetPreviewFromGUID",
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.InvokeMethod,
+                null,
+                new[]
+                {
+                    typeof(string)
+                },
+                null
             );
 
-            return m_GetAssetPreviewMethod.Invoke( null, new object[] { guid } ) as Texture2D;
+            return m_GetAssetPreviewMethod.Invoke
+            (
+                null,
+                new object[]
+                {
+                    guid
+                }
+            ) as Texture2D;
         }
     }
 }

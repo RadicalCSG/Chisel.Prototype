@@ -12,7 +12,7 @@ using UnityEditor;
 using UnityEngine;
 
 
-namespace Chisel.Editors
+namespace Chisel.Editors.MaterialBrowser
 {
     // color space adjusted texture utilities
     // $TODO: move this to a class with other embedded resources, e.g. "ChiselEmbeddedResources"

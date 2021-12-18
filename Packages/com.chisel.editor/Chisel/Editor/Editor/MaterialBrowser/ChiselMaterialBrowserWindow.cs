@@ -8,6 +8,7 @@ Various comments are left throughout the file noting
 anything important or needing change.
 
 $TODO: add context menus for each tile to eliminate the need for the side bar. This will simplify a lot of the code and make things more consistent.
+$TODO: automatically find any browser tabs in the project. this should find any subclasses of BrowserTab
 * * * * * * * * * * * * * * * * * * * * * */
 
 
@@ -20,7 +21,7 @@ using UnityEditor.ShortcutManagement;
 using UnityEngine;
 
 
-namespace Chisel.Editors
+namespace Chisel.Editors.MaterialBrowser
 {
     internal sealed partial class ChiselMaterialBrowserWindow : EditorWindow
     {
@@ -28,8 +29,8 @@ namespace Chisel.Editors
         private const string TILE_LABEL_PREF_KEY   = "chisel_matbrowser_pviewShowLabel";
         private const string TILE_LAST_TAB_OPT_KEY = "chisel_matbrowser_currentTileTab";
 
-        private static List<ChiselAssetPreviewTile<Material>> m_Tiles     = new();
-        private static List<ChiselAssetPreviewTile<Material>> m_UsedTiles = new();
+        private static List<PreviewTile<Material>> m_Tiles     = new();
+        private static List<PreviewTile<Material>> m_UsedTiles = new();
         private static List<string>                           m_Labels    = new();
         private static List<ChiselModel>                      m_Models    = new();
 
@@ -508,21 +509,21 @@ namespace Chisel.Editors
 
             // tile scroll area
             tileScrollPos = GUI.BeginScrollView( m_ScrollViewRect, tileScrollPos, m_TileContentRect, false, true );
-
+            // $TODO: replace this section with the new MaterialBrowserTab API
             {
                 float xOffset = 0;
                 float yOffset = 0;
                 int   row     = 0;
 
                 // show content for used/all tiles
-                List<ChiselAssetPreviewTile<Material>> current = selectedTab switch
+                List<PreviewTile<Material>> current = selectedTab switch
                 {
                     ChiselMaterialBrowserTab.All  => m_Tiles,
                     ChiselMaterialBrowserTab.Used => m_UsedTiles,
                     _                             => m_Tiles
                 };
 
-                foreach( ChiselAssetPreviewTile<Material> entry in current )
+                foreach( PreviewTile<Material> entry in current )
                 {
                     if( current.Count == 0 ) break;
                     if( idx == current.Count ) break;
@@ -661,6 +662,9 @@ namespace Chisel.Editors
                     surf.BrushMaterial.RenderMaterial = material;
                 }
             }
+            
+            // once we apply the material, refresh the geometry
+            ChiselNodeHierarchyManager.Rebuild();
         }
     }
 }
