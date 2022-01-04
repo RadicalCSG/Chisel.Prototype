@@ -65,6 +65,7 @@ namespace Chisel.Core
 
         void CopyFrom(NativeList<UnsafeList<Edge>> dst, int index, ref BrushIntersectionLoop brushIntersectionLoop, HashedVertices hashedTreeSpaceVertices, int extraCapacity)
         {
+            Debug.Assert(extraCapacity >= 0);
             ref var vertexIndex     = ref brushIntersectionLoop.loopVertexIndex;
             ref var loopVertexCount = ref brushIntersectionLoop.loopVertexCount;
             

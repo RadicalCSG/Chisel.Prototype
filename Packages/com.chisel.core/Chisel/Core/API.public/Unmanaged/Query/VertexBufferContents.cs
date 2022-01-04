@@ -91,20 +91,15 @@ namespace Chisel.Core
         public JobHandle Dispose(JobHandle dependency) 
         {
             JobHandle lastJobHandle = default;
-            if (meshDescriptions    .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, meshDescriptions.Dispose(dependency));
-            if (subMeshSections     .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, subMeshSections.Dispose(dependency));
-            if (meshes              .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, meshes.Dispose(dependency));
-            if (triangleBrushIndices.IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, NativeCollection.DisposeDeep(triangleBrushIndices, dependency));
+            if (meshDescriptions    .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, meshDescriptions       .Dispose(dependency));
+            if (subMeshSections     .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, subMeshSections        .Dispose(dependency));
+            if (meshes              .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, meshes                 .Dispose(dependency));
+            if (triangleBrushIndices.IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, triangleBrushIndices   .DisposeDeep(dependency));
 
-            if (renderDescriptors   .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, renderDescriptors  .Dispose(dependency));
-            if (colliderDescriptors .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, colliderDescriptors.Dispose(dependency));
-            
-            meshDescriptions     = default;
-            subMeshSections      = default;
-            meshes               = default;
-            triangleBrushIndices = default;
-            renderDescriptors    = default;
-            colliderDescriptors  = default;
+            if (renderDescriptors   .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, renderDescriptors      .Dispose(dependency));
+            if (colliderDescriptors .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, colliderDescriptors    .Dispose(dependency));
+
+            this = default;
             return lastJobHandle;
         }
     };

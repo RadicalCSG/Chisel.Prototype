@@ -114,10 +114,11 @@ namespace Chisel.Core
                 brushIDValues = default;
                 if (basePolygonCache.IsCreated)
                 {
-                    foreach (var item in basePolygonCache)
+                    for (int i = 0; i < basePolygonCache.Length; i++)
                     {
-                        if (item.IsCreated)
-                            item.Dispose();
+                        if (basePolygonCache[i].IsCreated)
+                            basePolygonCache[i].Dispose();
+                        basePolygonCache[i] = default;
                     }
                     basePolygonCache.Clear();
                     basePolygonCache.Dispose();
@@ -131,10 +132,11 @@ namespace Chisel.Core
                 brushTreeSpaceBoundCache = default;
                 if (treeSpaceVerticesCache.IsCreated)
                 {
-                    foreach (var item in treeSpaceVerticesCache)
+                    for (int i = 0; i < treeSpaceVerticesCache.Length; i++)
                     {
-                        if (item.IsCreated)
-                            item.Dispose();
+                        if (treeSpaceVerticesCache[i].IsCreated)
+                            treeSpaceVerticesCache[i].Dispose();
+                        treeSpaceVerticesCache[i] = default;
                     }
                     treeSpaceVerticesCache.Clear();
                     treeSpaceVerticesCache.Dispose();
@@ -142,10 +144,11 @@ namespace Chisel.Core
                 treeSpaceVerticesCache = default;
                 if (routingTableCache.IsCreated)
                 {
-                    foreach (var item in routingTableCache)
+                    for (int i = 0; i < routingTableCache.Length; i++)
                     {
-                        if (item.IsCreated)
-                            item.Dispose();
+                        if (routingTableCache[i].IsCreated)
+                            routingTableCache[i].Dispose();
+                        routingTableCache[i] = default;
                     }
                     routingTableCache.Clear();
                     routingTableCache.Dispose();
@@ -153,10 +156,11 @@ namespace Chisel.Core
                 routingTableCache = default;
                 if (brushTreeSpacePlaneCache.IsCreated)
                 {
-                    foreach (var item in brushTreeSpacePlaneCache)
+                    for (int i = 0; i < brushTreeSpacePlaneCache.Length; i++)
                     {
-                        if (item.IsCreated)
-                            item.Dispose();
+                        if (brushTreeSpacePlaneCache[i].IsCreated)
+                            brushTreeSpacePlaneCache[i].Dispose();
+                        brushTreeSpacePlaneCache[i] = default;
                     }
                     brushTreeSpacePlaneCache.Clear();
                     brushTreeSpacePlaneCache.Dispose();
@@ -164,10 +168,11 @@ namespace Chisel.Core
                 brushTreeSpacePlaneCache = default;
                 if (brushesTouchedByBrushCache.IsCreated)
                 {
-                    foreach (var item in brushesTouchedByBrushCache)
+                    for (int i = 0; i < brushesTouchedByBrushCache.Length; i++)
                     {
-                        if (item.IsCreated)
-                            item.Dispose();
+                        if (brushesTouchedByBrushCache[i].IsCreated)
+                            brushesTouchedByBrushCache[i].Dispose();
+                        brushesTouchedByBrushCache[i] = default;
                     }
                     brushesTouchedByBrushCache.Clear();
                     brushesTouchedByBrushCache.Dispose();
@@ -181,10 +186,11 @@ namespace Chisel.Core
                 transformationCache = default;
                 if (brushRenderBufferCache.IsCreated)
                 {
-                    foreach (var item in brushRenderBufferCache)
+                    for (int i = 0; i < brushRenderBufferCache.Length; i++)
                     {
-                        if (item.IsCreated)
-                            item.Dispose();
+                        if (brushRenderBufferCache[i].IsCreated)
+                            brushRenderBufferCache[i].Dispose();
+                        brushRenderBufferCache[i] = default;
                     }
                     brushRenderBufferCache.Clear();
                     brushRenderBufferCache.Dispose();
@@ -202,6 +208,7 @@ namespace Chisel.Core
                     {
                         if (parameters[i].IsCreated)
                             parameters[i].Dispose();
+                        parameters[i] = default;
                     }
                     parameters.Dispose();
                 }

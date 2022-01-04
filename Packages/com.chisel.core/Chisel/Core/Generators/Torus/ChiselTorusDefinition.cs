@@ -62,7 +62,8 @@ namespace Chisel.Core
         [BurstCompile]
         public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            using (var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp))
+            var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
+            try
             {
                 generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
                 using var vertices = BrushMeshFactory.GenerateTorusVertices(outerDiameter,
@@ -87,6 +88,7 @@ namespace Chisel.Core
                     {
                         if (generatedBrushMeshes[i].IsCreated)
                             generatedBrushMeshes[i].Dispose();
+                        generatedBrushMeshes[i] = default;
                     }
                     return false;
                 }
@@ -94,6 +96,10 @@ namespace Chisel.Core
                 for (int i = 0; i < generatedBrushMeshes.Length; i++)
                     nodes[i] = GeneratedNode.GenerateBrush(generatedBrushMeshes[i]);
                 return true;
+            }
+            finally
+            {
+                generatedBrushMeshes.Dispose();
             }
         }
 

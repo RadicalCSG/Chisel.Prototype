@@ -23,14 +23,14 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
         [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>     brushMeshLookup;
 
-        // Write
-        [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<ChiselAABB>                                     brushTreeSpaceBounds;
-        [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesCache;
-
         // Read/Write
         [NativeDisableContainerSafetyRestriction, NoAlias, ReadOnly] public NativeArray<CompactHierarchy> hierarchyList;
+
+        // Write
+        [NativeDisableParallelForRestriction]
+        [NoAlias, WriteOnly] public NativeArray<ChiselAABB>                                             brushTreeSpaceBounds;
+        [NativeDisableParallelForRestriction]
+        [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
 
         unsafe static ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob> Build(ref ChiselBlobArray<float3> localVertices, float4x4 nodeToTreeSpaceMatrix)
         {

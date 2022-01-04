@@ -190,6 +190,7 @@ namespace Chisel.Core
             for (int i = 0; i < dstVertices.Length; i++)
                 dstVertices[i] = hashedVertices[i];
             hashedVertices.Dispose();
+            hashedVertices = default;
 
             //builder.Construct(ref root.localPlanes, brushMesh.planes);
             root.localPlaneCount = brushMesh.planes.Length;
@@ -400,6 +401,7 @@ namespace Chisel.Core
                     var jobHandle = convertToBrushMeshBlobJob.Schedule(brushMeshPointers.Length, 16);
                     jobHandle.Complete();
                     surfaces.Dispose();
+                    surfaces = default;
                     Profiler.EndSample();
 
                     // TODO: use ScheduleBrushRegistration
@@ -425,9 +427,9 @@ namespace Chisel.Core
             }
             finally
             {
-                nativeTreeBrushes.Dispose();
-                brushMeshPointers.Dispose();
-                brushMeshBlobs.Dispose(); 
+                nativeTreeBrushes.Dispose(); nativeTreeBrushes = default;
+                brushMeshPointers.Dispose(); brushMeshPointers = default;
+                brushMeshBlobs.Dispose(); brushMeshBlobs = default;
                 Profiler.EndSample(); 
             }
         }
@@ -518,6 +520,7 @@ namespace Chisel.Core
                     root.localBounds = localBounds;
                 }
                 hashedVertices.Dispose();
+                hashedVertices = default;
 
                 var dstPolygons = builder.Allocate(ref root.polygons, brushMesh.polygonsLength);
                 for (int p = 0; p < brushMesh.polygonsLength; p++)
@@ -786,6 +789,7 @@ namespace Chisel.Core
                     refCountedBrushMeshBlob.refCount = 0;
                     //Chisel.Core.CompactHierarchyManager.NotifyBrushMeshRemoved(brushMeshHash);
                     refCountedBrushMeshBlob.brushMeshBlob.Dispose();
+                    refCountedBrushMeshBlob.brushMeshBlob = default;
                     brushMeshBlobCache.Remove(brushMeshHash);
                 }
             } else

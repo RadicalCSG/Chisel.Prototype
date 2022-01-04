@@ -663,9 +663,6 @@ namespace Chisel.Core
                         }
                     }
                 }
-                //alltreeSpacePlanes  .Dispose();
-                //allSegments     .Dispose();
-                //allCombinedEdges.Dispose();
 
                 for (int h = holeIndicesList.Length - 1; h >= 0; h--)
                 {
@@ -1036,10 +1033,6 @@ namespace Chisel.Core
                     output.Write(edges[e]);
             }
             output.EndForEachIndex();
-
-
-            //intersectionLoops.Dispose();
-            //holeIndices.Dispose();
         }
     }
 } 

@@ -209,7 +209,9 @@ namespace Chisel.Core.External
             finally
             {
                 allVertices.Dispose();
+                allVertices = default;
                 ranges.Dispose();
+                ranges = default;
             }
         }
         
@@ -387,7 +389,9 @@ namespace Chisel.Core.External
             finally
             {
                 allVertices.Dispose();
+                allVertices = default;
                 ranges.Dispose();
+                ranges = default;
             }
         }
 

@@ -36,23 +36,23 @@ namespace Chisel.Core
         }
 
         [NativeDisableUnsafePtrRestriction]
-        [NoAlias, ReadOnly] public CompactHierarchy*                    compactHierarchyPtr;
-        [NoAlias, ReadOnly] public NativeList<int>                      nodeIDValueToNodeOrderArray;
-        [NoAlias, ReadOnly] public NativeReference<int>                 nodeIDValueToNodeOrderOffsetRef;
-        [NoAlias, ReadOnly] public NativeArray<CompactNodeID>           brushes;
-        [NoAlias, ReadOnly] public int                                  brushCount;
-        [NoAlias, ReadOnly] public NativeList<IndexOrder>               allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeList<CompactNodeID>            brushIDValues;
+        [NoAlias, ReadOnly] public CompactHierarchy*            compactHierarchyPtr;
+        [NoAlias, ReadOnly] public NativeList<int>              nodeIDValueToNodeOrderArray;
+        [NoAlias, ReadOnly] public NativeReference<int>         nodeIDValueToNodeOrderOffsetRef;
+        [NoAlias, ReadOnly] public NativeArray<CompactNodeID>   brushes;
+        [NoAlias, ReadOnly] public int                          brushCount;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>       allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<CompactNodeID>    brushIDValues;
 
         // Read/Write
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>            basePolygonCache;
-        [NoAlias] public NativeList<ChiselBlobAssetReference<RoutingTable>>                routingTableCache;
-        [NoAlias] public NativeList<NodeTransformations>                             transformationCache;
-        [NoAlias] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>     brushRenderBufferCache;
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesCache;
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>        brushTreeSpacePlaneCache;
-        [NoAlias] public NativeList<ChiselAABB>                                      brushTreeSpaceBoundCache;
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<RoutingTable>>                 routingTableCache;
+        [NoAlias] public NativeList<NodeTransformations>                                    transformationCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
+        [NoAlias] public NativeList<ChiselAABB>                                             brushTreeSpaceBoundCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
 
         // Write
         [NoAlias, WriteOnly] public NativeHashSet<IndexOrder>           brushesThatNeedIndirectUpdateHashMap;

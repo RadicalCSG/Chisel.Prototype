@@ -166,8 +166,11 @@ namespace Chisel.Core
             {
                 Profiler.BeginSample("GenPool_Dispose");
                 var totalCountsDisposeJobHandle                 = totalCounts.Dispose(allocateJobHandle);
+                totalCounts = default;
                 var generatedNodeDefinitionsDisposeJobHandle    = generatedNodeDefinitions.Dispose(lastJobHandle);
+                generatedNodeDefinitions = default;
                 var brushMeshBlobsDisposeJobHandle              = brushMeshBlobs.Dispose(lastJobHandle);
+                brushMeshBlobs = default;
                 var allDisposes = JobHandle.CombineDependencies(totalCountsDisposeJobHandle,
                                                                 generatedNodeDefinitionsDisposeJobHandle,
                                                                 brushMeshBlobsDisposeJobHandle);
@@ -315,7 +318,11 @@ namespace Chisel.Core
             var allGeneratorPools = generatorPools.ToArray();
             for (int i = allGeneratorPools.Length - 1; i >= 0; i--)
             {
-                try { allGeneratorPools[i].Dispose(); }
+                try 
+                { 
+                    allGeneratorPools[i].Dispose(); 
+                    allGeneratorPools[i] = default; 
+                }
                 catch (System.Exception ex)
                 {
                     Debug.LogException(ex);
@@ -618,11 +625,11 @@ namespace Chisel.Core
         public void Dispose()
         {
             GeneratorJobPoolManager.Unregister(this);
-            if (generatorRootNodeIDs.IsCreated) generatorRootNodeIDs.Dispose();
-            if (generatorNodeRanges .IsCreated) generatorNodeRanges .Dispose();
+            if (generatorRootNodeIDs.IsCreated) generatorRootNodeIDs.SafeDispose();
+            if (generatorNodeRanges .IsCreated) generatorNodeRanges .SafeDispose();
             if (surfaceDefinitions  .IsCreated) surfaceDefinitions  .DisposeDeep();
-            if (generatedNodes      .IsCreated) generatedNodes      .Dispose();
-            if (generators          .IsCreated) generators          .Dispose();
+            if (generatedNodes      .IsCreated) generatedNodes      .SafeDispose();
+            if (generators          .IsCreated) generators          .SafeDispose();
             
             generatorRootNodeIDs = default;
             generatorNodeRanges = default;

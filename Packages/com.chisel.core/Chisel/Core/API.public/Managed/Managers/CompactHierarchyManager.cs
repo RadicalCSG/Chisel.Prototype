@@ -79,7 +79,7 @@ namespace Chisel.Core
                 for (int i = 0; i < hierarchies.Length; i++)
                     tempHierarchyList[i] = hierarchies[i];
 
-                using (tempHierarchyList)
+                try
                 {
                     for (int i = 0; i < tempHierarchyList.Length; i++)
                     {
@@ -90,6 +90,7 @@ namespace Chisel.Core
                                 // Note: calling dispose will remove it from hierarchies, 
                                 // which is why we need to copy the list to dispose them all efficiently
                                 tempHierarchyList[i].Dispose();
+                                tempHierarchyList[i] = default;
                             }
                             catch (Exception ex)
                             {
@@ -97,6 +98,10 @@ namespace Chisel.Core
                             }
                         }
                     }
+                }
+                finally
+                {
+                    tempHierarchyList.Dispose();
                 }
             }
             defaultHierarchyID = CompactHierarchyID.Invalid;
@@ -116,7 +121,10 @@ namespace Chisel.Core
             var hierarchyID = CreateHierarchyID(out var hierarchyIndex);
             var hierarchy = CompactHierarchy.CreateHierarchy(hierarchyID, rootNodeID, userID, Allocator.Persistent);
             if (hierarchies[hierarchyIndex].IsCreated)
+            {
                 hierarchies[hierarchyIndex].Dispose();
+                hierarchies[hierarchyIndex] = default;
+            }
             hierarchies[hierarchyIndex] = hierarchy;
             nodes[rootNodeIndex] = hierarchy.RootID;
             return ref ((CompactHierarchy*)hierarchies.GetUnsafePtr())[hierarchyIndex];
@@ -1045,6 +1053,7 @@ namespace Chisel.Core
 
                 hierarchies[hierarchyIndex] = default;
                 currHierarchy.Dispose();
+                currHierarchy = default;
                 FreeNodeID(nodeID);
                 return true;
             }
@@ -1727,7 +1736,7 @@ namespace Chisel.Core
         }
          
 #if UNITY_EDITOR
-        static void OnBeforeAssemblyReload() { instance.Dispose(); }
+        static void OnBeforeAssemblyReload() { instance.Dispose(); instance = default; }
 
         // TODO: need a runtime equivalent
         static void OnAfterAssemblyReload() { instance.Initialize(); }

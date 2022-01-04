@@ -44,7 +44,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public int                  meshQueryLength;
         [NoAlias, ReadOnly] public NativeReference<int> surfaceCountRef;
 
-        // Write
+        // Read/Write
         [NoAlias] public NativeList<SubMeshCounts>      subMeshCounts;
         [NoAlias] public NativeList<SubMeshSection>     subMeshSections;
 
@@ -52,10 +52,10 @@ namespace Chisel.Core
         {
             var subMeshCapacity = surfaceCountRef.Value * meshQueryLength;
             if (subMeshCounts.Capacity < subMeshCapacity)
-                subMeshCounts.Capacity = subMeshCapacity;
+                subMeshCounts.Capacity = math.max(4, subMeshCapacity);
             
             if (subMeshSections.Capacity < subMeshCapacity)
-                subMeshSections.Capacity = subMeshCapacity;
+                subMeshSections.Capacity = math.max(4, subMeshCapacity);
         }
     }
 
@@ -64,8 +64,8 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public int meshQueryLength;
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                   allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>  brushRenderBufferCache;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                          allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>   brushRenderBufferCache;
 
         // Write
         [NoAlias, WriteOnly] public NativeList<BrushData>.ParallelWriter brushRenderData;
@@ -380,7 +380,7 @@ namespace Chisel.Core
     struct AllocateVertexBuffersJob : IJob
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<SubMeshSection>                      subMeshSections;
+        [NoAlias, ReadOnly] public NativeArray<SubMeshSection> subMeshSections;
 
         // Read / Write
         public Allocator allocator;

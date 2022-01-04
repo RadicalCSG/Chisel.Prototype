@@ -441,6 +441,7 @@ namespace Chisel.Core
                         {
                             ref var treeUpdate = ref s_TreeUpdates[t];
                             treeUpdate.FreeTemporaries(ref finalJobHandle);
+                            treeUpdate.Temporaries = default;
                         }
                         GeneratorJobPoolManager.Clear();
                     }
@@ -509,7 +510,7 @@ namespace Chisel.Core
                 Temporaries.compactTreeRef                  = new NativeReference<ChiselBlobAssetReference<CompactTree>>(defaultAllocator);
                 Temporaries.needRemappingRef                = new NativeReference<bool>(defaultAllocator);
 
-                Temporaries.uniqueBrushPairs                = new NativeList<BrushPair2>(brushCount * 16, defaultAllocator);
+                Temporaries.uniqueBrushPairs                = new NativeList<BrushPair2>(brushCount * 256, defaultAllocator);
 
                 Temporaries.rebuildTreeBrushIndexOrders     = new NativeList<IndexOrder>(brushCount, defaultAllocator);
                 Temporaries.allUpdateBrushIndexOrders       = new NativeList<IndexOrder>(brushCount, defaultAllocator);
@@ -1976,47 +1977,47 @@ namespace Chisel.Core
                 var chiselLookupValues = ChiselTreeLookup.Value[this.tree];
                 var lastJobHandle = dependencies;
 
-                lastJobHandle.AddDependency(Temporaries.brushMeshLookup              .Dispose(JobHandles.brushMeshLookupJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.brushIntersectionsWithRange  .Dispose(JobHandles.brushIntersectionsWithRangeJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.brushIntersectionsWith       .Dispose(JobHandles.brushIntersectionsWithJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.outputSurfaceVertices        .Dispose(JobHandles.outputSurfaceVerticesJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.outputSurfacesRange          .Dispose(JobHandles.outputSurfacesRangeJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.outputSurfaces               .Dispose(JobHandles.outputSurfacesJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.parameterCounts              .Dispose(JobHandles.parameterCountsJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.brushMeshLookup              .SafeDispose(JobHandles.brushMeshLookupJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.brushIntersectionsWithRange  .SafeDispose(JobHandles.brushIntersectionsWithRangeJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.brushIntersectionsWith       .SafeDispose(JobHandles.brushIntersectionsWithJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.outputSurfaceVertices        .SafeDispose(JobHandles.outputSurfaceVerticesJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.outputSurfacesRange          .SafeDispose(JobHandles.outputSurfacesRangeJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.outputSurfaces               .SafeDispose(JobHandles.outputSurfacesJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.parameterCounts              .SafeDispose(JobHandles.parameterCountsJobHandle.readWriteBarrier));
                 
-                lastJobHandle.AddDependency(Temporaries.transformTreeBrushIndicesList.Dispose(JobHandles.transformTreeBrushIndicesListJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.brushBoundsUpdateList        .Dispose(JobHandles.brushBoundsUpdateListJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.brushes                      .Dispose(JobHandles.brushesJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.nodes                        .Dispose(JobHandles.nodesJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.brushRenderData              .Dispose(JobHandles.brushRenderDataJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.rebuildTreeBrushIndexOrders  .Dispose(JobHandles.rebuildTreeBrushIndexOrdersJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.allUpdateBrushIndexOrders    .Dispose(JobHandles.allUpdateBrushIndexOrdersJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.allBrushMeshIDs              .Dispose(JobHandles.allBrushMeshIDsJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.uniqueBrushPairs             .Dispose(JobHandles.uniqueBrushPairsJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.brushesThatNeedIndirectUpdate.Dispose(JobHandles.brushesThatNeedIndirectUpdateJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.nodeIDValueToNodeOrderArray  .Dispose(JobHandles.nodeIDValueToNodeOrderArrayJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.transformTreeBrushIndicesList.SafeDispose(JobHandles.transformTreeBrushIndicesListJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.brushBoundsUpdateList        .SafeDispose(JobHandles.brushBoundsUpdateListJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.brushes                      .SafeDispose(JobHandles.brushesJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.nodes                        .SafeDispose(JobHandles.nodesJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.brushRenderData              .SafeDispose(JobHandles.brushRenderDataJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.rebuildTreeBrushIndexOrders  .SafeDispose(JobHandles.rebuildTreeBrushIndexOrdersJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.allUpdateBrushIndexOrders    .SafeDispose(JobHandles.allUpdateBrushIndexOrdersJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.allBrushMeshIDs              .SafeDispose(JobHandles.allBrushMeshIDsJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.uniqueBrushPairs             .SafeDispose(JobHandles.uniqueBrushPairsJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.brushesThatNeedIndirectUpdate.SafeDispose(JobHandles.brushesThatNeedIndirectUpdateJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.nodeIDValueToNodeOrderArray  .SafeDispose(JobHandles.nodeIDValueToNodeOrderArrayJobHandle.readWriteBarrier));
                 
                 lastJobHandle.AddDependency(Temporaries.brushesThatNeedIndirectUpdateHashMap.Dispose(JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle.readWriteBarrier));
                 
                 
                 // Note: cannot use "IsCreated" on this job, for some reason it won't be scheduled and then complain that it's leaking? Bug in IsCreated?
-                lastJobHandle.AddDependency(Temporaries.meshQueries.Dispose(JobHandles.meshQueriesJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.meshQueries.SafeDispose(JobHandles.meshQueriesJobHandle.readWriteBarrier));
 
 
-                lastJobHandle.AddDependency(NativeCollection.DisposeDeep(Temporaries.brushBrushIntersections,          JobHandles.brushBrushIntersectionsJobHandle.readWriteBarrier),
-                                            NativeCollection.DisposeDeep(Temporaries.loopVerticesLookup,               JobHandles.loopVerticesLookupJobHandle.readWriteBarrier),
-                                            NativeCollection.DisposeDeep(Temporaries.basePolygonDisposeList,           JobHandles.basePolygonCacheJobHandle.readWriteBarrier),
-                                            NativeCollection.DisposeDeep(Temporaries.treeSpaceVerticesDisposeList,     JobHandles.treeSpaceVerticesCacheJobHandle.readWriteBarrier),
-                                            NativeCollection.DisposeDeep(Temporaries.brushesTouchedByBrushDisposeList, JobHandles.brushesTouchedByBrushCacheJobHandle.readWriteBarrier),
-                                            NativeCollection.DisposeDeep(Temporaries.routingTableDisposeList,          JobHandles.routingTableCacheJobHandle.readWriteBarrier),
-                                            NativeCollection.DisposeDeep(Temporaries.brushTreeSpacePlaneDisposeList,   JobHandles.brushTreeSpacePlaneCacheJobHandle.readWriteBarrier),
-                                            NativeCollection.DisposeDeep(Temporaries.brushRenderBufferDisposeList,     JobHandles.brushRenderBufferCacheJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.brushBrushIntersections         .DisposeDeep(JobHandles.brushBrushIntersectionsJobHandle.readWriteBarrier),
+                                            Temporaries.loopVerticesLookup              .DisposeDeep(JobHandles.loopVerticesLookupJobHandle.readWriteBarrier),
+                                            Temporaries.basePolygonDisposeList          .DisposeDeep(JobHandles.basePolygonCacheJobHandle.readWriteBarrier),
+                                            Temporaries.treeSpaceVerticesDisposeList    .DisposeDeep(JobHandles.treeSpaceVerticesCacheJobHandle.readWriteBarrier),
+                                            Temporaries.brushesTouchedByBrushDisposeList.DisposeDeep(JobHandles.brushesTouchedByBrushCacheJobHandle.readWriteBarrier),
+                                            Temporaries.routingTableDisposeList         .DisposeDeep(JobHandles.routingTableCacheJobHandle.readWriteBarrier),
+                                            Temporaries.brushTreeSpacePlaneDisposeList  .DisposeDeep(JobHandles.brushTreeSpacePlaneCacheJobHandle.readWriteBarrier),
+                                            Temporaries.brushRenderBufferDisposeList    .DisposeDeep(JobHandles.brushRenderBufferCacheJobHandle.readWriteBarrier));
                 
 
-                lastJobHandle.AddDependency(Temporaries.surfaceCountRef                .Dispose(JobHandles.surfaceCountRefJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.needRemappingRef               .Dispose(JobHandles.needRemappingRefJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.nodeIDValueToNodeOrderOffsetRef.Dispose(JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(NativeCollection.DisposeDeep(Temporaries.compactTreeRef, JobHandles.compactTreeRefJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.surfaceCountRef                 .Dispose(JobHandles.surfaceCountRefJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.needRemappingRef                .Dispose(JobHandles.needRemappingRefJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.nodeIDValueToNodeOrderOffsetRef .Dispose(JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.compactTreeRef                  .DisposeDeep(JobHandles.compactTreeRefJobHandle.readWriteBarrier));
 
                 chiselLookupValues.lastJobHandle = lastJobHandle;
                 return lastJobHandle;
@@ -2118,14 +2119,14 @@ namespace Chisel.Core
                                                             JobHandles.vertexBufferContents_meshDescriptionsJobHandle.readWriteBarrier,
                                                             JobHandles.vertexBufferContents_meshesJobHandle.readWriteBarrier);
 
-                lastJobHandle.AddDependency(NativeCollection.DisposeDeep(Temporaries.subMeshSurfaces, JobHandles.subMeshSurfacesJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.allTreeBrushIndexOrders .Dispose(JobHandles.allTreeBrushIndexOrdersJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.colliderMeshUpdates     .Dispose(JobHandles.colliderMeshUpdatesJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.debugHelperMeshes       .Dispose(JobHandles.debugHelperMeshesJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.renderMeshes            .Dispose(JobHandles.renderMeshesJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.meshDatas               .Dispose(JobHandles.meshDatasJobHandle.readWriteBarrier));                
+                lastJobHandle.AddDependency(Temporaries.subMeshSurfaces         .DisposeDeep(JobHandles.subMeshSurfacesJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.allTreeBrushIndexOrders .SafeDispose(JobHandles.allTreeBrushIndexOrdersJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.colliderMeshUpdates     .SafeDispose(JobHandles.colliderMeshUpdatesJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.debugHelperMeshes       .SafeDispose(JobHandles.debugHelperMeshesJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.renderMeshes            .SafeDispose(JobHandles.renderMeshesJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.meshDatas               .SafeDispose(JobHandles.meshDatasJobHandle.readWriteBarrier));                
                 lastJobHandle.AddDependency(Temporaries.vertexBufferContents    .Dispose(vertexbufferContentsJobHandle));
-                lastJobHandle.AddDependency(Temporaries.subMeshCounts           .Dispose(JobHandles.subMeshCountsJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.subMeshCounts           .SafeDispose(JobHandles.subMeshCountsJobHandle.readWriteBarrier));
 
                 lastJobHandle.AddDependency(dependencies);
                 

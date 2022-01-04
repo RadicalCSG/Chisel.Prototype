@@ -49,7 +49,8 @@ namespace Chisel.Core
         [BurstCompile()]
         public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            using (var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp))
+            var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
+            try
             {
                 generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
                 ref var curve = ref curveBlob.Value;
@@ -67,6 +68,7 @@ namespace Chisel.Core
                     {
                         if (generatedBrushMeshes[i].IsCreated)
                             generatedBrushMeshes[i].Dispose();
+                        generatedBrushMeshes[i] = default;
                     }
                     return false;
                 }
@@ -74,11 +76,15 @@ namespace Chisel.Core
                     nodes[i] = GeneratedNode.GenerateBrush(generatedBrushMeshes[i]);
                 return true;
             }
+            finally
+            {
+                generatedBrushMeshes.Dispose();
+            }
         }
 
         public void Dispose()
         {
-            if (curveBlob.IsCreated) curveBlob.Dispose();
+            if (curveBlob.IsCreated) curveBlob.Dispose(); curveBlob = default;
         }
         #endregion
 

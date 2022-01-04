@@ -443,6 +443,7 @@ namespace Chisel.Core
             UnsafeList<ushort>.Destroy(m_ChainedIndices);
             m_ChainedIndices = null;
             UnsafeUtility.Free(m_HashTable, m_AllocatorLabel);
+            m_HashTable = null;
         }
         #endregion
 

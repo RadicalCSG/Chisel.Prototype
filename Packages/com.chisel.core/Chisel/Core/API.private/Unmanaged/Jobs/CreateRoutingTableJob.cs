@@ -17,13 +17,13 @@ namespace Chisel.Core
     struct CreateRoutingTableJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeReference<ChiselBlobAssetReference<CompactTree>>         compactTreeRef;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeReference<ChiselBlobAssetReference<CompactTree>>       compactTreeRef;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<RoutingTable>>           routingTableLookup;
+        [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<RoutingTable>>         routingTableLookup;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<QueuedEvent>         queuedEvents;
@@ -138,7 +138,7 @@ namespace Chisel.Core
                 var routingTableBlob = builder.CreateBlobAssetReference<RoutingTable>(Allocator.Persistent);
                 routingTableLookup[processedNodeOrder] = routingTableBlob;
             }
-            //builder.Dispose(); // Temp allocated so we don't need to dispose
+            builder.Dispose();
         }
 
 

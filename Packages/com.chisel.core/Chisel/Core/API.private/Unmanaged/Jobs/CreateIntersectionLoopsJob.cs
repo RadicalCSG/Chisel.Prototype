@@ -616,12 +616,14 @@ skipMe:
                 for (int d = 0; d < loopLength; d++)
                     temporaryVertices[d] = srcVertices[uniqueIndicesArray[offset + d]];
 
+                var loopVertexIndex = outputSurfaceVertices.AddRangeNoResize(temporaryVertices.GetUnsafePtr(), loopLength);
+
                 outputSurfaces.AddNoResize(new BrushIntersectionLoop
                 {
                     indexOrder0 = brushIndexOrder0,
                     indexOrder1 = brushIndexOrder1,
                     surfaceInfo = surfaceInfo,
-                    loopVertexIndex = outputSurfaceVertices.AddRangeNoResize(temporaryVertices.GetUnsafePtr(), loopLength),
+                    loopVertexIndex = loopVertexIndex,
                     loopVertexCount = loopLength
                 });
             }

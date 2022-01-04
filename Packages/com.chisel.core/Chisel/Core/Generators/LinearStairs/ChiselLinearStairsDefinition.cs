@@ -164,7 +164,8 @@ namespace Chisel.Core
         [BurstCompile()]
         public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            using (var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp))
+            var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
+            try
             {
                 generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
                 var description = new BrushMeshFactory.LineairStairsData(bounds,
@@ -186,11 +187,16 @@ namespace Chisel.Core
                     {
                         if (generatedBrushMeshes[i].IsCreated)
                             generatedBrushMeshes[i].Dispose();
+                        generatedBrushMeshes[i] = default;
                     }
                     return false;
                 }
                 for (int i = 0; i < generatedBrushMeshes.Length; i++)
                     nodes[i] = GeneratedNode.GenerateBrush(generatedBrushMeshes[i]);
+            }
+            finally
+            {
+                generatedBrushMeshes.Dispose();
             }
             return true;
         }

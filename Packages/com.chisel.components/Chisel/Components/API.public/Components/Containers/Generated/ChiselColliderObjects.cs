@@ -184,6 +184,7 @@ namespace Chisel.Components
             //*/
 
             bakingSettings.Dispose(allJobHandles);
+            bakingSettings = default;
             allJobHandles.Complete();
 
             //*/

@@ -16,7 +16,7 @@ namespace Chisel.Core
     {
         // Read
         // 'Required' for scheduling with index count
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                              allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  allUpdateBrushIndexOrders;
         
         [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BasePolygonsBlob>>  basePolygonCache;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
@@ -25,7 +25,7 @@ namespace Chisel.Core
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<ChiselBlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferCache;
+        [NoAlias] public NativeArray<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>     brushRenderBufferCache;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float3>               surfaceColliderVertices;
@@ -273,7 +273,6 @@ namespace Chisel.Core
                         for (int n = 0; n < outputSurfaceIndicesArray.Length; n++)
                             surfaceIndexList.Add(outputSurfaceIndicesArray[n]);
                     }
-                    outputSurfaceIndicesArray.Dispose();
                 }
 
                 if (surfaceIndexList.Length == 0)
@@ -398,7 +397,10 @@ namespace Chisel.Core
             var brushRenderBuffer = builder.CreateBlobAssetReference<ChiselBrushRenderBuffer>(Allocator.Persistent);
 
             if (brushRenderBufferCache[brushNodeOrder].IsCreated)
+            {
                 brushRenderBufferCache[brushNodeOrder].Dispose();
+                brushRenderBufferCache[brushNodeOrder] = default;
+            }
 
             brushRenderBufferCache[brushNodeOrder] = brushRenderBuffer;
         }

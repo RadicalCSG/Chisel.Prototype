@@ -210,7 +210,9 @@ namespace Chisel.Core
         /// part of a scene or subscene.</exception>
         public void Dispose()
         {
-            m_data.Dispose();
+            if (m_data.m_Ptr != null)
+                m_data.Dispose();
+            m_data = default;
         }
 
         /// <summary>
@@ -538,6 +540,7 @@ namespace Chisel.Core
         public void Dispose()
         {
             m_data.Dispose();
+            m_data = default;
         }
 
         public bool Equals(ChiselUnsafeUntypedBlobAssetReference other)
