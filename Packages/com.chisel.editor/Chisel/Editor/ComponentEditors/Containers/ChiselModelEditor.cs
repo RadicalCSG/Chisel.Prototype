@@ -158,7 +158,7 @@ namespace Chisel.Editors
 
         SerializedProperty convexProp;
         SerializedProperty isTriggerProp;
-        //SerializedProperty cookingOptionsProp;
+        SerializedProperty cookingOptionsProp;
         //SerializedProperty skinWidthProp;
 
         bool showLighting;
@@ -242,7 +242,7 @@ namespace Chisel.Editors
 
             convexProp              = serializedObject.FindProperty($"{ChiselModel.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kConvexName}");
             isTriggerProp           = serializedObject.FindProperty($"{ChiselModel.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kIsTriggerName}");
-            //cookingOptionsProp    = serializedObject.FindProperty($"{ChiselModel.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kCookingOptionsName}");
+            cookingOptionsProp      = serializedObject.FindProperty($"{ChiselModel.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kCookingOptionsName}");
             //skinWidthProp         = serializedObject.FindProperty($"{ChiselModel.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kSkinWidthName}");
 
             gameObjectsSerializedObject = new SerializedObject(serializedObject.targetObjects.Select(t => ((Component)t).gameObject).ToArray());
@@ -1105,11 +1105,9 @@ namespace Chisel.Editors
                             {
                                 EditorGUILayout.PropertyField(isTriggerProp, IsTriggerContents);
                             }
-                            /*
                             {
                                 ChiselEditorUtility.EnumFlagsField(CookingOptionsContents, cookingOptionsProp, typeof(MeshColliderCookingOptions), EditorStyles.popup);
                             }
-                            */
                             EditorGUI.indentLevel--;
                         }
                         EditorGUILayout.EndFoldoutHeaderGroup();

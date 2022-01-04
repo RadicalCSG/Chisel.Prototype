@@ -11,7 +11,7 @@ namespace Chisel.Core
 {
     internal struct NodeOrderNodeID { public int nodeOrder; public CompactNodeID compactNodeID; }
 
-    [BurstCompile]
+    [BurstCompile(CompileSynchronously = true)]
     unsafe struct UpdateTransformationsJob: IJobParallelForDefer
     {                
         public void InitializeHierarchy(ref CompactHierarchy hierarchy)

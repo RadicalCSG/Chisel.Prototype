@@ -194,9 +194,8 @@ namespace Chisel.Core
 
             nodes[index] = CompactNodeID.Invalid;
         }
-        
-        
-        [BurstCompile]
+
+
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsValidNodeID(NodeID nodeID, out int index)
@@ -217,7 +216,6 @@ namespace Chisel.Core
             return true;
         }
 
-        [BurstCompile]
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValidNodeID(CSGTreeNode treeNode)
@@ -240,7 +238,6 @@ namespace Chisel.Core
             return true;
         }
 
-        [BurstCompile]
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValidNodeID(NodeID nodeID)
@@ -248,7 +245,6 @@ namespace Chisel.Core
             return IsValidNodeID(ref nodeIDLookup, ref hierarchyIDLookup, hierarchies, nodes, nodeID);
         }
 
-        [BurstCompile]
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsValidNodeID(ref IDManager nodeIDLookup, ref IDManager hierarchyIDLookup, NativeList<CompactHierarchy> hierarchies, NativeList<CompactNodeID> nodes, NodeID nodeID)
@@ -767,7 +763,6 @@ namespace Chisel.Core
         }
         #endregion
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal CSGNodeType GetTypeOfNode(NodeID nodeID)
         {
@@ -1019,7 +1014,6 @@ namespace Chisel.Core
         #endregion
 
         [return: MarshalAs(UnmanagedType.U1)]
-        [BurstCompile]
         public bool DestroyNode(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID, out var index))
@@ -1086,7 +1080,6 @@ namespace Chisel.Core
             return hierarchy.GetNodeID(parentCompactNodeID);
         }
 
-        [BurstCompile]
         internal CompactNodeID DeepMove(int nodeIndex, CompactNodeID destinationParentCompactNodeID, ref CompactHierarchy destinationHierarchy, ref CompactHierarchy sourceHierarchy, ref CompactChildNode sourceNode)
         {
             Debug.Assert(destinationHierarchy.IsCreated, "Hierarchy has not been initialized");
@@ -1120,7 +1113,6 @@ namespace Chisel.Core
         }
 
         // unchecked
-        [BurstCompile]
         internal CompactNodeID MoveChildNode(CompactNodeID compactNodeID, ref CompactHierarchy sourceHierarchy, ref CompactHierarchy destinationHierarchy, [MarshalAs(UnmanagedType.U1)] bool recursive = true)
         {
             Debug.Assert(sourceHierarchy.IsCreated, "Source hierarchy has not been initialized");
@@ -1138,7 +1130,6 @@ namespace Chisel.Core
         }
 
         // Move nodes from one hierarchy to another
-        [BurstCompile]
         public CompactNodeID MoveChildNode(NodeID nodeID, CompactHierarchyID destinationParentID, [MarshalAs(UnmanagedType.U1)] bool recursive = true)
         {
             if (!IsValidNodeID(nodeID, out var index))
@@ -1176,7 +1167,6 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        [BurstCompile]
         public bool AddChildNode(NodeID parent, NodeID childNode)
         {
             if (parent == NodeID.Invalid)
@@ -1285,7 +1275,6 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        [BurstCompile]
         internal unsafe bool InsertChildNodeRange(NodeID parent, int index, CSGTreeNode* arrayPtr, int arrayLength)
         {
             if (!IsValidNodeID(parent, out var parentNodeIndex))
@@ -1411,7 +1400,6 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        [BurstCompile]
         internal unsafe bool SetChildNodes(NodeID parent, CSGTreeNode* arrayPtr, int arrayLength)
         {
             if (!IsValidNodeID(parent, out var newParentNodeIndex))
@@ -1539,7 +1527,6 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        [BurstCompile]
         public bool RemoveChildNode(NodeID parent, NodeID item)
         {
             if (!IsValidNodeID(parent, out var parentNodeIndex))
@@ -1586,7 +1573,6 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        [BurstCompile]
         public bool RemoveChildNodeAt(NodeID parent, int index)
         {
             if (!IsValidNodeID(parent, out var parentNodeIndex))
@@ -1615,7 +1601,6 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        [BurstCompile]
         internal bool RemoveChildNodeRange(NodeID parent, int index, int range)
         {
             if (index < 0)
@@ -1673,7 +1658,6 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [BurstCompile]
         internal void ClearChildNodes(NodeID parent)
         {
             if (!IsValidNodeID(parent, out var parentNodeIndex))
@@ -1690,7 +1674,6 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [BurstCompile]
         internal void DestroyChildNodes(CSGTreeNode treeNode)
         {
             var parent = treeNode.nodeID;

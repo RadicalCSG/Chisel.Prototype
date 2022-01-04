@@ -8,7 +8,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 
 namespace Chisel.Core
 {
-    [BurstCompile]
+    [BurstCompile(CompileSynchronously = true)]
     struct BuildLookupTablesJob : IJob
     {
         // Read
@@ -58,7 +58,7 @@ namespace Chisel.Core
         }
     }
 
-    [BurstCompile]
+    [BurstCompile(CompileSynchronously = true)]
     struct UpdateBrushIDValuesJob : IJob
     {
         // Read 

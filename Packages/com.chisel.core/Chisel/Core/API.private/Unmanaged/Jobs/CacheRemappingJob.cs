@@ -11,7 +11,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     // TODO: make cache part of compactHierarchy? no need for remapping?
-    [BurstCompile]
+    [BurstCompile(CompileSynchronously = true)]
     unsafe struct CacheRemappingJob : IJob
     {
         #region IndexOrderComparer - Sort index order to ensure consistency

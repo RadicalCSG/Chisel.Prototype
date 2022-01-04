@@ -456,7 +456,7 @@ namespace Chisel.Core
         }
 
 
-        [BurstCompile(CompileSynchronously = true)]
+        //[BurstCompile(CompileSynchronously = true)]
         internal unsafe struct UnsafeDisposeJob : IJob
         {
             [NativeDisableUnsafePtrRestriction] public UnsafeList<float3>* vertices;

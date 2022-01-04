@@ -63,7 +63,6 @@ namespace Chisel.Core
             }
         }
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reset()
         {
@@ -74,7 +73,6 @@ namespace Chisel.Core
             hash = 0;
         }
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static unsafe uint GetListHash<T>(ref NativeList<T> list)
             where T : unmanaged
@@ -82,7 +80,6 @@ namespace Chisel.Core
             return math.hash(list.GetUnsafePtr(), list.Length * sizeof(T));
         }
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static unsafe uint GetListHash<T>(ref UnsafeList<T> list)
             where T : unmanaged
@@ -90,7 +87,6 @@ namespace Chisel.Core
             return math.hash(list.Ptr, list.Length * sizeof(T));
         }
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void UpdateHash()
         {
@@ -100,7 +96,6 @@ namespace Chisel.Core
                                        GetListHash(ref surfaceVisibleOuterLineRanges)));
         }
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Fill(ref BrushMeshBlob brushMesh)
         {

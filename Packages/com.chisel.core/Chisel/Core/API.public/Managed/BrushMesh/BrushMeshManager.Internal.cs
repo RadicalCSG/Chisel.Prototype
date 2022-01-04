@@ -256,7 +256,6 @@ namespace Chisel.Core
             public ulong                halfEdgesGCHandle;
         }
 
-        [BurstCompile]
         static void RegisterBrushMeshes(in NativeList<BrushMeshPointers> brushMeshPointers, in NativeArray<CSGTreeBrush> nativeTreeBrushes, in NativeArray<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshBlobs)
         {
             for (int i = 0; i < brushMeshPointers.Length; i++)
@@ -798,7 +797,7 @@ namespace Chisel.Core
             return true;
         }
 
-        [BurstCompile]
+        [BurstCompile(CompileSynchronously = true)]
         struct RegisterBrushMeshesJob : IJob
         {
             [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>    brushMeshBlobs;

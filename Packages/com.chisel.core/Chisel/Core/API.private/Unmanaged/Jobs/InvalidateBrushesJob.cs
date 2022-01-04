@@ -10,7 +10,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 
 namespace Chisel.Core
 {
-    [BurstCompile]
+    [BurstCompile(CompileSynchronously = true)]
     unsafe struct InvalidateBrushesJob : IJob
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

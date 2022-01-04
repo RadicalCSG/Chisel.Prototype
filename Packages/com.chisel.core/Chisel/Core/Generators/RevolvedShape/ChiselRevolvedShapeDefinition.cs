@@ -32,7 +32,6 @@ namespace Chisel.Core
         [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<float4x4>                  pathMatrices;
                 
         #region Generate
-        [BurstCompile]
         public int PrepareAndCountRequiredBrushMeshes()
         {
             ref var curve = ref curveBlob.Value;
@@ -46,7 +45,6 @@ namespace Chisel.Core
             return polygonVerticesSegments.Length * (pathMatrices.Length - 1);
         }
 
-        [BurstCompile()]
         public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
             var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);

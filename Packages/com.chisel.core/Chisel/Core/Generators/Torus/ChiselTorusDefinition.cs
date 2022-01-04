@@ -13,7 +13,6 @@ using System.Runtime.InteropServices;
 namespace Chisel.Core
 {
     [Serializable]
-    [BurstCompile()]
     public struct ChiselTorus : IBranchGenerator
     {
         public readonly static ChiselTorus DefaultValues = new ChiselTorus
@@ -53,13 +52,11 @@ namespace Chisel.Core
         #endregion
 
         #region Generate
-        [BurstCompile]
         public int PrepareAndCountRequiredBrushMeshes()
         {
             return horizontalSegments;
         }
 
-        [BurstCompile]
         public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
             var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
@@ -103,7 +100,6 @@ namespace Chisel.Core
             }
         }
 
-        [BurstCompile]
         public void Dispose() { }
         #endregion
 

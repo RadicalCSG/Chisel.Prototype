@@ -29,7 +29,6 @@ namespace Chisel.Core
 
 
         #region Generate
-        [BurstCompile(CompileSynchronously = true)]
         public ChiselBlobAssetReference<BrushMeshBlob> GenerateMesh(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.GenerateHemisphere(diameterXYZ,

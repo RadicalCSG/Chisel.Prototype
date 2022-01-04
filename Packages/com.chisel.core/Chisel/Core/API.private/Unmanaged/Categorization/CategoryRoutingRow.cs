@@ -492,13 +492,13 @@ namespace Chisel.Core
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                Debug.Assert(index >= 0 && index < CategoryRoutingRow.Length);
+                UnityEngine.Debug.Assert(index >= 0 && index < CategoryRoutingRow.Length);
                 return (CategoryGroupIndex)destination[index]; 
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set 
             {
-                Debug.Assert(index >= 0 && index < CategoryRoutingRow.Length);
+                UnityEngine.Debug.Assert(index >= 0 && index < CategoryRoutingRow.Length);
                 destination[index] = (byte)value; 
             }
         }

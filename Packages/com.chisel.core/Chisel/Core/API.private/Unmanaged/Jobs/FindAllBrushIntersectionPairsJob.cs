@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -481,6 +482,7 @@ namespace Chisel.Core
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void TransformOtherIntoBrushSpace(ref float4x4 treeToBrushSpaceMatrix, ref float4x4 brushToTreeSpaceMatrix, ref ChiselBlobArray<float4> srcPlanes, NativeArray<float4> dstPlanes)
         {
             var brush1ToBrush0LocalLocalSpace = math.transpose(math.mul(treeToBrushSpaceMatrix, brushToTreeSpaceMatrix));
@@ -491,7 +493,7 @@ namespace Chisel.Core
             }
         }
 
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntersectionType ConvexPolytopeTouching([NoAlias] ref BrushMeshBlob       brushMesh0,
                                                               [NoAlias] ref float4x4            treeToNode0SpaceMatrix,
                                                               [NoAlias] ref float4x4            nodeToTree0SpaceMatrix,
@@ -550,6 +552,7 @@ namespace Chisel.Core
             return IntersectionType.Intersection;//*/
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static int WhichSide([NoAlias,ReadOnly] ref ChiselBlobArray<float3> vertices, float4 plane, double epsilon)
         {
             {
@@ -575,8 +578,8 @@ namespace Chisel.Core
             }
             return 1;
         }
-        
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntersectionType FindIntersection(int brush0NodeOrder, int brush1NodeOrder,
                                                         [NoAlias] ref NativeArray<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshLookup,
                                                         [NoAlias] ref NativeArray<ChiselAABB>           brushTreeSpaceBounds,

@@ -28,7 +28,6 @@ namespace Chisel.Core
         [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<int>                      polygonVerticesSegments;
 
         #region Generate
-        [BurstCompile]
         public int PrepareAndCountRequiredBrushMeshes()
         {
             if (!curveBlob.IsCreated)
@@ -41,7 +40,6 @@ namespace Chisel.Core
             return polygonVerticesSegments.Length;
         }
 
-        [BurstCompile]
         public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
             // TODO: maybe just not bother with pathblob and just convert to path-matrices directly?

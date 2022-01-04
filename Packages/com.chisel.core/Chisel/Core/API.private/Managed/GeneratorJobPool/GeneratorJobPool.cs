@@ -68,8 +68,8 @@ namespace Chisel.Core
         {
             [NoAlias, ReadOnly] public NativeArray<int> totalCounts;
 
-            [NoAlias] public NativeList<GeneratedNodeDefinition>            generatedNodeDefinitions;
-            [NoAlias] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>  brushMeshBlobs;
+            [NoAlias, WriteOnly] public NativeList<GeneratedNodeDefinition>                  generatedNodeDefinitions;
+            [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>  brushMeshBlobs;
 
             public void Execute()
             {
@@ -180,7 +180,7 @@ namespace Chisel.Core
             return lastJobHandle;
         }
         
-        [BurstCompile(CompileSynchronously = true)]
+        //[BurstCompile(CompileSynchronously = true)]
         struct HierarchySortJob : IJob
         {
             [NoAlias] public NativeList<GeneratedNodeDefinition>    generatedNodeDefinitions;
@@ -222,7 +222,7 @@ namespace Chisel.Core
         }
 
 
-        [BurstCompile(CompileSynchronously = true)]
+        //[BurstCompile(CompileSynchronously = true)]
         unsafe struct AssignMeshesJob : IJob
         {            
             public void InitializeLookups()
@@ -818,7 +818,7 @@ namespace Chisel.Core
 
         // TODO: implement a way to setup a full hierarchy here, instead of a list of brushes
         // TODO: make this burstable
-        //[BurstCompile(CompileSynchronously = true)]
+        [BurstCompile(CompileSynchronously = true)]
         struct UpdateHierarchyJob : IJob
         {
             [NoAlias, ReadOnly] public NativeList<NodeID>   generatorRootNodeIDs;
@@ -909,7 +909,7 @@ namespace Chisel.Core
 #endif
         }
         
-        [BurstCompile(CompileSynchronously = true)]
+        //[BurstCompile(CompileSynchronously = true)]
         unsafe struct InitializeArraysJob : IJob
         {
             public void InitializeLookups()

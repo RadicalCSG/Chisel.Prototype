@@ -599,7 +599,7 @@ namespace Chisel.Core
             if (range == 0)
                 return; // nothing to do
 
-            if (freeIDs.capacity < freeIDs.Length + (lastIndex - startIndex + 1))
+            if (freeIDs.Capacity < freeIDs.Length + (lastIndex - startIndex + 1))
                 freeIDs.SetCapacity((int)((freeIDs.Length + (lastIndex - startIndex + 1)) * 1.5f));
             for (int index = startIndex; index < lastIndex; index++)
             {

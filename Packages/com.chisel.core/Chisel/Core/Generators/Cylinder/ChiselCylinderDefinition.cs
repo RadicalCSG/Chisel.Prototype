@@ -221,7 +221,6 @@ namespace Chisel.Core
         #endregion
 
         #region Generate
-        [BurstCompile]
         public ChiselBlobAssetReference<BrushMeshBlob> GenerateMesh(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             var topDiameter     = new float2(topDiameterX, topDiameterZ);

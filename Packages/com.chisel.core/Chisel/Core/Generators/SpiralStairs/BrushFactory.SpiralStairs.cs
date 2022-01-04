@@ -24,7 +24,6 @@ namespace Chisel.Core
     {
         // TODO: create helper method to cut brushes, use that instead of intersection + subtraction brushes
         // TODO: create spiral sides support
-        [BurstCompile]
         public static bool GenerateSpiralStairs(NativeList<ChiselBlobAssetReference<BrushMeshBlob>>        brushMeshes, 
                                                 ref ChiselSpiralStairs                               definition, 
                                                 in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,

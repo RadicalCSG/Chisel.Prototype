@@ -472,7 +472,6 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [BurstCompile]
         public unsafe void FillOutline(CompactNodeID compactNodeID, ref BrushMeshBlob brushMesh)
         {
             Debug.Assert(IsCreated);
@@ -1439,9 +1438,9 @@ namespace Chisel.Core
         {
             if (arrayLength <= 0)
                 return;
-            if (compactNodes.capacity < compactNodes.Length + arrayLength)
+            if (compactNodes.Capacity < compactNodes.Length + arrayLength)
                 compactNodes.SetCapacity((int)((compactNodes.Length + arrayLength) * 1.5f));
-            if (brushOutlines.capacity < brushOutlines.Length + arrayLength)
+            if (brushOutlines.Capacity < brushOutlines.Length + arrayLength)
                 brushOutlines.SetCapacity((int)((brushOutlines.Length + arrayLength) * 1.5f));
         }
 
@@ -1673,7 +1672,6 @@ namespace Chisel.Core
             return true;
         }
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal CSGNodeType GetTypeOfNode(CompactNodeID compactNodeID)
         {
@@ -1695,7 +1693,6 @@ namespace Chisel.Core
             return GetChildRef(compactNodeID).userID;
         }
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal CSGOperationType GetOperation(CompactNodeID compactNodeID)
         {

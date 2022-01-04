@@ -108,7 +108,6 @@ namespace Chisel.Core
         struct SectionFindStack { public int first, last; }
 
         // Find section by offset using binary search
-        [BurstCompile]
         unsafe bool FindSectionByOffset(int findOffset, out int foundSection)
         {
             foundSection = -1;

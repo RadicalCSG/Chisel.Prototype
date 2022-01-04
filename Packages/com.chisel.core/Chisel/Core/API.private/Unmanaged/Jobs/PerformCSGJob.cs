@@ -974,7 +974,7 @@ namespace Chisel.Core
                             continue;
                         } else
                         {
-                            surfaceLoopInfo.interiorCategory = routingRow[(int)CategoryIndex.Outside];
+                            surfaceLoopInfo.interiorCategory = routingRow.OutsideCategory;
                             allInfos[surfaceLoopIndex] = surfaceLoopInfo;
                         }
 
