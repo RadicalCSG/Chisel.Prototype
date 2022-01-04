@@ -10,15 +10,16 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    unsafe struct GatherBrushIntersectionPairsJob : IJob
+    struct GatherBrushIntersectionPairsJob : IJob
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<UnsafeList<BrushIntersectWith>> brushBrushIntersections;
 
         // Write
-        [NativeDisableUnsafePtrRestriction]
-        [NoAlias, WriteOnly] public UnsafeList<BrushIntersectWith>* brushIntersectionsWith;
-        [NoAlias, WriteOnly] public NativeArray<int2>               brushIntersectionsWithRange;
+        [NoAlias, WriteOnly] public NativeArray<int2>       brushIntersectionsWithRange;
+
+        // Read / Write
+        [NoAlias] public NativeList<BrushIntersectWith>     brushIntersectionsWith;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeList<BrushPair> intersections;
@@ -66,15 +67,18 @@ namespace Chisel.Core
                     intersections.Add(pair);
                 }
             }
-            brushIntersectionsWith->Clear();
+            brushIntersectionsWith.Clear();
             if (intersections.Length == 0)
                 return;
+
+            if (brushIntersectionsWith.Capacity < intersections.Length)
+                brushIntersectionsWith.Capacity = intersections.Length;
 
             intersections.Sort(new ListComparer());           
 
             var currentPair = intersections[0];
             int previousOrder = currentPair.brushNodeOrder0;
-            brushIntersectionsWith->Add(new BrushIntersectWith
+            brushIntersectionsWith.AddNoResize(new BrushIntersectWith
             {
                 brushNodeOrder1 = currentPair.brushNodeOrder1,
                 type            = currentPair.type,
@@ -84,7 +88,7 @@ namespace Chisel.Core
             {
                 currentPair = intersections[i];
                 int currentOrder = currentPair.brushNodeOrder0;
-                brushIntersectionsWith->Add(new BrushIntersectWith
+                brushIntersectionsWith.AddNoResize(new BrushIntersectWith
                 {
                     brushNodeOrder1 = currentPair.brushNodeOrder1,
                     type            = currentPair.type,

@@ -15,7 +15,7 @@ namespace Chisel.Core
         // Read
         [NoAlias, ReadOnly] public CompactNodeID                                    treeCompactNodeID;
         [NoAlias, ReadOnly] public NativeReference<ChiselBlobAssetReference<CompactTree>> compactTreeRef;
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                          allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                           allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                          allUpdateBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<BrushIntersectWith>                  brushIntersectionsWith;
         [NoAlias, ReadOnly] public NativeArray<int2>                                brushIntersectionsWithRange;

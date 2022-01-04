@@ -13,7 +13,7 @@ namespace Chisel.Core
     struct FindAllBrushIntersectionPairsJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                      allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                       allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>             transformationCache;
         [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshLookup;
         [NoAlias, ReadOnly] public NativeArray<ChiselAABB>                      brushTreeSpaceBounds;
@@ -122,13 +122,13 @@ namespace Chisel.Core
         // Read
         [NoAlias, ReadOnly] public NativeHashSet<IndexOrder> brushesThatNeedIndirectUpdateHashMap;
 
-        // Write
-        [NoAlias, WriteOnly] public NativeList<IndexOrder> brushesThatNeedIndirectUpdate;
+        // Read / Write
+        [NoAlias] public NativeList<IndexOrder> brushesThatNeedIndirectUpdate;
 
         public unsafe void Execute()
         {
             var keys = brushesThatNeedIndirectUpdateHashMap.ToNativeArray(Allocator.Temp);
-            brushesThatNeedIndirectUpdate.AddRangeNoResize(keys.GetUnsafePtr(), keys.Length);
+            brushesThatNeedIndirectUpdate.AddRangeNoResize(keys, keys.Length);
             keys.Dispose();
         }
     }
@@ -137,7 +137,7 @@ namespace Chisel.Core
     struct AddIndirectUpdatedBrushesToListAndSortJob : IJob
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                   allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  brushesThatNeedIndirectUpdate;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  rebuildTreeBrushIndexOrders;
 
@@ -179,7 +179,7 @@ namespace Chisel.Core
     struct FindAllIndirectBrushIntersectionPairsJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                   allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>         transformationCache;
         [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshLookup;
         [NoAlias, ReadOnly] public NativeArray<ChiselAABB>                  brushTreeSpaceBounds;
@@ -401,8 +401,8 @@ namespace Chisel.Core
     struct FixupBrushCacheIndicesJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>  allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<int>         nodeIDValueToNodeOrderArray;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>   allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<int>          nodeIDValueToNodeOrder;
         [NoAlias, ReadOnly] public NativeReference<int>     nodeIDValueToNodeOrderOffsetRef;
 
         // Read Write
@@ -427,7 +427,7 @@ namespace Chisel.Core
                     {
                         ref var nodeIndexOrder = ref polygons[p].nodeIndexOrder;
                         var nodeIDValue = nodeIndexOrder.compactNodeID.value;
-                        nodeIndexOrder.nodeOrder = nodeIDValueToNodeOrderArray[nodeIDValue - nodeIDValueToNodeOrderOffset];
+                        nodeIndexOrder.nodeOrder = nodeIDValueToNodeOrder[nodeIDValue - nodeIDValueToNodeOrderOffset];
                     }
                     basePolygonCache[nodeOrder] = item;
                 }
@@ -444,7 +444,7 @@ namespace Chisel.Core
                         ref var brushIntersection = ref brushIntersections[b];
                         ref var nodeIndexOrder = ref brushIntersection.nodeIndexOrder;
                         var nodeIDValue = nodeIndexOrder.compactNodeID.value;
-                        nodeIndexOrder.nodeOrder = nodeIDValueToNodeOrderArray[nodeIDValue - nodeIDValueToNodeOrderOffset];
+                        nodeIndexOrder.nodeOrder = nodeIDValueToNodeOrder[nodeIDValue - nodeIDValueToNodeOrderOffset];
                     }
                     for (int b0 = 0; b0 < brushIntersections.Length; b0++)
                     {

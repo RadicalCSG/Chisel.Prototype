@@ -52,7 +52,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static JobHandle ScheduleSetCapacity<T, U>(ref NativeList<T> list, NativeList<U> forEachCountFromList, Allocator allocator, JobHandle dependsOn = default)
+        public static JobHandle ScheduleSetCapacity<T, U>(ref NativeList<T> list, NativeList<U> forEachCountFromList, Allocator allocator, JobHandle dependsOn = default)
             where T : unmanaged
             where U : unmanaged
         {
@@ -76,7 +76,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static JobHandle ScheduleSetCapacity<T>(ref NativeList<T> list, NativeReference<int> capacity, Allocator allocator, JobHandle dependsOn = default)
+        public static JobHandle ScheduleSetCapacity<T>(ref NativeList<T> list, NativeReference<int> capacity, Allocator allocator, JobHandle dependsOn = default)
            where T : unmanaged
         {
             if (!list.IsCreated)
@@ -129,7 +129,7 @@ namespace Chisel.Core
         }
 
 
-        public static unsafe JobHandle SafeDispose<T>(bool runInParallel, ref NativeArray<T> array, JobHandle dependencies)
+        public static JobHandle SafeDispose<T>(bool runInParallel, ref NativeArray<T> array, JobHandle dependencies)
             where T : unmanaged
         {
             JobExtensions.CheckDependencies(runInParallel, dependencies);
@@ -147,7 +147,7 @@ namespace Chisel.Core
         public static void SafeDispose<T>(ref this NativeArray<T> array) where T : unmanaged { SafeDispose(false, ref array, default); }
 
 
-        public static unsafe JobHandle SafeDispose<T>(bool runInParallel, ref NativeList<T> list, JobHandle dependencies)
+        public static JobHandle SafeDispose<T>(bool runInParallel, ref NativeList<T> list, JobHandle dependencies)
             where T : unmanaged
         {
             JobHandle currentHandle = default;
@@ -252,7 +252,7 @@ namespace Chisel.Core
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    public unsafe struct EnsureCapacityListForEachCountFromListJob<T, U> : IJob
+    public struct EnsureCapacityListForEachCountFromListJob<T, U> : IJob
         where T : unmanaged
         where U : unmanaged
     {
@@ -270,7 +270,7 @@ namespace Chisel.Core
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    public unsafe struct EnsureCapacityListReferenceJob<T> : IJob
+    public struct EnsureCapacityListReferenceJob<T> : IJob
         where T : unmanaged
     {
         // Read

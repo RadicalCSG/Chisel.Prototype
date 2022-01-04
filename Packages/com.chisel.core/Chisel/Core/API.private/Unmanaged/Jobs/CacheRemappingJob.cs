@@ -37,7 +37,7 @@ namespace Chisel.Core
 
         [NativeDisableUnsafePtrRestriction]
         [NoAlias, ReadOnly] public CompactHierarchy*            compactHierarchyPtr;
-        [NoAlias, ReadOnly] public NativeList<int>              nodeIDValueToNodeOrderArray;
+        [NoAlias, ReadOnly] public NativeList<int>              nodeIDValueToNodeOrder;
         [NoAlias, ReadOnly] public NativeReference<int>         nodeIDValueToNodeOrderOffsetRef;
         [NoAlias, ReadOnly] public NativeArray<CompactNodeID>   brushes;
         [NoAlias, ReadOnly] public int                          brushCount;
@@ -69,7 +69,7 @@ namespace Chisel.Core
             var previousBrushIDValuesLength = brushIDValues.Length;
             if (previousBrushIDValuesLength > 0)
             {
-                var indexLookup = new NativeArray<int>(nodeIDValueToNodeOrderArray.Length, Allocator.Temp);
+                var indexLookup = new NativeArray<int>(nodeIDValueToNodeOrder.Length, Allocator.Temp);
                 var remapOldOrderToNewOrder = new NativeArray<int2>(previousBrushIDValuesLength, Allocator.Temp);
 
                 for (int n = 0; n < brushCount; n++)
@@ -88,7 +88,7 @@ namespace Chisel.Core
                             var sourceID        = brushIDValues[n];
                             var sourceIDValue   = sourceID.value;
                             var sourceOffset    = sourceIDValue - nodeIDValueToNodeOrderOffset;
-                            var destination     = (sourceOffset < 0 || sourceOffset >= nodeIDValueToNodeOrderArray.Length) ? -1 : indexLookup[sourceOffset] - 1;
+                            var destination     = (sourceOffset < 0 || sourceOffset >= nodeIDValueToNodeOrder.Length) ? -1 : indexLookup[sourceOffset] - 1;
                             if (destination == -1)
                             {
                                 removedBrushes.Add(new IndexOrder { compactNodeID = sourceID, nodeOrder = n });
@@ -126,7 +126,7 @@ namespace Chisel.Core
                                         continue;
 
                                     var otherBrushIDValue   = otherBrushID.value;
-                                    var otherBrushOrder     = nodeIDValueToNodeOrderArray[otherBrushIDValue - nodeIDValueToNodeOrderOffset];
+                                    var otherBrushOrder     = nodeIDValueToNodeOrder[otherBrushIDValue - nodeIDValueToNodeOrderOffset];
                                     var otherIndexOrder     = new IndexOrder { compactNodeID = otherBrushID, nodeOrder = otherBrushOrder };
                                     brushesThatNeedIndirectUpdateHashMap.Add(otherIndexOrder);
                                 }

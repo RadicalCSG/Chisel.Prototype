@@ -10,9 +10,9 @@ using System.Runtime.CompilerServices;
 
 namespace Chisel.Core
 {
-    internal sealed unsafe class ChiselTreeLookup : ScriptableObject
+    internal sealed class ChiselTreeLookup : ScriptableObject
     {
-        public unsafe class Data
+        public class Data
         {
             public JobHandle                                lastJobHandle;
 
@@ -32,7 +32,7 @@ namespace Chisel.Core
             public NativeHashMap<CompactNodeID, ChiselAABB>                                     brushTreeSpaceBoundLookup;
             public NativeHashMap<CompactNodeID, ChiselBlobAssetReference<ChiselBrushRenderBuffer>>    brushRenderBufferLookup;
 
-            internal unsafe void Initialize()
+            internal void Initialize()
             {
                 brushIDValues               = new NativeList<CompactNodeID>(1000, Allocator.Persistent);
                 allKnownBrushMeshIndices    = new NativeHashSet<int>(1000, Allocator.Persistent);
@@ -52,13 +52,12 @@ namespace Chisel.Core
                 brushRenderBufferCache      = new NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
 
                 parameters                  = new NativeArray<ChiselLayerParameters>(SurfaceLayers.ParameterCount, Allocator.Persistent);
-                // Regular index operator will return a copy instead of a reference *sigh*
-                var parameterPtr = parameters.GetUnsafePtr();
                 for (int i = 0; i < parameters.Length; i++)
                 {
-                    ref var parameter = ref UnsafeUtility.ArrayElementAsRef<ChiselLayerParameters>(parameterPtr, i);
+                    var parameter = parameters[i];
                     parameter.Initialize(); 
                     Debug.Assert(parameter.IsCreated);
+                    parameters[i] = parameter;
                 }
             }
 
@@ -301,9 +300,9 @@ namespace Chisel.Core
         public ChiselBlobAssetReference<BrushMeshBlob> brushMeshBlob;
     }
 
-    internal sealed unsafe class ChiselMeshLookup : ScriptableObject
+    internal sealed class ChiselMeshLookup : ScriptableObject
     {
-        public unsafe class Data
+        public class Data
         {
             public NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache;
 

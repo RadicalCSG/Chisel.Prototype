@@ -113,7 +113,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.LayerUsageFlags"/>
     /// <seealso cref="Chisel.Core.LayerParameterIndex"/>
     [Serializable, StructLayout(LayoutKind.Sequential)]
-    public unsafe struct SurfaceLayers
+    public struct SurfaceLayers
     {
         public const int ParameterCount = 2;
         public static readonly LayerUsageFlags[] kLayerUsageFlags = new[]

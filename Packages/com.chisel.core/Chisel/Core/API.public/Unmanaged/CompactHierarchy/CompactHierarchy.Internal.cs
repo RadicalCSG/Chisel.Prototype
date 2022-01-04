@@ -727,7 +727,7 @@ namespace Chisel.Core
             return index;
         }
 
-        unsafe bool DeleteRangeInternal(int parentIndex, int siblingIndex, int range, bool deleteChildren)
+        bool DeleteRangeInternal(int parentIndex, int siblingIndex, int range, bool deleteChildren)
         {
             if (range == 0)
                 return false;
@@ -834,14 +834,14 @@ namespace Chisel.Core
         }
 
         // "optimize" - remove holes, reorder them in hierarchy order
-        unsafe bool CompactInternal()
+        bool CompactInternal()
         {
             // TODO: implement
             //       could just create a new hierarchy and insert everything in it in order, and replace the hierarchy with this one
             throw new NotImplementedException();
         }
 
-        unsafe bool DetachAllChildrenInternal(int parentIndex)
+        bool DetachAllChildrenInternal(int parentIndex)
         {
             Debug.Assert(parentIndex >= 0 && parentIndex < compactNodes.Length);
             var parentHierarchy     = compactNodes[parentIndex];
@@ -849,7 +849,7 @@ namespace Chisel.Core
             return DetachRangeInternal(parentIndex, 0, parentChildCount);
         }
 
-        unsafe bool DeleteAllChildrenInternal(int parentIndex)
+        bool DeleteAllChildrenInternal(int parentIndex)
         {
             Debug.Assert(parentIndex >= 0 && parentIndex < compactNodes.Length);
             var parentHierarchy     = compactNodes[parentIndex];
@@ -1285,7 +1285,7 @@ namespace Chisel.Core
         }
 
 
-        unsafe bool AttachInternal(ref IDManager hierarchyIDLookup, NativeList<CompactHierarchy> hierarchies, ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, CompactNodeID parentID, int parentIndex, int insertIndex, CompactNodeID compactNodeID, bool ignoreBrushMeshHashes = false)
+        bool AttachInternal(ref IDManager hierarchyIDLookup, NativeList<CompactHierarchy> hierarchies, ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, CompactNodeID parentID, int parentIndex, int insertIndex, CompactNodeID compactNodeID, bool ignoreBrushMeshHashes = false)
         {
             Debug.Assert(parentID != CompactNodeID.Invalid);
 
@@ -1596,7 +1596,7 @@ namespace Chisel.Core
         }
 
         // This method might be removed/renamed in the future
-        internal unsafe bool SetChildrenDirty(CompactNodeID compactNodeID)
+        internal bool SetChildrenDirty(CompactNodeID compactNodeID)
         {
             if (!IsValidCompactNodeID(compactNodeID))
                 return false;

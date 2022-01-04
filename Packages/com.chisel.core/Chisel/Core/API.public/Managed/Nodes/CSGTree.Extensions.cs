@@ -144,7 +144,7 @@ namespace Chisel.Core
         /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be added to the end of the <see cref="Chisel.Core.CSGTree"/>. The array itself cannot be null.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool AddRange(in this Chisel.Core.CSGTree tree, params Chisel.Core.CSGTreeNode[] array)
+        public static bool AddRange(in this Chisel.Core.CSGTree tree, params Chisel.Core.CSGTreeNode[] array)
         {
             return InsertRange(tree, tree.Count, array);
         }
@@ -154,7 +154,7 @@ namespace Chisel.Core
         /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be added to the end of the <see cref="Chisel.Core.CSGTreeBranch"/>. The array itself cannot be null.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool AddRange(in this Chisel.Core.CSGTreeBranch branch, params Chisel.Core.CSGTreeNode[] array)
+        public static bool AddRange(in this Chisel.Core.CSGTreeBranch branch, params Chisel.Core.CSGTreeNode[] array)
         {
             return InsertRange(branch, branch.Count, array);
         }

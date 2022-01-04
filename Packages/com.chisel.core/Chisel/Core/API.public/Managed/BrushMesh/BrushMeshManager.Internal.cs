@@ -14,7 +14,7 @@ namespace Chisel.Core
     public static partial class BrushMeshManager
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static NativeChiselSurface Convert(in ChiselSurface surface)
+        public static NativeChiselSurface Convert(in ChiselSurface surface)
         {
             return new NativeChiselSurface
             {
@@ -24,7 +24,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static NativeChiselSurface Convert(int surfaceIndex, in ChiselSurfaceDefinition chiselSurfaceDefinition)
+        public static NativeChiselSurface Convert(int surfaceIndex, in ChiselSurfaceDefinition chiselSurfaceDefinition)
         {
             ref readonly var surface = ref chiselSurfaceDefinition.surfaces[surfaceIndex];
             return new NativeChiselSurface
@@ -35,7 +35,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static void Convert(in BrushMesh.Polygon srcPolygon, ref NativeChiselSurface surfaceDefinition, ref BrushMeshBlob.Polygon dstPolygon)
+        public static void Convert(in BrushMesh.Polygon srcPolygon, ref NativeChiselSurface surfaceDefinition, ref BrushMeshBlob.Polygon dstPolygon)
         {
             dstPolygon.firstEdge        = srcPolygon.firstEdge;
             dstPolygon.edgeCount        = srcPolygon.edgeCount;
@@ -44,7 +44,7 @@ namespace Chisel.Core
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static void Convert(in BrushMesh.Polygon srcPolygon, in ChiselSurfaceDefinition surfaceDefinition, ref BrushMeshBlob.Polygon dstPolygon)
+        public static void Convert(in BrushMesh.Polygon srcPolygon, in ChiselSurfaceDefinition surfaceDefinition, ref BrushMeshBlob.Polygon dstPolygon)
         {
             dstPolygon.firstEdge        = srcPolygon.firstEdge;
             dstPolygon.edgeCount        = srcPolygon.edgeCount;
@@ -53,7 +53,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static void Convert(in BrushMeshBlob.Polygon srcPolygon, ref BrushMesh.Polygon dstPolygon)
+        public static void Convert(in BrushMeshBlob.Polygon srcPolygon, ref BrushMesh.Polygon dstPolygon)
         {
             dstPolygon.firstEdge        = srcPolygon.firstEdge;
             dstPolygon.edgeCount        = srcPolygon.edgeCount;
@@ -62,12 +62,12 @@ namespace Chisel.Core
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static ChiselBlobAssetReference<NativeChiselSurfaceDefinition> BuildSurfaceDefinitionBlob(NativeChiselSurface surface0,
-                                                                                                          NativeChiselSurface surface1,
-                                                                                                          NativeChiselSurface surface2,
-                                                                                                          NativeChiselSurface surface3,
-                                                                                                          NativeChiselSurface surface4,
-                                                                                                          Allocator allocator)
+        public static ChiselBlobAssetReference<NativeChiselSurfaceDefinition> BuildSurfaceDefinitionBlob(NativeChiselSurface surface0,
+                                                                                                         NativeChiselSurface surface1,
+                                                                                                         NativeChiselSurface surface2,
+                                                                                                         NativeChiselSurface surface3,
+                                                                                                         NativeChiselSurface surface4,
+                                                                                                         Allocator allocator)
         {
             var surfaceCount = 5;
 
@@ -86,13 +86,13 @@ namespace Chisel.Core
         
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static ChiselBlobAssetReference<NativeChiselSurfaceDefinition> BuildSurfaceDefinitionBlob(NativeChiselSurface surface0,
-                                                                                                          NativeChiselSurface surface1,
-                                                                                                          NativeChiselSurface surface2,
-                                                                                                          NativeChiselSurface surface3,
-                                                                                                          NativeChiselSurface surface4,
-                                                                                                          NativeChiselSurface surface5,
-                                                                                                          Allocator allocator)
+        public static ChiselBlobAssetReference<NativeChiselSurfaceDefinition> BuildSurfaceDefinitionBlob(NativeChiselSurface surface0,
+                                                                                                         NativeChiselSurface surface1,
+                                                                                                         NativeChiselSurface surface2,
+                                                                                                         NativeChiselSurface surface3,
+                                                                                                         NativeChiselSurface surface4,
+                                                                                                         NativeChiselSurface surface5,
+                                                                                                         Allocator allocator)
         {
             var surfaceCount = 6;
 
@@ -111,7 +111,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static ChiselBlobAssetReference<NativeChiselSurfaceDefinition> BuildSurfaceDefinitionBlob(int surfaceCount, Allocator allocator)
+        public static ChiselBlobAssetReference<NativeChiselSurfaceDefinition> BuildSurfaceDefinitionBlob(int surfaceCount, Allocator allocator)
         {
             using (var builder = new ChiselBlobBuilder(Allocator.Temp, surfaceCount * UnsafeUtility.SizeOf<NativeChiselSurface>()))
             {
@@ -122,7 +122,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static ChiselBlobAssetReference<NativeChiselSurfaceDefinition> BuildSurfaceDefinitionBlob(in ChiselSurfaceDefinition surfaceDefinition, Allocator allocator)
+        public static ChiselBlobAssetReference<NativeChiselSurfaceDefinition> BuildSurfaceDefinitionBlob(in ChiselSurfaceDefinition surfaceDefinition, Allocator allocator)
         {
             if (surfaceDefinition == null ||
                 surfaceDefinition.surfaces == null ||
@@ -140,7 +140,7 @@ namespace Chisel.Core
             }
         }
 
-        public unsafe static ChiselBlobAssetReference<BrushMeshBlob> ConvertToBrushMeshBlob(BrushMesh brushMesh, in ChiselSurfaceDefinition surfaceDefinition, Allocator allocator = Allocator.Persistent)
+        public static ChiselBlobAssetReference<BrushMeshBlob> ConvertToBrushMeshBlob(BrushMesh brushMesh, in ChiselSurfaceDefinition surfaceDefinition, Allocator allocator = Allocator.Persistent)
         {
             if (brushMesh == null ||
                 brushMesh.vertices == null ||
@@ -440,8 +440,6 @@ namespace Chisel.Core
             [NoAlias, ReadOnly] public NativeArray<BrushMeshPointers>                           brushMeshPointers;
             [NoAlias, ReadOnly] public NativeArray<NativeChiselSurface>                         surfaces;
 
-            //[NoAlias] public NativeHashMap<int, RefCountedBrushMeshBlob>                      brushMeshBlobCache;
-
             [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>    brushMeshBlobs;
 
             public Allocator allocator;
@@ -574,7 +572,7 @@ namespace Chisel.Core
 
         
         
-        public unsafe static BrushMesh ConvertToBrushMesh(ChiselBlobAssetReference<BrushMeshBlob> brushMeshBlobRef)
+        public static BrushMesh ConvertToBrushMesh(ChiselBlobAssetReference<BrushMeshBlob> brushMeshBlobRef)
         {
             if (!brushMeshBlobRef.IsCreated)
                 return null;
@@ -801,7 +799,7 @@ namespace Chisel.Core
         }
 
         [BurstCompile]
-        unsafe struct RegisterBrushMeshesJob : IJob
+        struct RegisterBrushMeshesJob : IJob
         {
             [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>    brushMeshBlobs;
 

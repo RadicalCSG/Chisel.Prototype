@@ -32,7 +32,7 @@ namespace Chisel.Core
         [NativeDisableParallelForRestriction]
         [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
 
-        unsafe static ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob> Build(ref ChiselBlobArray<float3> localVertices, float4x4 nodeToTreeSpaceMatrix)
+        static ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob> Build(ref ChiselBlobArray<float3> localVertices, float4x4 nodeToTreeSpaceMatrix)
         {
             var totalSize   = localVertices.Length * sizeof(float3);
             var builder     = new ChiselBlobBuilder(Allocator.Temp, math.max(4, totalSize));

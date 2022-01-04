@@ -321,6 +321,15 @@ namespace Chisel.Core
                 return AddRangeNoResize(UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), ptr, AssumePositive(length));
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int AddRangeNoResize(NativeArray<T> array, int length)
+            {
+                CheckArgPositive(length);
+                CheckSufficientCapacity(array.Length, length);
+                var arrayPtr = array.GetUnsafePtr();
+                return AddRangeNoResize(UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), arrayPtr, AssumePositive(length));
+            }
+
             /// <summary>
             /// Adds elements from a list to this list.
             /// </summary>

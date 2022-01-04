@@ -18,13 +18,13 @@ namespace Chisel.Core
         const float kFatPlaneWidthEpsilon       = CSGConstants.kFatPlaneWidthEpsilon;
 
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public int                                                      maxNodeOrder;
-        [NoAlias, ReadOnly] public NativeArray<float3>                                      outputSurfaceVertices;        
-        [NoAlias, ReadOnly] public NativeArray<int2>                                        outputSurfacesRange;
-        [NoAlias, ReadOnly] public NativeArray<BrushIntersectionLoop>                       outputSurfaces;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BasePolygonsBlob>>        basePolygonCache;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlaneCache;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public int                                                          maxNodeOrder;
+        [NoAlias, ReadOnly] public NativeArray<float3>                                          outputSurfaceVertices;        
+        [NoAlias, ReadOnly] public NativeArray<int2>                                            outputSurfacesRange;
+        [NoAlias, ReadOnly] public NativeArray<BrushIntersectionLoop>                           outputSurfaces;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BasePolygonsBlob>>      basePolygonCache;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpacePlanes>>  brushTreeSpacePlaneCache;
 
         // Read Write
         public Allocator allocator;
@@ -241,8 +241,8 @@ namespace Chisel.Core
                     {
                         var brushIntersectionLoop   = brushIntersections[l];
                         ref var surfaceInfo         = ref brushIntersectionLoop.surfaceInfo;
-                        UnityEngine.Debug.Assert(brushIntersectionLoop.indexOrder0.compactNodeID == brushIndexOrder.compactNodeID);
-                        //UnityEngine.Debug.Assert(surfaceInfo.nodeIndex == brushIndexOrder.nodeIndex);
+                        //UnityEngine.Debug.Assert(brushIntersectionLoop.indexOrder0.compactNodeID == brushIndexOrder.compactNodeID);
+                        UnityEngine.Debug.Assert(brushIntersectionLoop.indexOrder0.nodeOrder == brushIndexOrder.nodeOrder);
 
                         var basePlaneIndex = surfaceInfo.basePlaneIndex;
                         if (prevBasePlaneIndex != basePlaneIndex)

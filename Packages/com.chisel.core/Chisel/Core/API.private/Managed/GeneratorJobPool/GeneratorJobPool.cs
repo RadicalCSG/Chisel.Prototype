@@ -86,7 +86,7 @@ namespace Chisel.Core
         static readonly List<GeneratorJobPool> generatorJobs = new List<GeneratorJobPool>();
 
         // TODO: Optimize this
-        public static unsafe JobHandle ScheduleJobs(bool runInParallel, JobHandle dependsOn = default)
+        public static JobHandle ScheduleJobs(bool runInParallel, JobHandle dependsOn = default)
         {
             var hierarchyList = CompactHierarchyManager.HierarchyList;
 
@@ -232,7 +232,7 @@ namespace Chisel.Core
                 nodesLookup = CompactHierarchyManager.Nodes;
             }
 
-            // ReadOnly
+            // Read
             [NoAlias, ReadOnly] public NativeArray<GeneratedNodeDefinition>     generatedNodeDefinitions;
 
             // Read/Write
@@ -431,7 +431,7 @@ namespace Chisel.Core
         }
 
         [BurstCompile(CompileSynchronously = true)]
-        unsafe struct CreateBrushesJob : IJobParallelForDefer
+        struct CreateBrushesJob : IJobParallelForDefer
         {
             [NoAlias, ReadOnly] public NativeArray<Generator>                                               settings;
             [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
@@ -493,7 +493,7 @@ namespace Chisel.Core
         }
         
         [BurstCompile(CompileSynchronously = true)]
-        unsafe struct UpdateHierarchyJob : IJob
+        struct UpdateHierarchyJob : IJob
         {
             [NoAlias, ReadOnly] public NativeList<NodeID>   generatorNodes;
             [NoAlias, ReadOnly] public int                  index;
@@ -527,6 +527,7 @@ namespace Chisel.Core
                 nodesLookup = CompactHierarchyManager.Nodes;
             }
 
+            // Read
             [NativeDisableUnsafePtrRestriction, NoAlias, ReadOnly] public IDManager*    hierarchyIDLookupPtr;
             [NativeDisableUnsafePtrRestriction, NoAlias, ReadOnly] public IDManager*    nodeIDLookupPtr;
             [NoAlias, ReadOnly] public NativeList<CompactNodeID>                        nodesLookup;
@@ -535,6 +536,7 @@ namespace Chisel.Core
             [NoAlias, ReadOnly] public NativeArray<CompactHierarchy>                        hierarchyList;
             [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes;
 
+            // Write
             [NoAlias, WriteOnly] public NativeList<GeneratedNodeDefinition>.ParallelWriter                  generatedNodeDefinitions;
             [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>.ParallelWriter  brushMeshBlobs;
 
@@ -677,12 +679,12 @@ namespace Chisel.Core
         }
 
         [BurstCompile(CompileSynchronously = true)]
-        public unsafe struct PrepareAndCountBrushesJob : IJobParallelForDefer
+        public struct PrepareAndCountBrushesJob : IJobParallelForDefer
         {
             [NoAlias] public NativeArray<Generator>      settings;
             [NoAlias, WriteOnly] public NativeArray<int> brushCounts;
 
-            public unsafe void Execute(int index)
+            public void Execute(int index)
             {
                 var setting = settings[index];
                 brushCounts[index] = setting.PrepareAndCountRequiredBrushMeshes();
@@ -691,7 +693,7 @@ namespace Chisel.Core
         }
 
         [BurstCompile(CompileSynchronously = true)]
-        public unsafe struct AllocateBrushesJob : IJob
+        public struct AllocateBrushesJob : IJob
         {
             [NoAlias, ReadOnly] public NativeArray<int>     brushCounts;
             [NoAlias, WriteOnly] public NativeArray<Range>  ranges;
@@ -714,7 +716,7 @@ namespace Chisel.Core
         }
 
         [BurstCompile(CompileSynchronously = true)]
-        unsafe struct CreateBrushesJob : IJobParallelForDefer
+        struct CreateBrushesJob : IJobParallelForDefer
         {
             [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
             [NoAlias] public NativeArray<Range>                     ranges;
@@ -817,7 +819,7 @@ namespace Chisel.Core
         // TODO: implement a way to setup a full hierarchy here, instead of a list of brushes
         // TODO: make this burstable
         //[BurstCompile(CompileSynchronously = true)]
-        unsafe struct UpdateHierarchyJob : IJob
+        struct UpdateHierarchyJob : IJob
         {
             [NoAlias, ReadOnly] public NativeList<NodeID>   generatorRootNodeIDs;
             [NoAlias, ReadOnly] public NativeList<Range>    generatorNodeRanges;
@@ -834,7 +836,7 @@ namespace Chisel.Core
                 branch.Clear();
             }
 
-            unsafe void BuildBrushes(CSGTreeBranch branch, int desiredBrushCount)
+            void BuildBrushes(CSGTreeBranch branch, int desiredBrushCount)
             {
                 if (branch.Count < desiredBrushCount)
                 {
@@ -846,7 +848,7 @@ namespace Chisel.Core
                         var userID = branch.UserID;
                         for (int i = 0; i < newBrushCount; i++)
                             newRange[i] = tree.CreateBrush(userID: userID, operation: CSGOperationType.Additive);
-                        branch.AddRange((CSGTreeNode*)newRange.GetUnsafePtr(), newBrushCount);
+                        branch.AddRange(newRange, newBrushCount);
                     }
                     finally { newRange.Dispose(); }
                 } else
@@ -906,7 +908,6 @@ namespace Chisel.Core
             return generators.Dispose(updateHierarchyJobHandle);
 #endif
         }
-
         
         [BurstCompile(CompileSynchronously = true)]
         unsafe struct InitializeArraysJob : IJob

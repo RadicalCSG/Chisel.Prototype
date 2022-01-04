@@ -12,7 +12,7 @@ using System.Collections.Generic;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    unsafe struct CreateIntersectionLoopsJob : IJobParallelForDefer
+    struct CreateIntersectionLoopsJob : IJobParallelForDefer
     {
         const float kFatPlaneWidthEpsilon = CSGConstants.kFatPlaneWidthEpsilon;
 
@@ -616,7 +616,7 @@ skipMe:
                 for (int d = 0; d < loopLength; d++)
                     temporaryVertices[d] = srcVertices[uniqueIndicesArray[offset + d]];
 
-                var loopVertexIndex = outputSurfaceVertices.AddRangeNoResize(temporaryVertices.GetUnsafePtr(), loopLength);
+                var loopVertexIndex = outputSurfaceVertices.AddRangeNoResize(temporaryVertices, loopLength);
 
                 outputSurfaces.AddNoResize(new BrushIntersectionLoop
                 {

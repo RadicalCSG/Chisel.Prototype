@@ -30,16 +30,10 @@ namespace Chisel.Core
             public NativeChiselSurface  surface;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override unsafe int GetHashCode() { unchecked { return (int)GetHashCode(ref this); } }
+            public override int GetHashCode() { unchecked { return (int)GetHashCode(ref this); } }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static unsafe uint GetHashCode(ref Polygon polygon)
-            {
-                fixed (Polygon* polygonPtr = &polygon)
-                {
-                    return math.hash(polygonPtr, sizeof(Polygon));
-                }
-            }
+            public static uint GetHashCode(ref Polygon polygon) { return HashExtensions.GetHashCode(ref polygon); }
         }
 
         /// <summary>Defines a half edge of a <see cref="BrushMeshBlob"/>.</summary>
@@ -67,14 +61,14 @@ namespace Chisel.Core
         public int                          localPlaneCount;    // number of surface planes
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int CalculateHashCode(ref BrushMeshBlob blob)
+        public static int CalculateHashCode(ref BrushMeshBlob blob)
         {
             unchecked
             {
                 return (int)math.hash(
-                            new uint3(blob.polygons.Length      == 0 ? 0 : math.hash(blob.polygons.GetUnsafePtr(), UnsafeUtility.SizeOf<Polygon>() * blob.polygons.Length),
-                                      blob.localVertices.Length == 0 ? 0 : math.hash(blob.localVertices.GetUnsafePtr(), UnsafeUtility.SizeOf<float3>() * blob.localVertices.Length),
-                                      blob.halfEdges.Length     == 0 ? 0 : math.hash(blob.halfEdges.GetUnsafePtr(), UnsafeUtility.SizeOf<HalfEdge>() * blob.halfEdges.Length)));
+                            new uint3(blob.polygons.Length      == 0 ? 0 : HashExtensions.GetHashCode(blob.polygons),
+                                      blob.localVertices.Length == 0 ? 0 : HashExtensions.GetHashCode(blob.localVertices),
+                                      blob.halfEdges.Length     == 0 ? 0 : HashExtensions.GetHashCode(blob.halfEdges)));
             }
         }
 

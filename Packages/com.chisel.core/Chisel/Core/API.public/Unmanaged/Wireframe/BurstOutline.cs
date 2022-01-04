@@ -74,6 +74,8 @@ namespace Chisel.Core
             hash = 0;
         }
 
+        [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static unsafe uint GetListHash<T>(ref NativeList<T> list)
             where T : unmanaged
         {

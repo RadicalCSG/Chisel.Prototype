@@ -61,7 +61,7 @@ namespace Poly2Tri
         const double PI_div2     = (Math.PI / 2);
         const double PI_3div4    = (3 * Math.PI / 4);
 
-        public unsafe struct DelaunayTriangle
+        public struct DelaunayTriangle
         {
             public enum EdgeFlags : int
             {
@@ -341,7 +341,7 @@ namespace Poly2Tri
         bool edgeEventRight;
 
         
-        internal unsafe static bool IsPointInPolygon(float3 right, float3 forward, UnsafeList<Edge> indices1, UnsafeList<Edge> indices2, HashedVertices vertices)
+        internal static bool IsPointInPolygon(float3 right, float3 forward, UnsafeList<Edge> indices1, UnsafeList<Edge> indices2, HashedVertices vertices)
         {
             int index = 0;
             while (index < indices2.Length &&
