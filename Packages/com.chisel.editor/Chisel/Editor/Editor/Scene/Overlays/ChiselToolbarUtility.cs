@@ -19,7 +19,7 @@ namespace Chisel.Editors
     {
         public static void SetupToolbarElement(EditorToolbarToggle element, string iconName, string tooltipName)
         {
-            element.text   = tooltipName;
+            element.text   = string.Empty;
             var icons   = ChiselEditorResources.LoadIconImages(iconName);
             if (icons != null && icons[0] != null && icons[1] != null)
             {
@@ -31,7 +31,7 @@ namespace Chisel.Editors
 
         public static void SetupToolbarElement(EditorToolbarButton element, string iconName, string tooltipName)
         {
-            element.text = tooltipName;
+            element.text = string.Empty;
             var icons = ChiselEditorResources.LoadIconImages(iconName);
             if (icons != null && icons[0] != null)
                 element.icon = icons[0];
