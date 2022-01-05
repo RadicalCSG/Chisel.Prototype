@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -9,7 +9,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 
 namespace Chisel.Core
 {        
-    [BurstCompile]
+    [BurstCompile(CompileSynchronously = true)]
     unsafe struct FindModifiedBrushesJob : IJob
     {
         public void InitializeHierarchy(ref CompactHierarchy hierarchy)
@@ -19,17 +19,17 @@ namespace Chisel.Core
 
         // Read
         [NativeDisableUnsafePtrRestriction]
-        [NoAlias, ReadOnly] public CompactHierarchy*                compactHierarchyPtr;
-        [NoAlias, ReadOnly] public NativeList<CompactNodeID>        brushes;
-        [NoAlias, ReadOnly] public int                              brushCount;
-        [NoAlias, ReadOnly] public NativeList<IndexOrder>           allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public CompactHierarchy*            compactHierarchyPtr;
+        [NoAlias, ReadOnly] public NativeArray<CompactNodeID>   brushes;
+        [NoAlias, ReadOnly] public int                          brushCount;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>       allTreeBrushIndexOrders;
 
         // Read/Write
-        [NoAlias] public NativeList<IndexOrder>                     rebuildTreeBrushIndexOrders;
+        [NoAlias] public NativeList<IndexOrder>                 rebuildTreeBrushIndexOrders;
 
         // Write
-        [NoAlias, WriteOnly] public NativeList<NodeOrderNodeID>     transformTreeBrushIndicesList;
-        [NoAlias, WriteOnly] public NativeList<NodeOrderNodeID>     brushBoundsUpdateList;
+        [NoAlias, WriteOnly] public NativeList<NodeOrderNodeID> transformTreeBrushIndicesList;
+        [NoAlias, WriteOnly] public NativeList<NodeOrderNodeID> brushBoundsUpdateList;
 
         public void Execute()
         {

@@ -48,17 +48,17 @@ namespace Chisel.Components
         
         // If the cookingOptions are not the default values it would force a full slow rebake later, 
         // even if we already did a Bake in a job
-//      public const string kCookingOptionsName = nameof(cookingOptions);
+        public const string kCookingOptionsName = nameof(cookingOptions);
 //      public const string kSkinWidthName      = nameof(skinWidth);
-//      public MeshColliderCookingOptions   cookingOptions;
+        public MeshColliderCookingOptions   cookingOptions;
 //      public float	                    skinWidth;
 
         public void Reset()
         {
             isTrigger       = false;
             convex          = false;
-  //        cookingOptions	= (MeshColliderCookingOptions)(2|4|8);
-  //        skinWidth       = 0.01f;
+            cookingOptions	= (MeshColliderCookingOptions)(2|4|8);
+            //skinWidth     = 0.01f;
         }
     }
 

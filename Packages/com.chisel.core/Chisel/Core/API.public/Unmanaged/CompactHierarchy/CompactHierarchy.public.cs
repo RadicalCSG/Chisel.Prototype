@@ -438,7 +438,8 @@ namespace Chisel.Core
             }
 
             var index = SiblingIndexOfInternal(parentIndex, nodeIndex);
-            return DeleteRangeInternal(parentIndex, index, range: 1, deleteChildren: true); 
+            var result = DeleteRangeInternal(parentIndex, index, range: 1, deleteChildren: true);
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

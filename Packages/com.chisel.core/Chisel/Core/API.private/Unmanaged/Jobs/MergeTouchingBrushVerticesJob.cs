@@ -10,7 +10,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    struct MergeTouchingBrushVerticesJob : IJobParallelFor
+    struct MergeTouchingBrushVerticesJob : IJobParallelForDefer
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
@@ -67,16 +67,16 @@ namespace Chisel.Core
     struct MergeTouchingBrushVerticesIndirectJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushCache;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesArray;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                              allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>>         brushesTouchedByBrushCache;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>    treeSpaceVerticesArray;
 
         // Read Write
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeListArray<float3>                                            loopVerticesLookup;
+        [NoAlias] public NativeArray<UnsafeList<float3>>            loopVerticesLookup;
 
         // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction] HashedVertices mergeVertices;
+        [NativeDisableContainerSafetyRestriction] HashedVertices    mergeVertices;
 
         public void Execute(int b)
         {
@@ -89,7 +89,7 @@ namespace Chisel.Core
             
             var vertices = loopVerticesLookup[brushIndexOrder.nodeOrder];
             NativeCollectionHelpers.EnsureCapacityAndClear(ref mergeVertices, math.max(vertices.Length, 1000));
-            mergeVertices.AddUniqueVertices(vertices);
+            mergeVertices.AddUniqueVertices(in vertices);
 
             // NOTE: assumes brushIntersections is in the same order as the brushes are in the tree
             ref var brushIntersections = ref brushIntersectionsBlob.Value.brushIntersections;
@@ -97,7 +97,7 @@ namespace Chisel.Core
             {
                 var intersectingNodeOrder = brushIntersections[i].nodeIndexOrder.nodeOrder;
                 if (intersectingNodeOrder > brushNodeOrder ||
-                    !loopVerticesLookup.IsIndexCreated(intersectingNodeOrder))
+                    !loopVerticesLookup[intersectingNodeOrder].IsCreated)
                     continue;
 
                 // In order, goes through the previous brushes in the tree, 
@@ -111,13 +111,13 @@ namespace Chisel.Core
             {
                 var intersectingNodeOrder = brushIntersections[i].nodeIndexOrder.nodeOrder;
                 if (intersectingNodeOrder > brushNodeOrder ||
-                    !loopVerticesLookup.IsIndexCreated(intersectingNodeOrder))
+                    !loopVerticesLookup[intersectingNodeOrder].IsCreated)
                     continue;
 
                 // In order, goes through the previous brushes in the tree, 
                 // and snaps any vertex that is almost the same in the next brush, with that vertex
                 var intersectingVertices = loopVerticesLookup[intersectingNodeOrder];
-                mergeVertices.ReplaceIfExists(intersectingVertices);
+                mergeVertices.ReplaceIfExists(in intersectingVertices);
             }
 
 

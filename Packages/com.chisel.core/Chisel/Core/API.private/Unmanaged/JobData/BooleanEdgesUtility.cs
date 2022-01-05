@@ -55,7 +55,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static int IndexOf([NoAlias] in NativeListArray<Edge>.NativeList edges, Edge edge, out bool inverted)
+        static int IndexOf([NoAlias] in UnsafeList<Edge> edges, Edge edge, out bool inverted)
         {
             for (int e = 0; e < edges.Length; e++)
             {
@@ -151,7 +151,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static EdgeCategory CategorizeEdge(Edge edge, [NoAlias] ref ChiselBlobArray<float4> planes, [NoAlias] in NativeListArray<Edge>.NativeList edges, [NoAlias] in HashedVertices vertices)
+        internal static EdgeCategory CategorizeEdge(Edge edge, [NoAlias] ref ChiselBlobArray<float4> planes, [NoAlias] in UnsafeList<Edge> edges, [NoAlias] in HashedVertices vertices)
         {
             // TODO: use something more clever than looping through all edges
             if (IndexOf(in edges, edge, out bool inverted) != -1)
@@ -163,10 +163,9 @@ namespace Chisel.Core
             return EdgeCategory.Inside;
         }
 
-
         // Note: Assumes polygons are convex
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static bool AreLoopsOverlapping([NoAlias] in NativeListArray<Edge>.NativeList polygon1, [NoAlias] in NativeListArray<Edge>.NativeList polygon2)
+        public unsafe static bool AreLoopsOverlapping([NoAlias] in UnsafeList<Edge> polygon1, [NoAlias] in UnsafeList<Edge> polygon2)
         {
             if (polygon1.Length < 3 ||
                 polygon2.Length < 3)

@@ -99,16 +99,15 @@ namespace Chisel.Core
         #endregion
 
         #region Generate
-        [BurstCompile]
         public int PrepareAndCountRequiredBrushMeshes()
         {
             return RequiredSubMeshCount;
         }
 
-        [BurstCompile]
         public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            using (var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp))
+            var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
+            try
             {
                 generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
                 if (!BrushMeshFactory.GenerateSpiralStairs(generatedBrushMeshes,
@@ -120,6 +119,7 @@ namespace Chisel.Core
                     {
                         if (generatedBrushMeshes[i].IsCreated)
                             generatedBrushMeshes[i].Dispose();
+                        generatedBrushMeshes[i] = default;
                     }
                     return false;
                 }
@@ -153,6 +153,10 @@ namespace Chisel.Core
                 }
 
                 return true;
+            }
+            finally
+            {
+                generatedBrushMeshes.Dispose();
             }
         }
 

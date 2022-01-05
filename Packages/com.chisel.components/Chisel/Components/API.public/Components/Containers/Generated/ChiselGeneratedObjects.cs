@@ -379,12 +379,12 @@ namespace Chisel.Components
         // in between UpdateMeshes and FinishMeshUpdates our jobs should be force completed, so we can now upload our meshes to unity Meshes
 
         public int FinishMeshUpdates(ChiselModel model, GameObject  parentGameObject, 
-                                     Mesh.MeshDataArray             meshDataArray, 
+                                     ref Mesh.MeshDataArray         meshDataArray, 
                                      ref VertexBufferContents       vertexBufferContents, 
                                      NativeList<ChiselMeshUpdate>   colliderMeshUpdates,
                                      NativeList<ChiselMeshUpdate>   debugHelperMeshes,
                                      NativeList<ChiselMeshUpdate>   renderMeshes,
-                                     JobHandle dependencies)
+                                     JobHandle                      dependencies)
         {
             gameObjectStates.Clear();
             colliderObjectUpdates.Clear();
@@ -625,6 +625,7 @@ namespace Chisel.Components
                 else
                     meshDataArray.Dispose();
             }
+            meshDataArray = default;
             Profiler.EndSample();
 
             // TODO: user meshDataArray data to determine if colliders are visible or not, then we can move this before the Apply

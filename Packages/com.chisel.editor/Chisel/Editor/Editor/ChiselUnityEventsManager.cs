@@ -13,7 +13,7 @@ using ToolManager = UnityEditor.EditorTools;
 #endif
 
 namespace Chisel.Editors
-{ 
+{
 
     public sealed class ChiselUnityEventsManager
     {
@@ -26,55 +26,55 @@ namespace Chisel.Editors
             // whenever this code is, for whatever reason, run more than once.
 
             // Update loop
-            UnityEditor.EditorApplication.update						-= OnEditorApplicationUpdate;
-            UnityEditor.EditorApplication.update						+= OnEditorApplicationUpdate;
+            UnityEditor.EditorApplication.update -= OnEditorApplicationUpdate;
+            UnityEditor.EditorApplication.update += OnEditorApplicationUpdate;
 
             // Called after prefab instances in the scene have been updated.
-            UnityEditor.PrefabUtility.prefabInstanceUpdated				-= OnPrefabInstanceUpdated;
-            UnityEditor.PrefabUtility.prefabInstanceUpdated				+= OnPrefabInstanceUpdated;
+            UnityEditor.PrefabUtility.prefabInstanceUpdated -= OnPrefabInstanceUpdated;
+            UnityEditor.PrefabUtility.prefabInstanceUpdated += OnPrefabInstanceUpdated;
 
             // OnGUI events for every visible list item in the HierarchyWindow.
-            UnityEditor.EditorApplication.hierarchyWindowItemOnGUI		-= OnHierarchyWindowItemOnGUI;
-            UnityEditor.EditorApplication.hierarchyWindowItemOnGUI		+= OnHierarchyWindowItemOnGUI;
+            UnityEditor.EditorApplication.hierarchyWindowItemOnGUI -= OnHierarchyWindowItemOnGUI;
+            UnityEditor.EditorApplication.hierarchyWindowItemOnGUI += OnHierarchyWindowItemOnGUI;
 
             // Triggered when the hierarchy changes
-            UnityEditor.EditorApplication.hierarchyChanged              -= OnHierarchyChanged;
-            UnityEditor.EditorApplication.hierarchyChanged              += OnHierarchyChanged;
+            UnityEditor.EditorApplication.hierarchyChanged -= OnHierarchyChanged;
+            UnityEditor.EditorApplication.hierarchyChanged += OnHierarchyChanged;
 
             // Triggered when currently active/selected item has changed.
-            UnityEditor.Selection.selectionChanged						-= OnSelectionChanged;
-            UnityEditor.Selection.selectionChanged						+= OnSelectionChanged;
-            
-            // Triggered when currently active/selected item has changed.
-            ChiselSurfaceSelectionManager.selectionChanged				-= OnSurfaceSelectionChanged;
-            ChiselSurfaceSelectionManager.selectionChanged				+= OnSurfaceSelectionChanged;
-            ChiselSurfaceSelectionManager.hoverChanged					-= OnSurfaceHoverChanged;
-            ChiselSurfaceSelectionManager.hoverChanged					+= OnSurfaceHoverChanged;
+            UnityEditor.Selection.selectionChanged -= OnSelectionChanged;
+            UnityEditor.Selection.selectionChanged += OnSelectionChanged;
 
-            UnityEditor.EditorApplication.playModeStateChanged			-= OnPlayModeStateChanged;
-            UnityEditor.EditorApplication.playModeStateChanged			+= OnPlayModeStateChanged;
+            // Triggered when currently active/selected item has changed.
+            ChiselSurfaceSelectionManager.selectionChanged -= OnSurfaceSelectionChanged;
+            ChiselSurfaceSelectionManager.selectionChanged += OnSurfaceSelectionChanged;
+            ChiselSurfaceSelectionManager.hoverChanged -= OnSurfaceHoverChanged;
+            ChiselSurfaceSelectionManager.hoverChanged += OnSurfaceHoverChanged;
+
+            UnityEditor.EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            UnityEditor.EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
 
             // Triggered when changing visibility/picking in hierarchy
-            UnityEditor.SceneVisibilityManager.visibilityChanged        += OnVisibilityChanged;
-            UnityEditor.SceneVisibilityManager.pickingChanged           += OnPickingChanged;
+            UnityEditor.SceneVisibilityManager.visibilityChanged += OnVisibilityChanged;
+            UnityEditor.SceneVisibilityManager.pickingChanged += OnPickingChanged;
 
 
             // Callback that is triggered after an undo or redo was executed.
-            UnityEditor.Undo.undoRedoPerformed							-= OnUndoRedoPerformed;
-            UnityEditor.Undo.undoRedoPerformed							+= OnUndoRedoPerformed;
+            UnityEditor.Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            UnityEditor.Undo.undoRedoPerformed += OnUndoRedoPerformed;
 
-            UnityEditor.Undo.postprocessModifications					-= OnPostprocessModifications;
-            UnityEditor.Undo.postprocessModifications					+= OnPostprocessModifications;
-            
-            UnityEditor.Undo.willFlushUndoRecord                        -= OnWillFlushUndoRecord;
-            UnityEditor.Undo.willFlushUndoRecord                        += OnWillFlushUndoRecord;
-            
-            UnityEditor.SceneView.beforeSceneGui                        -= OnBeforeSceneGUI;
-            UnityEditor.SceneView.beforeSceneGui                        += OnBeforeSceneGUI;
+            UnityEditor.Undo.postprocessModifications -= OnPostprocessModifications;
+            UnityEditor.Undo.postprocessModifications += OnPostprocessModifications;
 
-            UnityEditor.SceneView.duringSceneGui                        -= OnDuringSceneGUI;
-            UnityEditor.SceneView.duringSceneGui                        += OnDuringSceneGUI;
+            UnityEditor.Undo.willFlushUndoRecord -= OnWillFlushUndoRecord;
+            UnityEditor.Undo.willFlushUndoRecord += OnWillFlushUndoRecord;
+
+            UnityEditor.SceneView.beforeSceneGui -= OnBeforeSceneGUI;
+            UnityEditor.SceneView.beforeSceneGui += OnBeforeSceneGUI;
+
+            UnityEditor.SceneView.duringSceneGui -= OnDuringSceneGUI;
+            UnityEditor.SceneView.duringSceneGui += OnDuringSceneGUI;
 
             UnityEditor.SceneManagement.EditorSceneManager.activeSceneChangedInEditMode += OnActiveSceneChanged;
 
@@ -89,7 +89,7 @@ namespace Chisel.Editors
 
             ChiselGeneratedModelMeshManager.PostUpdateModels -= OnPostUpdateModels;
             ChiselGeneratedModelMeshManager.PostUpdateModels += OnPostUpdateModels;
-            
+
             ChiselGeneratedModelMeshManager.PostReset -= OnPostResetModels;
             ChiselGeneratedModelMeshManager.PostReset += OnPostResetModels;
 
@@ -124,7 +124,7 @@ namespace Chisel.Editors
         {
             ChiselOutlineRenderer.Instance.OnTransformationChanged();
         }
-        
+
 
         static void OnBeforeSceneGUI(SceneView sceneView)
         {
@@ -180,14 +180,14 @@ namespace Chisel.Editors
 
         private static void OnSurfaceSelectionChanged()
         {
-            ChiselOutlineRenderer.Instance.OnSurfaceSelectionChanged(); 
+            ChiselOutlineRenderer.Instance.OnSurfaceSelectionChanged();
         }
-        
+
         private static void OnSurfaceHoverChanged()
         {
-            ChiselOutlineRenderer.Instance.OnSurfaceHoverChanged(); 
+            ChiselOutlineRenderer.Instance.OnSurfaceHoverChanged();
         }
-        
+
 
         private static void OnPostUpdateModels()
         {
@@ -198,7 +198,7 @@ namespace Chisel.Editors
         {
             ChiselOutlineRenderer.Instance.OnReset();
         }
-    
+
         private static void OnNodeHierarchyModified()
         {
             ChiselOutlineRenderer.Instance.OnReset();
@@ -270,12 +270,44 @@ namespace Chisel.Editors
             ChiselNodeHierarchyManager.firstStart = false;
         }
 
+
+
         private static void OnUndoRedoPerformed()
         {
+            //ProfileFrame("myLog2");
+
+            //ChiselNodeHierarchyManager.firstStart = false;
             ChiselNodeHierarchyManager.UpdateAllTransformations();
             ChiselOutlineRenderer.Instance.OnTransformationChanged();
             ChiselOutlineRenderer.OnUndoRedoPerformed();
+
         }
+        /*
+        static bool profilerStarted = false;
+        public static void ProfileFrame(string filename)
+        {
+            if (profilerStarted)
+                return;
+            profilerStarted = true;
+            Profiler.logFile = filename; //Also supports passing "myLog.raw"
+            Profiler.enableBinaryLog = true;
+            Profiler.enabled = true;
+            // Optional, if more memory is needed for the buffer
+            Profiler.maxUsedMemory = 1024 * 1024 * 1024;
+            
+            EditorApplication.update -= EndProfiling;
+            EditorApplication.update += EndProfiling;
+        }
+
+        static void EndProfiling()
+        {
+            profilerStarted = false;
+            EditorApplication.update -= EndProfiling;
+            // Optional, to close the file when done
+            Profiler.enabled = false;
+            Profiler.logFile = "";
+        }
+        */
 
         static readonly HashSet<ChiselNode>	modifiedNodes		= new HashSet<ChiselNode>();
         static readonly HashSet<Transform>	processedTransforms = new HashSet<Transform>();

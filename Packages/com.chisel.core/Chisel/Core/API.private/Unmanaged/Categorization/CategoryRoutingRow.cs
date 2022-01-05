@@ -479,12 +479,28 @@ namespace Chisel.Core
             set { destination[(int)index] = (byte)value; } 
         }*/
 
+        public CategoryGroupIndex OutsideCategory
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (CategoryGroupIndex)destination[Outside]; }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set { destination[Outside] = (byte)value; }
+        }
+
         public CategoryGroupIndex this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return (CategoryGroupIndex)destination[index]; }
+            get
+            {
+                UnityEngine.Debug.Assert(index >= 0 && index < CategoryRoutingRow.Length);
+                return (CategoryGroupIndex)destination[index]; 
+            }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set { destination[index] = (byte)value; }
+            set 
+            {
+                UnityEngine.Debug.Assert(index >= 0 && index < CategoryRoutingRow.Length);
+                destination[index] = (byte)value; 
+            }
         }
     }
 }

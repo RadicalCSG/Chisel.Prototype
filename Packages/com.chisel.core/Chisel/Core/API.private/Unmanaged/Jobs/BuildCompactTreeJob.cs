@@ -9,7 +9,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 
 namespace Chisel.Core
 {
-    [BurstCompile]
+    [BurstCompile(CompileSynchronously = true)]
     unsafe struct BuildCompactTreeJob : IJob
     {
         public void InitializeHierarchy(ref CompactHierarchy hierarchy)

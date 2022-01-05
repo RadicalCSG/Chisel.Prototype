@@ -104,6 +104,7 @@ namespace Chisel.Core
         public int IndexCount   { get { return indexToID.Length; } }
 
         public bool IsIndexFree(int index) { return sectionManager.IsIndexFree(index); }
+        public bool IsAnyIndexFree(int index, int count) { return sectionManager.IsAnyIndexFree(index, count); }
 
         public bool IsCreated
         {
@@ -184,6 +185,24 @@ namespace Chisel.Core
             index = idLookup.index;
             return sectionManager.IsAllocatedIndex(idLookup.index);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal unsafe bool IsValidIDUnsafe(int id, int generation, out int index)
+        {
+            var idInternal = id - 1; // We don't want 0 to be a valid id
+
+            index = -1;
+            if (idInternal < 0 || idInternal >= idToIndex.Length)
+                return false;
+
+            var idLookup = idToIndex.Ptr[idInternal];
+            if (idLookup.generation != generation)
+                return false;
+
+            index = idLookup.index;
+            return true;
+        }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe bool IsValidIndex(int index, out int id, out int generation)
@@ -420,46 +439,60 @@ namespace Chisel.Core
             }
         }
 
-        internal unsafe int InsertIntoIndexRange(int offset, int count, int insertIndex, int srcIndex)
+        internal unsafe int InsertIndexRange(int originalOffset, int originalCount, int srcIndex, int dstIndex, int moveCount = 1)
         {
-            var newCount = count + 1;
-            var newOffset = sectionManager.ReallocateRange(offset, count, newCount);
+            if (moveCount <= 0)
+                throw new ArgumentException($"{nameof(moveCount)} must be 1 or higher.");
+
+            var newCount = originalCount + moveCount;
+            var newOffset = sectionManager.ReallocateRange(originalOffset, originalCount, newCount);
             if (newOffset < 0)
                 throw new ArgumentException($"{nameof(newOffset)} must be 0 or higher.");
 
             if (indexToID.Length < newOffset + newCount)
                 indexToID.Resize(newOffset + newCount, NativeArrayOptions.ClearMemory);
 
-            var originalID = indexToID[srcIndex];
-            indexToID[srcIndex] = 0;
+            var originalIDs = stackalloc int[moveCount];
+            for (int index = 0; index < moveCount; index++)
+            {
+                originalIDs[index] = indexToID[srcIndex + index];
+                indexToID[srcIndex + index] = default;
+            }
 
             // We first move the front part (when necesary)
-            var range = insertIndex;
+            var range = dstIndex;
             if (range > 0)
-                indexToID.MemMove(newOffset, offset, range);
+                indexToID.MemMove(newOffset, originalOffset, range);
 
             // Then we move the back part to the correct new offset (when necesary) ..
-            range = count - insertIndex;
+            range = originalCount - dstIndex;
             if (range > 0)
-                indexToID.MemMove(newOffset + insertIndex + 1, offset + insertIndex, range);
+                indexToID.MemMove(newOffset + dstIndex + moveCount, originalOffset + dstIndex, range);
 
             // Then we copy srcIndex to the new location
-            var newNodeIndex = newOffset + insertIndex;
-            indexToID[newNodeIndex] = originalID;
+            var newNodeIndex = newOffset + dstIndex;
+            for (int index = 0; index < moveCount; index++)
+            {
+                indexToID[newNodeIndex + index] = originalIDs[index];
+            }
 
             // Then we set the old indices to 0
-            if (srcIndex < newOffset || srcIndex >= newOffset + newCount)
+            if (srcIndex >= newOffset && srcIndex + moveCount <= newOffset + newCount)
+                sectionManager.FreeRange(srcIndex, moveCount);
+            for (int index = srcIndex; index < srcIndex + moveCount; index++)
             {
-                sectionManager.FreeRange(srcIndex, 1);
-                indexToID[srcIndex] = default;
+                if (index >= newOffset && index < newOffset + newCount)
+                    continue;
+                
+                indexToID[index] = default;
             }
-            for (int index = offset, lastIndex = (offset + count); index < lastIndex; index++)
+            for (int index = originalOffset, lastIndex = (originalOffset + originalCount); index < lastIndex; index++)
             {
                 // TODO: figure out if there's an off by one here
                 if (index >= newOffset && index < newOffset + newCount)
                     continue;
 
-                indexToID[index] = 0;
+                indexToID[index] = default;
             }
 
             // And fixup the id to index lookup
@@ -566,18 +599,21 @@ namespace Chisel.Core
             if (range == 0)
                 return; // nothing to do
 
+            if (freeIDs.Capacity < freeIDs.Length + (lastIndex - startIndex + 1))
+                freeIDs.SetCapacity((int)((freeIDs.Length + (lastIndex - startIndex + 1)) * 1.5f));
             for (int index = startIndex; index < lastIndex; index++)
             {
                 var idInternal = indexToID[index] - 1;
                 indexToID[index] = 0;
 
-                Debug.Assert(!freeIDs.Contains(idInternal)); 
-                freeIDs.Add(idInternal);
+                //Debug.Assert(!freeIDs.Contains(idInternal)); // slow
+                freeIDs.AddNoResize(idInternal);
 
                 var idLookup = idToIndex[idInternal];
                 idLookup.index = -1;
                 idToIndex[idInternal] = idLookup;
             }
+
             sectionManager.FreeRange(startIndex, range);
         }
     }

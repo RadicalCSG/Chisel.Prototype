@@ -32,7 +32,6 @@ namespace Chisel.Core
         [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<float4x4>                  pathMatrices;
                 
         #region Generate
-        [BurstCompile]
         public int PrepareAndCountRequiredBrushMeshes()
         {
             ref var curve = ref curveBlob.Value;
@@ -46,10 +45,10 @@ namespace Chisel.Core
             return polygonVerticesSegments.Length * (pathMatrices.Length - 1);
         }
 
-        [BurstCompile()]
         public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            using (var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp))
+            var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
+            try
             {
                 generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
                 if (!BrushMeshFactory.GenerateExtrudedShape(generatedBrushMeshes,
@@ -63,12 +62,17 @@ namespace Chisel.Core
                     {
                         if (generatedBrushMeshes[i].IsCreated)
                             generatedBrushMeshes[i].Dispose();
+                        generatedBrushMeshes[i] = default;
                     }
                     return false;
                 }
                 for (int i = 0; i < generatedBrushMeshes.Length; i++)
                     nodes[i] = GeneratedNode.GenerateBrush(generatedBrushMeshes[i]);
                 return true;
+            }
+            finally
+            {
+                generatedBrushMeshes.Dispose();
             }
         }
 
@@ -132,9 +136,10 @@ namespace Chisel.Core
         }
 
 
+        const Allocator defaultAllocator = Allocator.TempJob;
         public override ChiselRevolvedShape GetBranchGenerator()
         {
-            settings.curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob);
+            settings.curveBlob = ChiselCurve2DBlob.Convert(shape, defaultAllocator);
             return base.GetBranchGenerator();
         }
 

@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 
@@ -29,16 +30,10 @@ namespace Chisel.Core
             public NativeChiselSurface  surface;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public override unsafe int GetHashCode() { unchecked { return (int)GetHashCode(ref this); } }
+            public override int GetHashCode() { unchecked { return (int)GetHashCode(ref this); } }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static unsafe uint GetHashCode(ref Polygon polygon)
-            {
-                fixed (Polygon* polygonPtr = &polygon)
-                {
-                    return math.hash(polygonPtr, sizeof(Polygon));
-                }
-            }
+            public static uint GetHashCode(ref Polygon polygon) { return HashExtensions.GetHashCode(ref polygon); }
         }
 
         /// <summary>Defines a half edge of a <see cref="BrushMeshBlob"/>.</summary>
@@ -66,15 +61,21 @@ namespace Chisel.Core
         public int                          localPlaneCount;    // number of surface planes
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override unsafe int GetHashCode()
+        public static int CalculateHashCode(ref BrushMeshBlob blob)
         {
             unchecked
             {
                 return (int)math.hash(
-                            new uint3(polygons     .Length == 0 ? 0 : math.hash(polygons     .GetUnsafePtr(), UnsafeUtility.SizeOf<Polygon>()  * polygons.Length),
-                                      localVertices.Length == 0 ? 0 : math.hash(localVertices.GetUnsafePtr(), UnsafeUtility.SizeOf<float3>()   * localVertices.Length),
-                                      halfEdges    .Length == 0 ? 0 : math.hash(halfEdges    .GetUnsafePtr(), UnsafeUtility.SizeOf<HalfEdge>() * halfEdges.Length)));
+                            new uint3(blob.polygons.Length      == 0 ? 0 : HashExtensions.GetHashCode(blob.polygons),
+                                      blob.localVertices.Length == 0 ? 0 : HashExtensions.GetHashCode(blob.localVertices),
+                                      blob.halfEdges.Length     == 0 ? 0 : HashExtensions.GetHashCode(blob.halfEdges)));
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override int GetHashCode()
+        {
+            return CalculateHashCode(ref this);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

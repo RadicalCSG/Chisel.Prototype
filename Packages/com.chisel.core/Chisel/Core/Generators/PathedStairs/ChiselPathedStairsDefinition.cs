@@ -30,7 +30,6 @@ namespace Chisel.Core
         [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<SegmentVertex> shapeVertices;
 
         #region Generate
-        [BurstCompile]
         public int PrepareAndCountRequiredBrushMeshes()
         {
             ref var curve = ref curveBlob.Value;
@@ -46,10 +45,10 @@ namespace Chisel.Core
                                                             stairs.sideWidth, stairs.sideHeight, stairs.sideDepth);
         }
 
-        [BurstCompile()]
         public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            using (var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp))
+            var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
+            try
             {
                 generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
                 ref var curve = ref curveBlob.Value;
@@ -67,6 +66,7 @@ namespace Chisel.Core
                     {
                         if (generatedBrushMeshes[i].IsCreated)
                             generatedBrushMeshes[i].Dispose();
+                        generatedBrushMeshes[i] = default;
                     }
                     return false;
                 }
@@ -74,11 +74,15 @@ namespace Chisel.Core
                     nodes[i] = GeneratedNode.GenerateBrush(generatedBrushMeshes[i]);
                 return true;
             }
+            finally
+            {
+                generatedBrushMeshes.Dispose();
+            }
         }
 
         public void Dispose()
         {
-            if (curveBlob.IsCreated) curveBlob.Dispose();
+            if (curveBlob.IsCreated) curveBlob.Dispose(); curveBlob = default;
         }
         #endregion
 
@@ -135,9 +139,10 @@ namespace Chisel.Core
             base.Validate(); 
         }
 
+        const Allocator defaultAllocator = Allocator.TempJob;
         public override ChiselPathedStairs GetBranchGenerator()
         {
-            settings.curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob);
+            settings.curveBlob = ChiselCurve2DBlob.Convert(shape, defaultAllocator);
             settings.closed = shape.closed;
             return base.GetBranchGenerator();
         }

@@ -37,18 +37,12 @@ namespace Chisel.Components
         }
 
         protected override bool EnsureTopNodeCreatedInternal(in CSGTree tree, ref CSGTreeNode node, int userID)
-        {    
-            Profiler.BeginSample("OnValidateDefinition");
+        {
             OnValidateDefinition();
-            Profiler.EndSample();
 
             var brush = (CSGTreeBrush)node;
             if (!brush.Valid)
-            {
-                Profiler.BeginSample("GenerateTopNode");
                 node = GenerateTopNode(in tree, brush, userID, operation);
-                Profiler.EndSample();
-            }
             return true;
         }
 

@@ -51,7 +51,6 @@ namespace Chisel.Core
         #endregion
 
         #region Generate
-        [BurstCompile]
         public ChiselBlobAssetReference<BrushMeshBlob> GenerateMesh(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.CreateBox(bounds.Min, bounds.Max,

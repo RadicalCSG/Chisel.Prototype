@@ -22,9 +22,9 @@
       "depth": 0,
       "source": "embedded",
       "dependencies": {
-        "com.unity.burst": "1.6.0",
+        "com.unity.burst": "1.6.1",
         "com.unity.jobs": "0.11.0-preview.6",
-        "com.unity.collections": "1.0.0-pre.5",
+        "com.unity.collections": "1.0.0-pre.6",
         "com.unity.mathematics": "1.2.1"
       }
     },
@@ -78,7 +78,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.rider": {
-      "version": "3.0.7",
+      "version": "3.0.9",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -107,7 +107,7 @@
     },
     "com.unity.mathematics": {
       "version": "1.2.5",
-      "depth": 1,
+      "depth": 0,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
@@ -134,7 +134,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.test-framework": {
-      "version": "1.1.29",
+      "version": "1.1.30",
       "depth": 1,
       "source": "registry",
       "dependencies": {

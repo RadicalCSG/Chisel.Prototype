@@ -13,8 +13,8 @@ namespace Chisel.Core
     struct StoreToCacheJob : IJob
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder> allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<ChiselAABB> brushTreeSpaceBoundCache;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>   allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<ChiselAABB>  brushTreeSpaceBoundCache;
         [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferCache;
 
         // Read, Write

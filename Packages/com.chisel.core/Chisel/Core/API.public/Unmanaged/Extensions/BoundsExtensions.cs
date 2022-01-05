@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using Unity.Mathematics;
 using Mathf = UnityEngine.Mathf;
 
@@ -6,6 +7,7 @@ namespace Chisel.Core
 {
     public static class BoundsExtensions
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsValid(UnityEngine.Vector3 min, UnityEngine.Vector3 max)
         {
             const float kMinSize = 0.0001f;
@@ -20,6 +22,7 @@ namespace Chisel.Core
             return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsValid(float3 min, float3 max)
         {
             const float kMinSize = 0.0001f;
@@ -34,6 +37,7 @@ namespace Chisel.Core
             return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Intersects(this ChiselAABB left, ChiselAABB right, double epsilon)
         {
             return ((right.Max.x - left.Min.x) >= -epsilon) && ((left.Max.x - right.Min.x) >= -epsilon) &&

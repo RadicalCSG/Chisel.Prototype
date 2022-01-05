@@ -52,7 +52,23 @@ namespace Chisel.Core
         {
             if (!FindSectionByOffset(index, out var sectionIndex))
                 return true;
-            return ((sectionIndex & 1) == 0) ? firstElementFree : !firstElementFree; 
+            return ((sectionIndex & 1) == 0) ? firstElementFree : !firstElementFree;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsAnyIndexFree(int index, int count)
+        {
+            if (count <= 0)
+                return false;
+            // TODO: optimize
+            for (int i = index; i < index + count; i++)
+            {
+                if (!FindSectionByOffset(i, out var sectionIndex))
+                    return true;
+                if (((sectionIndex & 1) == 0) ? firstElementFree : !firstElementFree)
+                    return true;
+            }
+            return false;
         }
 
         public bool IsCreated { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return sections.IsCreated; } }
@@ -92,7 +108,6 @@ namespace Chisel.Core
         struct SectionFindStack { public int first, last; }
 
         // Find section by offset using binary search
-        [BurstCompile]
         unsafe bool FindSectionByOffset(int findOffset, out int foundSection)
         {
             foundSection = -1;
@@ -195,7 +210,7 @@ namespace Chisel.Core
             if (sectionLength < originalLength)
                 throw new IndexOutOfRangeException("Cannot reallocate section because it's not completely allocated");
 
-            var requiredExtraLength = newLength - originalLength;
+            var requiredExtraLength = newLength - originalLength; 
             if (requiredExtraLength == 0)
                 return offset; // nothing to do
 

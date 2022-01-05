@@ -42,13 +42,11 @@ namespace Chisel.Core
             };
         }
 
-        [BurstCompile]
         static float2 PointOnBezier(float2 p0, float2 p1, float2 p2, float2 p3, float t)
         {
             return (1 - t) * (1 - t) * (1 - t) * p0 + 3 * t * (1 - t) * (1 - t) * p1 + 3 * t * t * (1 - t) * p2 + t * t * t * p3;
         }
 
-        [BurstCompile]
         public void GetPathVertices(int shapeCurveSegments, NativeList<SegmentVertex> shapeVertices)
         {
             var length = controlPoints.Length;
@@ -88,8 +86,7 @@ namespace Chisel.Core
                 }
             }
         }
-        
-        [BurstCompile]
+
         public void GetPathVertices(int shapeCurveSegments, out UnsafeList<SegmentVertex> shapeVertices, Allocator allocator)
         {
             var length = controlPoints.Length;
@@ -132,7 +129,6 @@ namespace Chisel.Core
         }
 
         // TODO: put somewhere else
-        [BurstCompile]
         static float CalculateOrientation(NativeList<SegmentVertex> vertices, Range range)
         {
             // Newell's algorithm to create a plane for concave polygons.
@@ -149,7 +145,6 @@ namespace Chisel.Core
         }
 
         // TODO: put somewhere else
-        [BurstCompile]
         public static float CalculateOrientation(UnsafeList<SegmentVertex> vertices, Range range)
         {
             // Newell's algorithm to create a plane for concave polygons.
@@ -166,7 +161,6 @@ namespace Chisel.Core
         }
 
 
-        [BurstCompile]
         public bool ConvexPartition(int curveSegments, out NativeList<SegmentVertex> polygonVerticesArray, out NativeList<int> polygonVerticesSegments, Allocator allocator)
         {
             using (var shapeVertices = new NativeList<SegmentVertex>(Allocator.Temp))
@@ -218,7 +212,6 @@ namespace Chisel.Core
             }
         }
 
-        [BurstCompile]
         public bool ConvexPartition(int curveSegments, out UnsafeList<SegmentVertex> polygonVerticesArray, out UnsafeList<int> polygonVerticesSegments, Allocator allocator)
         {
             using (var shapeVertices = new NativeList<SegmentVertex>(Allocator.Temp))

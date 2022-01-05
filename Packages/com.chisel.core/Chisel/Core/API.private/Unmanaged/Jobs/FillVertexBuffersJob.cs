@@ -44,7 +44,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public int                  meshQueryLength;
         [NoAlias, ReadOnly] public NativeReference<int> surfaceCountRef;
 
-        // Write
+        // Read/Write
         [NoAlias] public NativeList<SubMeshCounts>      subMeshCounts;
         [NoAlias] public NativeList<SubMeshSection>     subMeshSections;
 
@@ -52,10 +52,10 @@ namespace Chisel.Core
         {
             var subMeshCapacity = surfaceCountRef.Value * meshQueryLength;
             if (subMeshCounts.Capacity < subMeshCapacity)
-                subMeshCounts.Capacity = subMeshCapacity;
+                subMeshCounts.Capacity = math.max(4, subMeshCapacity);
             
             if (subMeshSections.Capacity < subMeshCapacity)
-                subMeshSections.Capacity = subMeshCapacity;
+                subMeshSections.Capacity = math.max(4, subMeshCapacity);
         }
     }
 
@@ -64,8 +64,8 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public int meshQueryLength;
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                   allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>  brushRenderBufferCache;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                           allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>   brushRenderBufferCache;
 
         // Write
         [NoAlias, WriteOnly] public NativeList<BrushData>.ParallelWriter brushRenderData;
@@ -119,8 +119,9 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<BrushData>   brushRenderData;
 
         // Read, Write
+        public Allocator allocator;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeListArray<SubMeshSurface>    subMeshSurfaces;
+        [NoAlias] public NativeArray<UnsafeList<SubMeshSurface>> subMeshSurfaces;
 
         struct SubMeshSurfaceComparer : System.Collections.Generic.IComparer<SubMeshSurface>
         {
@@ -144,9 +145,14 @@ namespace Chisel.Core
             //              => this whole job could be removed
             // TODO: store surface info and its vertices/indices separately, both sequentially in arrays
             // TODO: store surface vertices/indices sequentially in a big array, *somehow* make ordering work
-                
-            subMeshSurfaces.AllocateWithCapacityForIndex(t, requiredSurfaceCount);
-            var subMeshSurfaceList = subMeshSurfaces[t];
+
+            if (subMeshSurfaces[t].IsCreated)
+            {
+                // should not happen
+                subMeshSurfaces[t].Dispose();
+                subMeshSurfaces[t] = default;
+            }
+            var subMeshSurfaceList = new UnsafeList<SubMeshSurface>(requiredSurfaceCount, allocator);
 
             for (int b = 0, count_b = brushRenderData.Length; b < count_b; b++)
             {
@@ -173,8 +179,9 @@ namespace Chisel.Core
                 }
                 // ^ do those 3 points (mentioned in comments)
             }
-
-            subMeshSurfaceList.AsArray().Sort(subMeshSurfaceComparer);
+            
+            subMeshSurfaceList.Sort(subMeshSurfaceComparer);
+            subMeshSurfaces[t] = subMeshSurfaceList;
         }
     }
 
@@ -183,7 +190,7 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<MeshQuery>           meshQueries;
-        [NoAlias, ReadOnly] public NativeListArray<SubMeshSurface>  subMeshSurfaces;
+        [NoAlias, ReadOnly] public NativeArray<UnsafeList<SubMeshSurface>> subMeshSurfaces;
 
         // Write
         [NoAlias, WriteOnly] public NativeList<SubMeshCounts> subMeshCounts;
@@ -373,17 +380,18 @@ namespace Chisel.Core
     struct AllocateVertexBuffersJob : IJob
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<SubMeshSection>                      subMeshSections;
+        [NoAlias, ReadOnly] public NativeArray<SubMeshSection> subMeshSections;
 
         // Read / Write
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<CompactNodeID> triangleBrushIndices;
+        public Allocator allocator;
+        [NativeDisableParallelForRestriction, NoAlias] public NativeList<UnsafeList<CompactNodeID>> triangleBrushIndices;
 
         public void Execute()
         {
             if (subMeshSections.Length == 0)
                 return;
 
-            triangleBrushIndices.   ResizeExact(subMeshSections.Length);
+            triangleBrushIndices.Resize(subMeshSections.Length, NativeArrayOptions.ClearMemory);
             for (int i = 0; i < subMeshSections.Length; i++)
             {
                 var section             = subMeshSections[i];
@@ -392,9 +400,9 @@ namespace Chisel.Core
                     continue;
 
                 var totalIndexCount = section.totalIndexCount;
-                triangleBrushIndices.AllocateWithCapacityForIndex(i, totalIndexCount / 3);                        
-                triangleBrushIndices[i].Clear();
-                triangleBrushIndices[i].Resize(totalIndexCount / 3, NativeArrayOptions.ClearMemory);
+                var newBrushIndices = new UnsafeList<CompactNodeID>(totalIndexCount / 3, allocator);
+                newBrushIndices.Resize(totalIndexCount / 3, NativeArrayOptions.ClearMemory);
+                triangleBrushIndices[i] = newBrushIndices;
             }
         }
     }
@@ -436,6 +444,11 @@ namespace Chisel.Core
     }    
     
 
+    public enum ChiselMeshType
+    {
+        Render,
+        Collider
+    }
 
     public struct ChiselMeshUpdate
     {
@@ -443,6 +456,7 @@ namespace Chisel.Core
         public int colliderIndex;
         public int meshIndex;
         public int objectIndex;
+        public ChiselMeshType type;
     }
     
     [BurstCompile(CompileSynchronously = true)]
@@ -470,15 +484,15 @@ namespace Chisel.Core
         [NoAlias, WriteOnly] public NativeList<ChiselMeshUpdate>        debugHelperMeshes;
         [NoAlias, WriteOnly] public NativeList<ChiselMeshUpdate>        renderMeshes;
 
-        // Read / Write
+        // Read / Write (allocate)
         [NoAlias] public NativeList<ChiselMeshUpdate>                   colliderMeshUpdates;
+        [NoAlias] public NativeList<ChiselMeshUpdate>                   meshUpdates;
 
 
         [BurstDiscard]
         public static void InvalidQuery(LayerUsageFlags query, LayerUsageFlags mask)
         {
             Debug.Assert(false, $"Invalid helper query used (query: {query}, mask: {mask})");
-
         }
 
         public void Execute() 
@@ -487,6 +501,8 @@ namespace Chisel.Core
             int colliderCount = 0;
             if (meshDescriptions.IsCreated)
             {
+                if (meshUpdates.Capacity < subMeshSections.Length)
+                    meshUpdates.Capacity = subMeshSections.Length;
                 for (int i = 0; i < subMeshSections.Length; i++)
                 {
                     var subMeshSection = subMeshSections[i];
@@ -510,25 +526,33 @@ namespace Chisel.Core
                             continue;
                         }
 
-                        meshes.Add(meshDatas[meshIndex]);
-                        debugHelperMeshes.Add(new ChiselMeshUpdate
+                        var meshUpdate = new ChiselMeshUpdate
                         {
-                            contentsIndex       = i,
-                            meshIndex           = meshIndex,
-                            objectIndex         = helperIndex
-                        });
+                            contentsIndex   = i,
+                            meshIndex       = meshIndex,
+                            objectIndex     = helperIndex,
+                            type            = ChiselMeshType.Render
+                        };
+
+                        meshes.Add(meshDatas[meshIndex]);
+                        debugHelperMeshes.Add(meshUpdate);
+                        meshUpdates.Add(meshUpdate);
                         meshIndex++; 
                     } else
                     if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
                     {
                         var renderIndex = (int)(subMeshSection.meshQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows);
-                        meshes.Add(meshDatas[meshIndex]);
-                        renderMeshes.Add(new ChiselMeshUpdate
+                        var meshUpdate = new ChiselMeshUpdate
                         {
                             contentsIndex       = i,
                             meshIndex           = meshIndex,
-                            objectIndex         = renderIndex
-                        });
+                            objectIndex         = renderIndex,
+                            type                = ChiselMeshType.Render
+                        };
+
+                        meshes.Add(meshDatas[meshIndex]);
+                        renderMeshes.Add(meshUpdate);
+                        meshUpdates.Add(meshUpdate);
                         meshIndex++;
                     } else
                     if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)
@@ -548,51 +572,139 @@ namespace Chisel.Core
                         continue;
 
                     var surfaceParameter = meshDescriptions[subMeshSection.startIndex].surfaceParameter;
-
-                    meshes.Add(meshDatas[meshIndex]);
-                    colliderMeshUpdates.Add(new ChiselMeshUpdate
+                    var meshUpdate = new ChiselMeshUpdate
                     {
                         contentsIndex   = i,
                         colliderIndex   = colliderIndex,
                         meshIndex       = meshIndex,
-                        objectIndex     = surfaceParameter
-                    });
+                        objectIndex     = surfaceParameter,
+                        type            = ChiselMeshType.Collider
+                    };
+
+                    meshes.Add(meshDatas[meshIndex]);
+                    colliderMeshUpdates.Add(meshUpdate);
+                    meshUpdates.Add(meshUpdate);
                     colliderIndex++;
                     meshIndex++;
                 }
             }
         }
     }
-
+    
     [BurstCompile(CompileSynchronously = true, OptimizeFor = OptimizeFor.Performance)]
-    struct CopyToRenderMeshJob : IJobParallelForDefer
+    struct FindTriangleBrushIndicesJob : IJobParallelForDefer
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<SubMeshSection>              subMeshSections;
         [NoAlias, ReadOnly] public NativeArray<SubMeshCounts>               subMeshCounts;
-        [NoAlias, ReadOnly] public NativeListArray<SubMeshSurface>          subMeshSurfaces;
+        [NoAlias, ReadOnly] public NativeArray<UnsafeList<SubMeshSurface>>  subMeshSurfaces;
 
-        [NoAlias, ReadOnly] public NativeArray<VertexAttributeDescriptor>   renderDescriptors;
-        [NoAlias, ReadOnly] public NativeArray<ChiselMeshUpdate>            renderMeshes;
+        [NoAlias, ReadOnly] public NativeArray<ChiselMeshUpdate>            meshUpdates;
 
         // Read / Write
-        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeListArray<CompactNodeID>    triangleBrushIndices;
-        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeList<Mesh.MeshData>         meshes;
+        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeList<UnsafeList<CompactNodeID>> triangleBrushIndices;
 
         public void Execute(int renderIndex)
         {
-            var update          = renderMeshes[renderIndex];
-            var contentsIndex   = update.contentsIndex;
-            var meshIndex       = update.meshIndex;
-            
+            var update              = meshUpdates[renderIndex];
+            if (update.type != ChiselMeshType.Render)
+                return;
+                
+            var contentsIndex       = update.contentsIndex;            
             var vertexBufferInit    = subMeshSections[contentsIndex];
+            var triangleIndices     = triangleBrushIndices[contentsIndex];
+            FindTriangleBrushIndices(vertexBufferInit, triangleIndices);
+        }
+
+        void FindTriangleBrushIndices(SubMeshSection vertexBufferInit, UnsafeList<CompactNodeID> triangleIndices)
+        {
             var startIndex          = vertexBufferInit.startIndex;
             var endIndex            = vertexBufferInit.endIndex;
             var numberOfSubMeshes   = endIndex - startIndex;
             var totalVertexCount    = vertexBufferInit.totalVertexCount;
-            var totalIndexCount     = vertexBufferInit.totalIndexCount;
-            
-            var meshData        = meshes[meshIndex];
+            var totalIndexCount     = vertexBufferInit.totalIndexCount;            
+            if (numberOfSubMeshes == 0 ||
+                totalVertexCount == 0 ||
+                totalIndexCount == 0)
+                return;
+
+            int currentBaseIndex    = 0;
+
+            for (int subMeshIndex = 0, d = startIndex; d < endIndex; d++, subMeshIndex++)
+            {
+                var subMeshCount        = subMeshCounts[d];
+                var indexCount		    = subMeshCount.indexCount;
+                var surfacesOffset      = subMeshCount.surfacesOffset;
+                var surfacesCount       = subMeshCount.surfacesCount;
+                var meshQueryIndex      = subMeshCount.meshQueryIndex;
+                var subMeshSurfaceArray = subMeshSurfaces[meshQueryIndex];
+
+                for (int surfaceIndex       = surfacesOffset, 
+                         brushIDIndexOffset = currentBaseIndex / 3, 
+                         lastSurfaceIndex   = surfacesCount + surfacesOffset;
+
+                         surfaceIndex < lastSurfaceIndex;
+
+                         ++surfaceIndex)
+                {
+                    var subMeshSurface      = subMeshSurfaceArray[surfaceIndex];
+                    var brushNodeID         = subMeshSurface.brushNodeID;
+                    ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
+                            
+                    ref var sourceIndices   = ref sourceBuffer.indices;
+                
+                    var sourceIndexCount    = sourceIndices.Length;
+                    
+                    if (sourceIndexCount == 0)
+                        continue;
+                        
+                    var sourceBrushCount    = sourceIndexCount / 3;
+                    for (int n = 0; n < sourceBrushCount; n++)
+                        triangleIndices[n + brushIDIndexOffset] = brushNodeID;
+                    brushIDIndexOffset += sourceBrushCount;
+                }
+                currentBaseIndex += indexCount;
+            }
+        }
+    }
+    
+    [BurstCompile(CompileSynchronously = true, OptimizeFor = OptimizeFor.Performance)]
+    struct CopyToMeshJob : IJobParallelForDefer
+    {
+        // Read
+        [NoAlias, ReadOnly] public NativeArray<SubMeshSection>              subMeshSections;
+        [NoAlias, ReadOnly] public NativeArray<SubMeshCounts>               subMeshCounts;
+        [NoAlias, ReadOnly] public NativeArray<UnsafeList<SubMeshSurface>>  subMeshSurfaces;
+
+        [NoAlias, ReadOnly] public NativeArray<VertexAttributeDescriptor>   renderDescriptors;
+        [NoAlias, ReadOnly] public NativeArray<VertexAttributeDescriptor>   colliderDescriptors;
+        [NoAlias, ReadOnly] public NativeArray<ChiselMeshUpdate>            meshUpdates;
+
+        // Read / Write
+        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeList<Mesh.MeshData> meshes;
+
+        public void Execute(int renderIndex)
+        {
+            var update              = meshUpdates[renderIndex];
+            var contentsIndex       = update.contentsIndex;
+            var meshIndex           = update.meshIndex;
+
+            var vertexBufferInit    = subMeshSections[contentsIndex];
+            var meshData            = meshes[meshIndex];
+
+            if (update.type == ChiselMeshType.Render)
+                CopyRenderMesh(vertexBufferInit, meshData);
+            else
+                CopyColliderMesh(vertexBufferInit, meshData);
+        }
+
+        void CopyRenderMesh(SubMeshSection vertexBufferInit, Mesh.MeshData meshData)
+        {
+            var startIndex          = vertexBufferInit.startIndex;
+            var endIndex            = vertexBufferInit.endIndex;
+            var numberOfSubMeshes   = endIndex - startIndex;
+            var totalVertexCount    = vertexBufferInit.totalVertexCount;
+            var totalIndexCount     = vertexBufferInit.totalIndexCount;            
             if (numberOfSubMeshes == 0 ||
                 totalVertexCount == 0 ||
                 totalIndexCount == 0)
@@ -610,10 +722,8 @@ namespace Chisel.Core
             var vertices    = meshData.GetVertexData<RenderVertex>(stream: 0);
             var indices     = meshData.GetIndexData<int>();
 
-            var triangleBrushIndices = this.triangleBrushIndices[contentsIndex].AsArray();
-                
-            int currentBaseVertex = 0;
-            int currentBaseIndex = 0;
+            int currentBaseVertex   = 0;
+            int currentBaseIndex    = 0;
 
             for (int subMeshIndex = 0, d = startIndex; d < endIndex; d++, subMeshIndex++)
             {
@@ -623,14 +733,13 @@ namespace Chisel.Core
                 var surfacesOffset      = subMeshCount.surfacesOffset;
                 var surfacesCount       = subMeshCount.surfacesCount;
                 var meshQueryIndex      = subMeshCount.meshQueryIndex;
-                var subMeshSurfaceArray = subMeshSurfaces[meshQueryIndex].AsArray();
+                var subMeshSurfaceArray = subMeshSurfaces[meshQueryIndex];
 
                 var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
                 var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
 
                 // copy all the vertices & indices to the sub-meshes, one sub-mesh per material
                 for (int surfaceIndex       = surfacesOffset, 
-                         brushIDIndexOffset = currentBaseIndex / 3, 
                          indexOffset        = currentBaseIndex, 
                          indexVertexOffset  = 0, 
                          lastSurfaceIndex   = surfacesCount + surfacesOffset;
@@ -640,7 +749,6 @@ namespace Chisel.Core
                          ++surfaceIndex)
                 {
                     var subMeshSurface      = subMeshSurfaceArray[surfaceIndex];
-                    var brushNodeID         = subMeshSurface.brushNodeID;
                     ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
                             
                     ref var sourceIndices   = ref sourceBuffer.indices;
@@ -652,11 +760,6 @@ namespace Chisel.Core
                     if (sourceIndexCount == 0 ||
                         sourceVertexCount == 0)
                         continue;
-                        
-                    var sourceBrushCount    = sourceIndexCount / 3;
-                    for (int n = 0; n < sourceBrushCount; n++)
-                        triangleBrushIndices[n + brushIDIndexOffset] = brushNodeID;
-                    brushIDIndexOffset += sourceBrushCount;
 
                     for (int i = 0; i < sourceIndexCount; i++)
                         indices[i + indexOffset] = (int)(sourceIndices[i] + indexVertexOffset);
@@ -683,41 +786,18 @@ namespace Chisel.Core
                     indexCount  = indexCount,
                     bounds      = dstBounds,
                     topology    = UnityEngine.MeshTopology.Triangles,
-                }, MeshUpdateFlags.DontRecalculateBounds);
+                }, MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices);
 
                 currentBaseVertex += vertexCount;
                 currentBaseIndex += indexCount;
             }
         }
-    }
 
-    [BurstCompile(CompileSynchronously = true)]
-    struct CopyToColliderMeshJob : IJobParallelForDefer
-    {
-        // Read
-        [NoAlias, ReadOnly] public NativeArray<SubMeshSection>              subMeshSections;
-        [NoAlias, ReadOnly] public NativeArray<SubMeshCounts>               subMeshCounts;
-        [NoAlias, ReadOnly] public NativeListArray<SubMeshSurface>          subMeshSurfaces;
-
-        [NoAlias, ReadOnly] public NativeArray<VertexAttributeDescriptor>   colliderDescriptors;
-        [NoAlias, ReadOnly] public NativeArray<ChiselMeshUpdate>            colliderMeshes;
-
-        // Read / Write
-        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeList<Mesh.MeshData> meshes;
-
-
-
-        public void Execute(int colliderIndex)
+        void CopyColliderMesh(SubMeshSection vertexBufferInit, Mesh.MeshData meshData)
         {
-            var update              = colliderMeshes[colliderIndex];
-            var contentsIndex       = update.contentsIndex;
-            var meshIndex           = update.meshIndex;
-            
-            var vertexBufferInit    = subMeshSections[contentsIndex];
             var totalVertexCount    = vertexBufferInit.totalVertexCount;
             var totalIndexCount     = vertexBufferInit.totalIndexCount;
 
-            var meshData            = meshes[meshIndex];
             if (totalVertexCount == 0 ||
                 totalIndexCount == 0)
             {
@@ -727,7 +807,6 @@ namespace Chisel.Core
                 return;
             }
             var startIndex          = vertexBufferInit.startIndex;
-
 
             meshData.SetVertexBufferParams(totalVertexCount, colliderDescriptors);
             meshData.SetIndexBufferParams(totalIndexCount, IndexFormat.UInt32);
@@ -782,13 +861,10 @@ namespace Chisel.Core
             Debug.Assert(indexOffset == totalIndexCount);
             Debug.Assert(vertexOffset == totalVertexCount);
 
-
-
-                
             var srcBounds   = new ChiselAABB { Min = min, Max = max };
             var center      = (Vector3)((srcBounds.Max + srcBounds.Min) * 0.5f);
             var size        = (Vector3)(srcBounds.Max - srcBounds.Min);
-            
+            var dstBounds   = new Bounds(center, size);
             meshData.subMeshCount = 1;
             meshData.SetSubMesh(0, new SubMeshDescriptor
             {
@@ -797,9 +873,9 @@ namespace Chisel.Core
                 vertexCount = vertexCount,
                 indexStart  = 0,
                 indexCount  = indexCount,
-                bounds      = new Bounds(center, size),
+                bounds      = dstBounds,
                 topology    = UnityEngine.MeshTopology.Triangles,
-            }, MeshUpdateFlags.DontRecalculateBounds);
+            }, MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices);
         }
     }
 }

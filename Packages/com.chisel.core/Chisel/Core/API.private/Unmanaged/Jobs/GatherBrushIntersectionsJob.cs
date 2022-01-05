@@ -10,15 +10,16 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    unsafe struct GatherBrushIntersectionPairsJob : IJob
+    struct GatherBrushIntersectionPairsJob : IJob
     {
         // Read
-        [NoAlias, ReadOnly] public NativeListArray<BrushIntersectWith> brushBrushIntersections;
+        [NoAlias, ReadOnly] public NativeArray<UnsafeList<BrushIntersectWith>> brushBrushIntersections;
 
         // Write
-        [NativeDisableUnsafePtrRestriction]
-        [NoAlias, WriteOnly] public UnsafeList<BrushIntersectWith>* brushIntersectionsWith;
-        [NoAlias, WriteOnly] public NativeArray<int2>               brushIntersectionsWithRange;
+        [NoAlias, WriteOnly] public NativeArray<int2>       brushIntersectionsWithRange;
+
+        // Read / Write
+        [NoAlias] public NativeList<BrushIntersectWith>     brushIntersectionsWith;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeList<BrushPair> intersections;
@@ -43,16 +44,16 @@ namespace Chisel.Core
 
         public void Execute()
         {
-            var minCount = brushBrushIntersections.Count * 16;
+            var minCount = brushBrushIntersections.Length * 16;
 
             NativeCollectionHelpers.EnsureCapacityAndClear(ref intersections, minCount);
 
-            for (int i = 0; i < brushBrushIntersections.Count; i++)
+            for (int i = 0; i < brushBrushIntersections.Length; i++)
             {
-                if (!brushBrushIntersections.IsAllocated(i))
+                if (!brushBrushIntersections[i].IsCreated)
                     continue;
                 var subArray = brushBrushIntersections[i];
-                for (int j = 0; j < subArray.Count; j++)
+                for (int j = 0; j < subArray.Length; j++)
                 {
                     var intersectWith = subArray[j];
                     var pair = new BrushPair
@@ -66,15 +67,18 @@ namespace Chisel.Core
                     intersections.Add(pair);
                 }
             }
-            brushIntersectionsWith->Clear();
+            brushIntersectionsWith.Clear();
             if (intersections.Length == 0)
                 return;
+
+            if (brushIntersectionsWith.Capacity < intersections.Length)
+                brushIntersectionsWith.Capacity = intersections.Length;
 
             intersections.Sort(new ListComparer());           
 
             var currentPair = intersections[0];
             int previousOrder = currentPair.brushNodeOrder0;
-            brushIntersectionsWith->Add(new BrushIntersectWith
+            brushIntersectionsWith.AddNoResize(new BrushIntersectWith
             {
                 brushNodeOrder1 = currentPair.brushNodeOrder1,
                 type            = currentPair.type,
@@ -84,7 +88,7 @@ namespace Chisel.Core
             {
                 currentPair = intersections[i];
                 int currentOrder = currentPair.brushNodeOrder0;
-                brushIntersectionsWith->Add(new BrushIntersectWith
+                brushIntersectionsWith.AddNoResize(new BrushIntersectWith
                 {
                     brushNodeOrder1 = currentPair.brushNodeOrder1,
                     type            = currentPair.type,

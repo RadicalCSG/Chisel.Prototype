@@ -2,6 +2,7 @@ using Chisel.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -195,6 +196,8 @@ namespace Chisel.Components
             updateChildrenQueueList.Clear();
             sortChildrenQueue.Clear();
             hierarchyUpdateQueue.Clear();
+
+            rebuildBrushMeshes.Clear();
         }
 
         static void ClearTemporaries()
@@ -283,6 +286,7 @@ namespace Chisel.Components
             component.hierarchyItem.Registered = false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void UpdateAvailability(ChiselNode node)
         {
             if (!node.IsActive)
@@ -318,20 +322,26 @@ namespace Chisel.Components
 
 
         // Let the hierarchy manager know that this/these node(s) has/have moved, so we can regenerate meshes
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] 
         public static void RebuildTreeNodes(ChiselNode node) { if (node) rebuildTreeNodes.Add(node); }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] 
         public static void UpdateTreeNodeTransformation(ChiselNode node) { if (node) updateTransformationNodes.Add(node); }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] 
         public static void NotifyTransformationChanged(HashSet<ChiselNode> nodes) { foreach (var node in nodes) if (node) updateTransformationNodes.Add(node); }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] 
         public static void UpdateAllTransformations() { foreach (var node in registeredNodes) if (node) updateTransformationNodes.Add(node); }
 
 
         // Let the hierarchy manager know that the contents of this node has been modified
         //	so we can rebuild/update sub-trees and regenerate meshes
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void NotifyContentsModified(ChiselNode node)
         {
             node.hierarchyItem.SetBoundsDirty();
             node.TopTreeNode.SetDirty();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void UpdateGeneratedBrushes(ChiselNode node)
         {
             node.UpdateBrushMeshInstances();
@@ -940,6 +950,8 @@ namespace Chisel.Components
                 rebuildBrushMeshes.Count == 0)
                 return;
 
+ForceRerun:
+            bool forceRerun = false;
             TransformNodeLookupClear();
             __registerNodes   .Clear();
             __unregisterNodes .Clear();
@@ -1153,19 +1165,13 @@ namespace Chisel.Components
                         continue;
                     }
 
-                    Profiler.BeginSample("UpdateTrampoline.hierarchyUpdateQueue.reset");
                     hierarchyItem.Component.ResetTreeNodes();
-                    Profiler.EndSample();
-
+                    
                     //Debug.Log($"addToHierarchyQueue {hierarchyItem.Component}", hierarchyItem.Component);
-                    Profiler.BeginSample("UpdateTrampoline.hierarchyUpdateQueue.GetSceneHierarchyForScene");
                     var sceneHierarchy = GetSceneHierarchyForScene(hierarchyItem.Scene);
                     hierarchyItem.sceneHierarchy = sceneHierarchy;
-                    Profiler.EndSample();
-
-                    Profiler.BeginSample("UpdateTrampoline.hierarchyUpdateQueue.UpdateSiblingIndices");
+                    
                     hierarchyItem.parentComponent = UpdateSiblingIndices(hierarchyItem);
-                    Profiler.EndSample();
                     if (hierarchyItem.parentComponent != null &&
                         hierarchyItem.parentComponent.hierarchyItem != null)
                     {
@@ -1175,11 +1181,10 @@ namespace Chisel.Components
                 }
                 foreach(var parent in parentUpdateQueue)
                 {
-                    Profiler.BeginSample("UpdateTrampoline.hierarchyUpdateQueue.AddChildren");
                     var children = parent.Children;
+                    siblingIndexUpdateQueue.EnsureCapacity(siblingIndexUpdateQueue.Count + children.Count);
                     for (int c = 0; c < children.Count; c++)
                         siblingIndexUpdateQueue.Add(children[c]);
-                    Profiler.EndSample();
                 }
                 foreach (var node in addToHierarchyQueue)
                     hierarchyUpdateQueue.Add(node.Component);
@@ -1298,7 +1303,8 @@ namespace Chisel.Components
                     {
                         if (!(hierarchyItem.Component is ChiselModel))
                         {
-                            hierarchyItem.parentComponent = hierarchyItem.sceneHierarchy.GetOrCreateDefaultModel();
+                            hierarchyItem.parentComponent = hierarchyItem.sceneHierarchy.GetOrCreateDefaultModel(out var created);
+                            if (created) forceRerun = true;
                         }
                     }
                 }
@@ -1327,7 +1333,8 @@ namespace Chisel.Components
                 {
                     if (!(hierarchyItem.Component is ChiselModel))
                     {
-                        hierarchyItem.parentComponent = sceneHierarchy.GetOrCreateDefaultModel();
+                        hierarchyItem.parentComponent = sceneHierarchy.GetOrCreateDefaultModel(out var created);
+                        if (created) forceRerun = true;
                     }
                 }
 
@@ -1530,17 +1537,14 @@ namespace Chisel.Components
                     if (!parentComponent)
                         continue;
 
-                    var parentTreeNode = parentComponent.TopTreeNode;
-                    if (!parentTreeNode.Valid)
-                        continue;
-
                     if (!parentComponent.IsContainer ||
                         hierarchyItem.Children.Count == 0)
                         continue;
 
+                    var parentTreeNode = parentComponent.TopTreeNode;                    
                     if (!parentTreeNode.Valid)
                     {
-                        Debug.LogWarning($"SetChildren called on a {nameof(ChiselComposite)} ({parentComponent}) that isn't properly initialized", parentComponent);
+                        //Debug.LogWarning($"SetChildren called on a {nameof(ChiselComposite)} ({parentComponent}) that isn't properly initialized", parentComponent);
                         continue;
                     }
 
@@ -1606,6 +1610,14 @@ namespace Chisel.Components
             }
             Profiler.EndSample();
 
+            // When we're forced to create a default model during this loop, this creates changes. 
+            // This forces us to go through everything again, to ensure those changes are properly handled.
+            if (forceRerun)
+            {
+                forceRerun = false;
+                goto ForceRerun;
+            }
+
             UpdateBrushMeshes();
 
             Profiler.BeginSample("UpdateTrampoline.End");
@@ -1632,10 +1644,20 @@ namespace Chisel.Components
             Profiler.EndSample();
         }
 
+
+        static readonly HashSet<ChiselHierarchyItem> sKnownNodes = new HashSet<ChiselHierarchyItem>();
         public static void AddChildrenOfHierarchyItem(ChiselHierarchyItem item, List<ChiselHierarchyItem> updateNodes)
         {
             if (item == null)
                 return;
+
+            sKnownNodes.Clear();
+            sKnownNodes.EnsureCapacity(updateNodes.Count);
+            for (int i = 0; i < updateNodes.Count; i++)
+                sKnownNodes.Add(updateNodes[i]);
+
+            if (updateNodes.Capacity < updateNodes.Count + item.Children.Count)
+                updateNodes.Capacity = updateNodes.Count + item.Children.Count;
 
             for (int i = 0; i < item.Children.Count; i++)
             {
@@ -1647,12 +1669,12 @@ namespace Chisel.Components
                 var topNode = childComponent.TopTreeNode;
                 if (topNode.Valid)
                     continue;
-                
+
                 topNode = childComponent.RebuildTreeNodes();
                 if (!topNode.Valid)
                     continue;
 
-                if (!updateNodes.Contains(childHierarchyItem))
+                if (sKnownNodes.Add(childHierarchyItem))
                     updateNodes.Add(childHierarchyItem);
             }
         }

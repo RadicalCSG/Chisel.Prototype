@@ -28,7 +28,6 @@ namespace Chisel.Core
             public float height;
         }
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GenerateCylinderSubMesh(float    diameter,
                                                    float    topHeight, 
@@ -46,7 +45,6 @@ namespace Chisel.Core
                                                  in surfaceDefinitionBlob, out brushMesh, allocator);
         }
 
-        [BurstCompile]
         public static unsafe bool GenerateConicalFrustumSubMesh(float2 topDiameter,    float topHeight,
                                                                 float2 bottomDiameter, float bottomHeight, 
                                                                 float                  rotation, 

@@ -8,14 +8,15 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 
 namespace Chisel.Core
 {
-    [BurstCompile]
-    unsafe struct BuildLookupTablesJob : IJob
+    [BurstCompile(CompileSynchronously = true)]
+    struct BuildLookupTablesJob : IJob
     {
-        [NoAlias, ReadOnly] public NativeList<CompactNodeID> brushes;
-        [NoAlias, ReadOnly] public int brushCount;
+        // Read
+        [NoAlias, ReadOnly] public NativeArray<CompactNodeID>   brushes;
+        [NoAlias, ReadOnly] public int                          brushCount;
 
         // Read/Write
-        [NoAlias] public NativeList<int>           nodeIDValueToNodeOrderArray;
+        [NoAlias] public NativeList<int>                        nodeIDValueToNodeOrder;
 
         // Write
         [NoAlias, WriteOnly] public NativeReference<int>        nodeIDValueToNodeOrderOffsetRef;
@@ -42,13 +43,13 @@ namespace Chisel.Core
             nodeIDValueToNodeOrderOffsetRef.Value = nodeIDValueToNodeOrderOffset;
             var desiredLength = (nodeIDValueMax + 1) - nodeIDValueMin;
                     
-            nodeIDValueToNodeOrderArray.Clear();
-            nodeIDValueToNodeOrderArray.Resize(desiredLength, NativeArrayOptions.ClearMemory);
+            nodeIDValueToNodeOrder.Clear();
+            nodeIDValueToNodeOrder.Resize(desiredLength, NativeArrayOptions.ClearMemory);
             for (int nodeOrder  = 0; nodeOrder  < brushCount; nodeOrder ++)
             {
                 var brushCompactNodeID      = brushes[nodeOrder];
                 var brushCompactNodeIDValue = brushCompactNodeID.value;
-                nodeIDValueToNodeOrderArray[brushCompactNodeIDValue - nodeIDValueToNodeOrderOffset] = nodeOrder;
+                nodeIDValueToNodeOrder[brushCompactNodeIDValue - nodeIDValueToNodeOrderOffset] = nodeOrder;
                     
                 // We need the index into the tree to ensure deterministic ordering
                 var brushIndexOrder = new IndexOrder { compactNodeID = brushCompactNodeID, nodeOrder = nodeOrder };
@@ -57,10 +58,11 @@ namespace Chisel.Core
         }
     }
 
-    [BurstCompile]
-    unsafe struct UpdateBrushIDValuesJob : IJob
+    [BurstCompile(CompileSynchronously = true)]
+    struct UpdateBrushIDValuesJob : IJob
     {
-        [NoAlias, ReadOnly] public NativeList<CompactNodeID> brushes;
+        // Read 
+        [NoAlias, ReadOnly] public NativeArray<CompactNodeID> brushes;
         [NoAlias, ReadOnly] public int brushCount;
 
         // Read/Write

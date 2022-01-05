@@ -14,14 +14,18 @@ namespace Chisel.Components
         public Scene                                Scene;
         public ChiselModel                          DefaultModel;
 
-        public ChiselModel GetOrCreateDefaultModel()
+        public ChiselModel GetOrCreateDefaultModel(out bool created)
         {
+            created = false;
             if (!DefaultModel)
             {
                 DefaultModel = null;
                 if (Scene.IsValid() &&
                     Scene.isLoaded)
+                {
                     DefaultModel = ChiselGeneratedComponentManager.CreateDefaultModel(this);
+                    created = true;
+                }
             }
             return DefaultModel;
         }

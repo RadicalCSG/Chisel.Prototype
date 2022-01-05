@@ -26,6 +26,7 @@ namespace Chisel.Core
         {
             if (twoBits.IsCreated)
                 twoBits.Dispose();
+            twoBits = default;
         }
 
         public NativeArray<UInt32> twoBits;

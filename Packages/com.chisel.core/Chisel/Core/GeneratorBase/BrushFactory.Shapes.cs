@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Chisel.Core;
 using Vector2 = UnityEngine.Vector2;
@@ -35,7 +35,6 @@ namespace Chisel.Core
         //      2           4
         //
         
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ChiselBlobAssetReference<BrushMeshBlob> CreateSquarePyramidAssetPolygons(float3 vertex0,
                                                                                          float3 vertex1,
@@ -222,8 +221,7 @@ namespace Chisel.Core
         //       *---------*
         //      2           0
         //
-        
-        [BurstCompile]
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ChiselBlobAssetReference<BrushMeshBlob> CreateTriangularPyramidAssetPolygons(float3 vertex0,
                                                                                              float3 vertex1,
@@ -388,10 +386,9 @@ namespace Chisel.Core
             new BrushMesh.HalfEdge{ twinIndex =  0, vertexIndex = 3 },	// 10 (3-1)
             new BrushMesh.HalfEdge{ twinIndex =  3, vertexIndex = 0 },	// 11 (0-3)
         };
-        
 
-        
-        [BurstCompile]
+
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ChiselBlobAssetReference<BrushMeshBlob> CreateWedgeAssetPolygons(float3 vertex0,
                                                                                  float3 vertex1,

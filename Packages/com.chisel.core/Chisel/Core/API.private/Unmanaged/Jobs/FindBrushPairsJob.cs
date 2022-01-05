@@ -9,7 +9,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    unsafe struct FindBrushPairsJob : IJob
+    struct FindBrushPairsJob : IJob
     {
         // Read
         [NoAlias, ReadOnly] public int maxOrder;
@@ -17,9 +17,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
 
         // Read (Re-allocate) / Write
-        [NativeDisableUnsafePtrRestriction]
-        [NoAlias, WriteOnly] public UnsafeList<BrushPair2>* uniqueBrushPairs;
-
+        [NoAlias] public NativeList<BrushPair2> uniqueBrushPairs;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeBitArray usedLookup;
@@ -29,6 +27,30 @@ namespace Chisel.Core
             var maxPairs = (maxOrder * maxOrder);
 
             NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref usedLookup, maxPairs);
+
+            uniqueBrushPairs.Clear();
+
+            int requiredCapacity = 0;
+            for (int b0 = 0; b0 < allUpdateBrushIndexOrders.Length; b0++)
+            {
+                var brushIndexOrder0 = allUpdateBrushIndexOrders[b0];
+                int brushNodeOrder0 = brushIndexOrder0.nodeOrder;
+
+                var brushesTouchedByBrush = brushesTouchedByBrushes[brushNodeOrder0];
+                if (brushesTouchedByBrush == ChiselBlobAssetReference<BrushesTouchedByBrush>.Null)
+                    continue;
+
+                ref var intersections = ref brushesTouchedByBrush.Value.brushIntersections;
+                if (intersections.Length == 0)
+                    continue;
+
+                requiredCapacity += intersections.Length + 1;
+            }
+
+            if (uniqueBrushPairs.Capacity < requiredCapacity + 1)
+                uniqueBrushPairs.Capacity = requiredCapacity + 1;
+            // Workaround for the incredibly dumb "can't create a stream that is zero sized" when the value is determined at runtime. Yeah, thanks
+            uniqueBrushPairs.AddNoResize(new BrushPair2 { type = IntersectionType.InvalidValue });
 
             for (int b0 = 0; b0 < allUpdateBrushIndexOrders.Length; b0++)
             {
@@ -42,9 +64,6 @@ namespace Chisel.Core
                 ref var intersections = ref brushesTouchedByBrush.Value.brushIntersections;
                 if (intersections.Length == 0)
                     continue;
-
-                if (uniqueBrushPairs->Capacity < intersections.Length)
-                    uniqueBrushPairs->Capacity = intersections.Length;
 
                 // Find all intersections between brushes
                 for (int i = 0; i < intersections.Length; i++)
@@ -68,7 +87,7 @@ namespace Chisel.Core
                     if (!usedLookup.IsSet(testIndex))
                     {
                         usedLookup.Set(testIndex, true);
-                        uniqueBrushPairs->AddNoResize(brushPair);
+                        uniqueBrushPairs.AddNoResize(brushPair);
                     }
                 }
             }

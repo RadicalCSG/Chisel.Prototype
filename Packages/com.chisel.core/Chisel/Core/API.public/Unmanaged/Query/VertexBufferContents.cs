@@ -47,9 +47,9 @@ namespace Chisel.Core
 
         public NativeList<GeneratedMeshDescription> meshDescriptions;
         public NativeList<SubMeshSection>           subMeshSections;
-        
-        public NativeListArray<CompactNodeID> 	    triangleBrushIndices;
-        public NativeList<Mesh.MeshData>            meshes;
+
+        public NativeList<UnsafeList<CompactNodeID>>    triangleBrushIndices;
+        public NativeList<Mesh.MeshData>                meshes;
 
         public NativeArray<VertexAttributeDescriptor> renderDescriptors;
         public NativeArray<VertexAttributeDescriptor> colliderDescriptors;
@@ -61,7 +61,7 @@ namespace Chisel.Core
             if (!subMeshSections.IsCreated) subMeshSections     = new NativeList<SubMeshSection>(Allocator.Persistent);
             else subMeshSections.Clear();
             if (!meshes              .IsCreated) meshes               = new NativeList<Mesh.MeshData>(Allocator.Persistent);
-            if (!triangleBrushIndices.IsCreated) triangleBrushIndices = new NativeListArray<CompactNodeID>(Allocator.Persistent);
+            if (!triangleBrushIndices.IsCreated) triangleBrushIndices = new NativeList<UnsafeList<CompactNodeID>>(Allocator.Persistent);
 
             if (!renderDescriptors.IsCreated)
                 renderDescriptors = new NativeArray<VertexAttributeDescriptor>(s_RenderDescriptors, Allocator.Persistent);
@@ -91,20 +91,15 @@ namespace Chisel.Core
         public JobHandle Dispose(JobHandle dependency) 
         {
             JobHandle lastJobHandle = default;
-            if (meshDescriptions    .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, meshDescriptions.Dispose(dependency));
-            if (subMeshSections     .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, subMeshSections.Dispose(dependency));
-            if (meshes              .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, meshes.Dispose(dependency));
-            if (triangleBrushIndices.IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, triangleBrushIndices.Dispose(dependency));
+            if (meshDescriptions    .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, meshDescriptions       .Dispose(dependency));
+            if (subMeshSections     .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, subMeshSections        .Dispose(dependency));
+            if (meshes              .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, meshes                 .Dispose(dependency));
+            if (triangleBrushIndices.IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, triangleBrushIndices   .DisposeDeep(dependency));
 
-            if (renderDescriptors   .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, renderDescriptors  .Dispose(dependency));
-            if (colliderDescriptors .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, colliderDescriptors.Dispose(dependency));
-            
-            meshDescriptions     = default;
-            subMeshSections      = default;
-            meshes               = default;
-            triangleBrushIndices = default;
-            renderDescriptors    = default;
-            colliderDescriptors  = default;
+            if (renderDescriptors   .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, renderDescriptors      .Dispose(dependency));
+            if (colliderDescriptors .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, colliderDescriptors    .Dispose(dependency));
+
+            this = default;
             return lastJobHandle;
         }
     };

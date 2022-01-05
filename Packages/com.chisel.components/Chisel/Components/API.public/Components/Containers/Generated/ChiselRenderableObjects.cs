@@ -306,10 +306,10 @@ namespace Chisel.Components
                 var meshUpdate          = meshUpdates[u];
                 var objectUpdate        = objectUpdates[u];
                 var instance            = objectUpdate.instance;
-                var brushIndicesArray   = vertexBufferContents.triangleBrushIndices[meshUpdate.contentsIndex].AsArray();
+                var brushIndicesArray   = vertexBufferContents.triangleBrushIndices[meshUpdate.contentsIndex];
                 if (instance.triangleBrushes.Length < brushIndicesArray.Length)
                     instance.triangleBrushes = new CompactNodeID[brushIndicesArray.Length];
-                NativeArray<CompactNodeID>.Copy(brushIndicesArray, instance.triangleBrushes, brushIndicesArray.Length);
+                brushIndicesArray.CopyTo(instance.triangleBrushes, brushIndicesArray.Length);
             }
             Profiler.EndSample();
 

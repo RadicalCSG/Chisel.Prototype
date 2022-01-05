@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -10,7 +11,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     // TODO: make cache part of compactHierarchy? no need for remapping?
-    [BurstCompile]
+    [BurstCompile(CompileSynchronously = true)]
     unsafe struct CacheRemappingJob : IJob
     {
         #region IndexOrderComparer - Sort index order to ensure consistency
@@ -26,30 +27,32 @@ namespace Chisel.Core
         }
         static readonly IndexOrderComparer indexOrderComparer = new IndexOrderComparer();
         #endregion
-        
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void InitializeHierarchy(ref CompactHierarchy hierarchy)
         {
             compactHierarchyPtr = (CompactHierarchy*)UnsafeUtility.AddressOf(ref hierarchy);
         }
 
         [NativeDisableUnsafePtrRestriction]
-        [NoAlias, ReadOnly] public CompactHierarchy*                    compactHierarchyPtr;
-        [NoAlias, ReadOnly] public NativeList<int>                      nodeIDValueToNodeOrderArray;
-        [NoAlias, ReadOnly] public NativeReference<int>                 nodeIDValueToNodeOrderOffsetRef;
-        [NoAlias, ReadOnly] public NativeList<CompactNodeID>            brushes;
-        [NoAlias, ReadOnly] public int                                  brushCount;
-        [NoAlias, ReadOnly] public NativeList<IndexOrder>               allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeList<CompactNodeID>            brushIDValues;
+        [NoAlias, ReadOnly] public CompactHierarchy*            compactHierarchyPtr;
+        [NoAlias, ReadOnly] public NativeList<int>              nodeIDValueToNodeOrder;
+        [NoAlias, ReadOnly] public NativeReference<int>         nodeIDValueToNodeOrderOffsetRef;
+        [NoAlias, ReadOnly] public NativeArray<CompactNodeID>   brushes;
+        [NoAlias, ReadOnly] public int                          brushCount;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>       allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<CompactNodeID>    brushIDValues;
 
         // Read/Write
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>            basePolygonCache;
-        [NoAlias] public NativeList<ChiselBlobAssetReference<RoutingTable>>                routingTableCache;
-        [NoAlias] public NativeList<NodeTransformations>                             transformationCache;
-        [NoAlias] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>     brushRenderBufferCache;
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesCache;
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>        brushTreeSpacePlaneCache;
-        [NoAlias] public NativeList<ChiselAABB>                                      brushTreeSpaceBoundCache;
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<RoutingTable>>                 routingTableCache;
+        [NoAlias] public NativeList<NodeTransformations>                                    transformationCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
+        [NoAlias] public NativeList<ChiselAABB>                                             brushTreeSpaceBoundCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
 
         // Write
         [NoAlias, WriteOnly] public NativeHashSet<IndexOrder>           brushesThatNeedIndirectUpdateHashMap;
@@ -66,7 +69,7 @@ namespace Chisel.Core
             var previousBrushIDValuesLength = brushIDValues.Length;
             if (previousBrushIDValuesLength > 0)
             {
-                var indexLookup = new NativeArray<int>(nodeIDValueToNodeOrderArray.Length, Allocator.Temp);
+                var indexLookup = new NativeArray<int>(nodeIDValueToNodeOrder.Length, Allocator.Temp);
                 var remapOldOrderToNewOrder = new NativeArray<int2>(previousBrushIDValuesLength, Allocator.Temp);
 
                 for (int n = 0; n < brushCount; n++)
@@ -85,7 +88,7 @@ namespace Chisel.Core
                             var sourceID        = brushIDValues[n];
                             var sourceIDValue   = sourceID.value;
                             var sourceOffset    = sourceIDValue - nodeIDValueToNodeOrderOffset;
-                            var destination     = (sourceOffset < 0 || sourceOffset >= nodeIDValueToNodeOrderArray.Length) ? -1 : indexLookup[sourceOffset] - 1;
+                            var destination     = (sourceOffset < 0 || sourceOffset >= nodeIDValueToNodeOrder.Length) ? -1 : indexLookup[sourceOffset] - 1;
                             if (destination == -1)
                             {
                                 removedBrushes.Add(new IndexOrder { compactNodeID = sourceID, nodeOrder = n });
@@ -123,7 +126,7 @@ namespace Chisel.Core
                                         continue;
 
                                     var otherBrushIDValue   = otherBrushID.value;
-                                    var otherBrushOrder     = nodeIDValueToNodeOrderArray[otherBrushIDValue - nodeIDValueToNodeOrderOffset];
+                                    var otherBrushOrder     = nodeIDValueToNodeOrder[otherBrushIDValue - nodeIDValueToNodeOrderOffset];
                                     var otherIndexOrder     = new IndexOrder { compactNodeID = otherBrushID, nodeOrder = otherBrushOrder };
                                     brushesThatNeedIndirectUpdateHashMap.Add(otherIndexOrder);
                                 }

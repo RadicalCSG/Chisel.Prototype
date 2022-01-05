@@ -80,7 +80,8 @@ namespace Chisel.Core
             var dependencies = JobHandleExtensions.CombineDependencies(readDependencies.Handles, writeDependencies.Handles);
             CheckDependencies(runInParallel, dependencies);
             var currentJobHandle = jobData.Schedule(runInParallel, dependencies);
-            writeDependencies.AddWriteDependency(currentJobHandle);
+            writeDependencies.AddDependency(currentJobHandle);
+            readDependencies.AddDependency(currentJobHandle);
 
             return currentJobHandle;
         }
@@ -92,7 +93,8 @@ namespace Chisel.Core
             var dependencies = JobHandleExtensions.CombineDependencies(readDependencies.Handles, writeDependencies.Handles);
             CheckDependencies(runInParallel, dependencies);
             var currentJobHandle = jobData.Schedule(runInParallel, arrayLength, innerloopBatchCount, dependencies);
-            writeDependencies.AddWriteDependency(currentJobHandle);
+            writeDependencies.AddDependency(currentJobHandle);
+            readDependencies.AddDependency(currentJobHandle);
             return currentJobHandle;
         }
 
@@ -104,28 +106,145 @@ namespace Chisel.Core
             var dependencies = JobHandleExtensions.CombineDependencies(readDependencies.Handles, writeDependencies.Handles);
             CheckDependencies(runInParallel, dependencies);
             var currentJobHandle = jobData.Schedule(runInParallel, list, innerloopBatchCount, dependencies);
-            writeDependencies.AddWriteDependency(currentJobHandle);
+            writeDependencies.AddDependency(currentJobHandle);
+            readDependencies.AddDependency(currentJobHandle);
             return currentJobHandle;
         }
     }
 
+    public struct DualJobHandle
+    {
+        public JobHandle writeBarrier;
+        public JobHandle readWriteBarrier;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Complete()
+        {
+            readWriteBarrier.Complete();
+        }
+    }
+
     // Note: you're only supposed to use this struct in the "Schedule" method
-    public struct ReadJobHandles
+    public unsafe struct ReadJobHandles
     {
         public JobHandle Handles;
 
-        public ReadJobHandles(JobHandle jobHandle0) { Handles = jobHandle0; }
-        public ReadJobHandles(JobHandle jobHandle0, JobHandle jobHandle1) { Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1); }
-        public ReadJobHandles(JobHandle jobHandle0, JobHandle jobHandle1, JobHandle jobHandle2) { Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2); }
-        public ReadJobHandles(JobHandle jobHandle0, JobHandle jobHandle1, JobHandle jobHandle2, JobHandle jobHandle3) { Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3); }
-        public ReadJobHandles(JobHandle jobHandle0, JobHandle jobHandle1, JobHandle jobHandle2, JobHandle jobHandle3, JobHandle jobHandle4) { Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4); }
-        public ReadJobHandles(JobHandle jobHandle0, JobHandle jobHandle1, JobHandle jobHandle2, JobHandle jobHandle3, JobHandle jobHandle4, JobHandle jobHandle5) { Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4, jobHandle5); }
-        public ReadJobHandles(JobHandle jobHandle0, JobHandle jobHandle1, JobHandle jobHandle2, JobHandle jobHandle3, JobHandle jobHandle4, JobHandle jobHandle5, JobHandle jobHandle6) { Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4, jobHandle5, jobHandle6); }
-        public ReadJobHandles(JobHandle jobHandle0, JobHandle jobHandle1, JobHandle jobHandle2, JobHandle jobHandle3, JobHandle jobHandle4, JobHandle jobHandle5, JobHandle jobHandle6, JobHandle jobHandle7) { Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4, jobHandle5, jobHandle6, jobHandle7); }
-        public ReadJobHandles(JobHandle jobHandle0, JobHandle jobHandle1, JobHandle jobHandle2, JobHandle jobHandle3, JobHandle jobHandle4, JobHandle jobHandle5, JobHandle jobHandle6, JobHandle jobHandle7, JobHandle jobHandle8) { Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4, jobHandle5, jobHandle6, jobHandle7, jobHandle8); }
-        public ReadJobHandles(JobHandle jobHandle0, JobHandle jobHandle1, JobHandle jobHandle2, JobHandle jobHandle3, JobHandle jobHandle4, JobHandle jobHandle5, JobHandle jobHandle6, JobHandle jobHandle7, JobHandle jobHandle8, JobHandle jobHandle9) { Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4, jobHandle5, jobHandle6, jobHandle7, jobHandle8, jobHandle9); }
-        public ReadJobHandles(JobHandle jobHandle0, JobHandle jobHandle1, JobHandle jobHandle2, JobHandle jobHandle3, JobHandle jobHandle4, JobHandle jobHandle5, JobHandle jobHandle6, JobHandle jobHandle7, JobHandle jobHandle8, JobHandle jobHandle9, JobHandle jobHandle10) { Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4, jobHandle5, jobHandle6, jobHandle7, jobHandle8, jobHandle9, jobHandle10); }
-        public ReadJobHandles(JobHandle jobHandle0, JobHandle jobHandle1, JobHandle jobHandle2, JobHandle jobHandle3, JobHandle jobHandle4, JobHandle jobHandle5, JobHandle jobHandle6, JobHandle jobHandle7, JobHandle jobHandle8, JobHandle jobHandle9, JobHandle jobHandle10, JobHandle jobHandle11) { Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4, jobHandle5, jobHandle6, jobHandle7, jobHandle8, jobHandle9, jobHandle10, jobHandle11); }
+        const int maxHandles = 32;
+        static DualJobHandle*[] handleArray = new DualJobHandle*[maxHandles];
+        static int handleArrayLength = 0;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] 
+        static void Add(ref DualJobHandle jobHandle) 
+        {
+            UnityEngine.Debug.Assert(handleArrayLength < maxHandles);
+            handleArray[handleArrayLength] = (DualJobHandle*)UnsafeUtility.AddressOf(ref jobHandle); 
+            handleArrayLength++; 
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadJobHandles(ref DualJobHandle jobHandle0)
+        {
+            Handles = jobHandle0.writeBarrier;
+            handleArrayLength = 0;
+            Add(ref jobHandle0);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1) 
+        { 
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.writeBarrier, jobHandle1.writeBarrier);
+            handleArrayLength = 0;
+            Add(ref jobHandle0); Add(ref jobHandle1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2) 
+        { 
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.writeBarrier, jobHandle1.writeBarrier, jobHandle2.writeBarrier);
+            handleArrayLength = 0;
+            Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3) 
+        { 
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.writeBarrier, jobHandle1.writeBarrier, jobHandle2.writeBarrier, jobHandle3.writeBarrier);
+            handleArrayLength = 0;
+            Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4) 
+        { 
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.writeBarrier, jobHandle1.writeBarrier, jobHandle2.writeBarrier, jobHandle3.writeBarrier, jobHandle4.writeBarrier);
+            handleArrayLength = 0;
+            Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4, ref DualJobHandle jobHandle5) 
+        { 
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.writeBarrier, jobHandle1.writeBarrier, jobHandle2.writeBarrier, jobHandle3.writeBarrier, jobHandle4.writeBarrier, jobHandle5.writeBarrier);
+            handleArrayLength = 0;
+            Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4); Add(ref jobHandle5);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4, ref DualJobHandle jobHandle5, ref DualJobHandle jobHandle6) 
+        { 
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.writeBarrier, jobHandle1.writeBarrier, jobHandle2.writeBarrier, jobHandle3.writeBarrier, jobHandle4.writeBarrier, jobHandle5.writeBarrier, jobHandle6.writeBarrier);
+            handleArrayLength = 0;
+            Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4); Add(ref jobHandle5); Add(ref jobHandle6);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4, ref DualJobHandle jobHandle5, ref DualJobHandle jobHandle6, ref DualJobHandle jobHandle7) 
+        { 
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.writeBarrier, jobHandle1.writeBarrier, jobHandle2.writeBarrier, jobHandle3.writeBarrier, jobHandle4.writeBarrier, jobHandle5.writeBarrier, jobHandle6.writeBarrier, jobHandle7.writeBarrier);
+            handleArrayLength = 0;
+            Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4); Add(ref jobHandle5); Add(ref jobHandle6); Add(ref jobHandle7);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4, ref DualJobHandle jobHandle5, ref DualJobHandle jobHandle6, ref DualJobHandle jobHandle7, ref DualJobHandle jobHandle8) 
+        { 
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.writeBarrier, jobHandle1.writeBarrier, jobHandle2.writeBarrier, jobHandle3.writeBarrier, jobHandle4.writeBarrier, jobHandle5.writeBarrier, jobHandle6.writeBarrier, jobHandle7.writeBarrier, jobHandle8.writeBarrier);
+            handleArrayLength = 0;
+            Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4); Add(ref jobHandle5); Add(ref jobHandle6); Add(ref jobHandle7); Add(ref jobHandle8);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4, ref DualJobHandle jobHandle5, ref DualJobHandle jobHandle6, ref DualJobHandle jobHandle7, ref DualJobHandle jobHandle8, ref DualJobHandle jobHandle9) 
+        { 
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.writeBarrier, jobHandle1.writeBarrier, jobHandle2.writeBarrier, jobHandle3.writeBarrier, jobHandle4.writeBarrier, jobHandle5.writeBarrier, jobHandle6.writeBarrier, jobHandle7.writeBarrier, jobHandle8.writeBarrier, jobHandle9.writeBarrier);
+            handleArrayLength = 0;
+            Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4); Add(ref jobHandle5); Add(ref jobHandle6); Add(ref jobHandle7); Add(ref jobHandle8); Add(ref jobHandle9);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4, ref DualJobHandle jobHandle5, ref DualJobHandle jobHandle6, ref DualJobHandle jobHandle7, ref DualJobHandle jobHandle8, ref DualJobHandle jobHandle9, ref DualJobHandle jobHandle10) 
+        { 
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.writeBarrier, jobHandle1.writeBarrier, jobHandle2.writeBarrier, jobHandle3.writeBarrier, jobHandle4.writeBarrier, jobHandle5.writeBarrier, jobHandle6.writeBarrier, jobHandle7.writeBarrier, jobHandle8.writeBarrier, jobHandle9.writeBarrier, jobHandle10.writeBarrier);
+            handleArrayLength = 0;
+            Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4); Add(ref jobHandle5); Add(ref jobHandle6); Add(ref jobHandle7); Add(ref jobHandle8); Add(ref jobHandle9); Add(ref jobHandle10);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4, ref DualJobHandle jobHandle5, ref DualJobHandle jobHandle6, ref DualJobHandle jobHandle7, ref DualJobHandle jobHandle8, ref DualJobHandle jobHandle9, ref DualJobHandle jobHandle10, ref DualJobHandle jobHandle11) 
+        { 
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.writeBarrier, jobHandle1.writeBarrier, jobHandle2.writeBarrier, jobHandle3.writeBarrier, jobHandle4.writeBarrier, jobHandle5.writeBarrier, jobHandle6.writeBarrier, jobHandle7.writeBarrier, jobHandle8.writeBarrier, jobHandle9.writeBarrier, jobHandle10.writeBarrier, jobHandle11.writeBarrier);
+            handleArrayLength = 0;
+            Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4); Add(ref jobHandle5); Add(ref jobHandle6); Add(ref jobHandle7); Add(ref jobHandle8); Add(ref jobHandle9); Add(ref jobHandle10); Add(ref jobHandle11);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AddDependency(JobHandle newDependency)
+        {
+            if (handleArrayLength == 0)
+                return;
+            for (int i = 0; i < handleArrayLength; i++)
+                handleArray[i]->readWriteBarrier.AddDependency(newDependency);
+        }
     }
 
     // Note: you're only supposed to use this struct in the "Schedule" method
@@ -133,101 +252,125 @@ namespace Chisel.Core
     {
         public JobHandle Handles;
 
-        static JobHandle*[] writeHandleArray = new JobHandle*[32];
-        static int writeHandleArrayLength = 0;
+        const int maxHandles = 32;
+        static DualJobHandle*[] handleArray = new DualJobHandle*[maxHandles];
+        static int handleArrayLength = 0;
 
-        static void Add(ref JobHandle jobHandle) { writeHandleArray[writeHandleArrayLength] = (JobHandle*)UnsafeUtility.AddressOf(ref jobHandle); writeHandleArrayLength++; }
-
-        public WriteJobHandles(ref JobHandle jobHandle0)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] 
+        static void Add(ref DualJobHandle jobHandle) 
         {
-            Handles = jobHandle0;
-            writeHandleArrayLength = 0;
+            UnityEngine.Debug.Assert(handleArrayLength < maxHandles);
+            handleArray[handleArrayLength] = (DualJobHandle*)UnsafeUtility.AddressOf(ref jobHandle); 
+            handleArrayLength++; 
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public WriteJobHandles(ref DualJobHandle jobHandle0)
+        {
+            Handles = jobHandle0.readWriteBarrier;
+            handleArrayLength = 0;
             Add(ref jobHandle0);
         }
 
-        public WriteJobHandles(ref JobHandle jobHandle0, ref JobHandle jobHandle1) 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public WriteJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1) 
         { 
-            Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1);
-            writeHandleArrayLength = 0;
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.readWriteBarrier, jobHandle1.readWriteBarrier);
+            handleArrayLength = 0;
             Add(ref jobHandle0); Add(ref jobHandle1);
         }
-            
-        public WriteJobHandles(ref JobHandle jobHandle0, ref JobHandle jobHandle1, ref JobHandle jobHandle2) 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public WriteJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2) 
         { 
-            Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2);
-            writeHandleArrayLength = 0;
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.readWriteBarrier, jobHandle1.readWriteBarrier, jobHandle2.readWriteBarrier);
+            handleArrayLength = 0;
             Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2);
         }
-            
-        public WriteJobHandles(ref JobHandle jobHandle0, ref JobHandle jobHandle1, ref JobHandle jobHandle2, ref JobHandle jobHandle3) 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public WriteJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3) 
         { 
-            Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3);
-            writeHandleArrayLength = 0;
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.readWriteBarrier, jobHandle1.readWriteBarrier, jobHandle2.readWriteBarrier, jobHandle3.readWriteBarrier);
+            handleArrayLength = 0;
             Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3);
         }
-            
-        public WriteJobHandles(ref JobHandle jobHandle0, ref JobHandle jobHandle1, ref JobHandle jobHandle2, ref JobHandle jobHandle3, ref JobHandle jobHandle4) 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public WriteJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4) 
         { 
-            Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4);
-            writeHandleArrayLength = 0;
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.readWriteBarrier, jobHandle1.readWriteBarrier, jobHandle2.readWriteBarrier, jobHandle3.readWriteBarrier, jobHandle4.readWriteBarrier);
+            handleArrayLength = 0;
             Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4);
         }
-            
-        public WriteJobHandles(ref JobHandle jobHandle0, ref JobHandle jobHandle1, ref JobHandle jobHandle2, ref JobHandle jobHandle3, ref JobHandle jobHandle4, ref JobHandle jobHandle5) 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public WriteJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4, ref DualJobHandle jobHandle5) 
         { 
-            Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4, jobHandle5);
-            writeHandleArrayLength = 0;
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.readWriteBarrier, jobHandle1.readWriteBarrier, jobHandle2.readWriteBarrier, jobHandle3.readWriteBarrier, jobHandle4.readWriteBarrier, jobHandle5.readWriteBarrier);
+            handleArrayLength = 0;
             Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4); Add(ref jobHandle5);
         }
-            
-        public WriteJobHandles(ref JobHandle jobHandle0, ref JobHandle jobHandle1, ref JobHandle jobHandle2, ref JobHandle jobHandle3, ref JobHandle jobHandle4, ref JobHandle jobHandle5, ref JobHandle jobHandle6) 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public WriteJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4, ref DualJobHandle jobHandle5, ref DualJobHandle jobHandle6) 
         { 
-            Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4, jobHandle5, jobHandle6);
-            writeHandleArrayLength = 0;
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.readWriteBarrier, jobHandle1.readWriteBarrier, jobHandle2.readWriteBarrier, jobHandle3.readWriteBarrier, jobHandle4.readWriteBarrier, jobHandle5.readWriteBarrier, jobHandle6.readWriteBarrier);
+            handleArrayLength = 0;
             Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4); Add(ref jobHandle5); Add(ref jobHandle6);
         }
-            
-        public WriteJobHandles(ref JobHandle jobHandle0, ref JobHandle jobHandle1, ref JobHandle jobHandle2, ref JobHandle jobHandle3, ref JobHandle jobHandle4, ref JobHandle jobHandle5, ref JobHandle jobHandle6, ref JobHandle jobHandle7) 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public WriteJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4, ref DualJobHandle jobHandle5, ref DualJobHandle jobHandle6, ref DualJobHandle jobHandle7) 
         { 
-            Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4, jobHandle5, jobHandle6, jobHandle7);
-            writeHandleArrayLength = 0;
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.readWriteBarrier, jobHandle1.readWriteBarrier, jobHandle2.readWriteBarrier, jobHandle3.readWriteBarrier, jobHandle4.readWriteBarrier, jobHandle5.readWriteBarrier, jobHandle6.readWriteBarrier, jobHandle7.readWriteBarrier);
+            handleArrayLength = 0;
             Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4); Add(ref jobHandle5); Add(ref jobHandle6); Add(ref jobHandle7);
         }
-            
-        public WriteJobHandles(ref JobHandle jobHandle0, ref JobHandle jobHandle1, ref JobHandle jobHandle2, ref JobHandle jobHandle3, ref JobHandle jobHandle4, ref JobHandle jobHandle5, ref JobHandle jobHandle6, ref JobHandle jobHandle7, ref JobHandle jobHandle8) 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public WriteJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4, ref DualJobHandle jobHandle5, ref DualJobHandle jobHandle6, ref DualJobHandle jobHandle7, ref DualJobHandle jobHandle8) 
         { 
-            Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4, jobHandle5, jobHandle6, jobHandle7, jobHandle8);
-            writeHandleArrayLength = 0;
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.readWriteBarrier, jobHandle1.readWriteBarrier, jobHandle2.readWriteBarrier, jobHandle3.readWriteBarrier, jobHandle4.readWriteBarrier, jobHandle5.readWriteBarrier, jobHandle6.readWriteBarrier, jobHandle7.readWriteBarrier, jobHandle8.readWriteBarrier);
+            handleArrayLength = 0;
             Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4); Add(ref jobHandle5); Add(ref jobHandle6); Add(ref jobHandle7); Add(ref jobHandle8);
         }
-            
-        public WriteJobHandles(ref JobHandle jobHandle0, ref JobHandle jobHandle1, ref JobHandle jobHandle2, ref JobHandle jobHandle3, ref JobHandle jobHandle4, ref JobHandle jobHandle5, ref JobHandle jobHandle6, ref JobHandle jobHandle7, ref JobHandle jobHandle8, ref JobHandle jobHandle9) 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public WriteJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4, ref DualJobHandle jobHandle5, ref DualJobHandle jobHandle6, ref DualJobHandle jobHandle7, ref DualJobHandle jobHandle8, ref DualJobHandle jobHandle9) 
         { 
-            Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4, jobHandle5, jobHandle6, jobHandle7, jobHandle8, jobHandle9);
-            writeHandleArrayLength = 0;
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.readWriteBarrier, jobHandle1.readWriteBarrier, jobHandle2.readWriteBarrier, jobHandle3.readWriteBarrier, jobHandle4.readWriteBarrier, jobHandle5.readWriteBarrier, jobHandle6.readWriteBarrier, jobHandle7.readWriteBarrier, jobHandle8.readWriteBarrier, jobHandle9.readWriteBarrier);
+            handleArrayLength = 0;
             Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4); Add(ref jobHandle5); Add(ref jobHandle6); Add(ref jobHandle7); Add(ref jobHandle8); Add(ref jobHandle9);
         }
-            
-        public WriteJobHandles(ref JobHandle jobHandle0, ref JobHandle jobHandle1, ref JobHandle jobHandle2, ref JobHandle jobHandle3, ref JobHandle jobHandle4, ref JobHandle jobHandle5, ref JobHandle jobHandle6, ref JobHandle jobHandle7, ref JobHandle jobHandle8, ref JobHandle jobHandle9, ref JobHandle jobHandle10) 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public WriteJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4, ref DualJobHandle jobHandle5, ref DualJobHandle jobHandle6, ref DualJobHandle jobHandle7, ref DualJobHandle jobHandle8, ref DualJobHandle jobHandle9, ref DualJobHandle jobHandle10) 
         { 
-            Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4, jobHandle5, jobHandle6, jobHandle7, jobHandle8, jobHandle9, jobHandle10);
-            writeHandleArrayLength = 0;
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.readWriteBarrier, jobHandle1.readWriteBarrier, jobHandle2.readWriteBarrier, jobHandle3.readWriteBarrier, jobHandle4.readWriteBarrier, jobHandle5.readWriteBarrier, jobHandle6.readWriteBarrier, jobHandle7.readWriteBarrier, jobHandle8.readWriteBarrier, jobHandle9.readWriteBarrier, jobHandle10.readWriteBarrier);
+            handleArrayLength = 0;
             Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4); Add(ref jobHandle5); Add(ref jobHandle6); Add(ref jobHandle7); Add(ref jobHandle8); Add(ref jobHandle9); Add(ref jobHandle10);
         }
-            
-        public WriteJobHandles(ref JobHandle jobHandle0, ref JobHandle jobHandle1, ref JobHandle jobHandle2, ref JobHandle jobHandle3, ref JobHandle jobHandle4, ref JobHandle jobHandle5, ref JobHandle jobHandle6, ref JobHandle jobHandle7, ref JobHandle jobHandle8, ref JobHandle jobHandle9, ref JobHandle jobHandle10, ref JobHandle jobHandle11) 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public WriteJobHandles(ref DualJobHandle jobHandle0, ref DualJobHandle jobHandle1, ref DualJobHandle jobHandle2, ref DualJobHandle jobHandle3, ref DualJobHandle jobHandle4, ref DualJobHandle jobHandle5, ref DualJobHandle jobHandle6, ref DualJobHandle jobHandle7, ref DualJobHandle jobHandle8, ref DualJobHandle jobHandle9, ref DualJobHandle jobHandle10, ref DualJobHandle jobHandle11) 
         { 
-            Handles = JobHandleExtensions.CombineDependencies(jobHandle0, jobHandle1, jobHandle2, jobHandle3, jobHandle4, jobHandle5, jobHandle6, jobHandle7, jobHandle8, jobHandle9, jobHandle10, jobHandle11);
-            writeHandleArrayLength = 0;
+            Handles = JobHandleExtensions.CombineDependencies(jobHandle0.readWriteBarrier, jobHandle1.readWriteBarrier, jobHandle2.readWriteBarrier, jobHandle3.readWriteBarrier, jobHandle4.readWriteBarrier, jobHandle5.readWriteBarrier, jobHandle6.readWriteBarrier, jobHandle7.readWriteBarrier, jobHandle8.readWriteBarrier, jobHandle9.readWriteBarrier, jobHandle10.readWriteBarrier, jobHandle11.readWriteBarrier);
+            handleArrayLength = 0;
             Add(ref jobHandle0); Add(ref jobHandle1); Add(ref jobHandle2); Add(ref jobHandle3); Add(ref jobHandle4); Add(ref jobHandle5); Add(ref jobHandle6); Add(ref jobHandle7); Add(ref jobHandle8); Add(ref jobHandle9); Add(ref jobHandle10); Add(ref jobHandle11);
         }
 
-        public void AddWriteDependency(JobHandle newDependency)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AddDependency(JobHandle newDependency)
         {
-            if (writeHandleArray == null)
+            if (handleArrayLength == 0)
                 return;
-            for (int i = 0; i < writeHandleArrayLength; i++)
-                writeHandleArray[i]->AddDependency(newDependency);
+
+            for (int i = 0; i < handleArrayLength; i++)
+            {
+                handleArray[i]->writeBarrier.AddDependency(newDependency);
+                handleArray[i]->readWriteBarrier.AddDependency(newDependency);
+            }
         }
     }
 }

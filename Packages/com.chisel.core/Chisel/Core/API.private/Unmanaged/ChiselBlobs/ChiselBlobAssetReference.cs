@@ -210,7 +210,9 @@ namespace Chisel.Core
         /// part of a scene or subscene.</exception>
         public void Dispose()
         {
-            m_data.Dispose();
+            if (m_data.m_Ptr != null)
+                m_data.Dispose();
+            m_data = default;
         }
 
         /// <summary>
@@ -305,88 +307,6 @@ namespace Chisel.Core
         {
             return new ChiselBlobAssetReference<T> { m_data = blobData };
         }
-        /*
-        public static bool TryRead<U>(U binaryReader, int version, out BlobAssetReference<T> result)
-        where U : BinaryReader
-        {
-            var storedVersion = binaryReader.ReadInt();
-            if (storedVersion != version)
-            {
-                result = default;
-                return false;
-            }
-            result = binaryReader.Read<T>();
-            return true;
-        }
-
-#if !UNITY_DOTSRUNTIME
-        /// <summary>
-        /// Reads bytes from a fileName, validates the expected serialized version, and deserializes them into a new blob asset.
-        /// </summary>
-        /// <param name="path">The path of the blob data to read.</param>
-        /// <param name="version">Expected version number of the blob data.</param>
-        /// <param name="result">The resulting BlobAssetReference if the data was read successful.</param>
-        /// <returns>A bool if the read was successful or not.</returns>
-        public static bool TryRead(string path, int version, out BlobAssetReference<T> result)
-        {
-            if (string.IsNullOrEmpty(path))
-            {
-                result = default;
-                return false;
-            }
-            using (var binaryReader = new StreamBinaryReader(path, UnsafeUtility.SizeOf<T>() + sizeof(int)))
-            {
-                return TryRead(binaryReader, version, out result);
-            }
-        }
-#else
-        /// <summary>
-        /// Reads bytes from a buffer, validates the expected serialized version, and deserializes them into a new blob asset.
-        /// </summary>
-        /// <param name="data">A byte stream of the blob data to read.</param>
-        /// <param name="version">Expected version number of the blob data.</param>
-        /// <param name="result">The resulting BlobAssetReference if the data was read successful.</param>
-        /// <returns>A bool if the read was successful or not.</returns>
-        public static bool TryRead(byte* data, int version, out BlobAssetReference<T> result)
-        {
-            var binaryReader = new MemoryBinaryReader(data);
-            var storedVersion = binaryReader.ReadInt();
-            if (storedVersion != version)
-            {
-                result = default;
-                return false;
-            }
-
-            result = binaryReader.Read<T>();
-
-            return true;
-        }
-#endif
-
-        public static void Write<U>(U writer, BlobBuilder builder, int verison)
-        where U : BinaryWriter
-        {
-            using (var asset = builder.CreateBlobAssetReference<T>(Allocator.TempJob))
-            {
-                writer.Write(verison);
-                writer.Write(asset);
-            }
-        }
-#if !NET_DOTS
-        /// <summary>
-        /// Writes the blob data to a path with serialized version.
-        /// </summary>
-        /// <param name="builder">The BlobBuilder containing the blob to write.</param>
-        /// <param name="path">The path to write the blob data.</param>
-        /// <param name="version">Serialized version number of the blob data.</param>
-        public static void Write(BlobBuilder builder, string path, int verison)
-        {
-            using (var writer = new StreamBinaryWriter(path))
-            {
-                Write(writer, builder, verison);
-            }
-        }
-#endif*/
 
         /// <summary>
         /// A "null" blob asset reference that can be used to test if a BlobAssetReference instance
@@ -620,6 +540,7 @@ namespace Chisel.Core
         public void Dispose()
         {
             m_data.Dispose();
+            m_data = default;
         }
 
         public bool Equals(ChiselUnsafeUntypedBlobAssetReference other)

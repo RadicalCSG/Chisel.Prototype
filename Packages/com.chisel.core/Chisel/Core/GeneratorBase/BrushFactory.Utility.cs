@@ -21,7 +21,6 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float4 CalculatePlane(in BrushMeshBlob.Polygon polygon, in ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in ChiselBlobBuilderArray<float3> vertices)
         {
@@ -48,7 +47,6 @@ namespace Chisel.Core
             return new float4((float3)normal, (float)d);
         }
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void UpdateHalfEdgePolygonIndices(ref ChiselBlobBuilderArray<int> halfEdgePolygonIndices, in ChiselBlobBuilderArray<BrushMeshBlob.Polygon> polygons)
         {
@@ -62,7 +60,6 @@ namespace Chisel.Core
             }
         }
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ChiselAABB CalculateBounds(in ChiselBlobBuilderArray<float3> vertices)
         {
@@ -76,7 +73,6 @@ namespace Chisel.Core
             return new ChiselAABB { Min = min, Max = max };
         }
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void FitXZ(ref ChiselBlobBuilderArray<float3> vertices, int firstVertex, int vertexCount, float2 expectedSize)
         {
@@ -105,7 +101,6 @@ namespace Chisel.Core
             }
         }
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CalculatePlanes(ref ChiselBlobBuilderArray<float4> planes, in ChiselBlobBuilderArray<BrushMeshBlob.Polygon> polygons, in ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in ChiselBlobBuilderArray<float3> vertices)
         {
@@ -113,7 +108,6 @@ namespace Chisel.Core
                 planes[p] = CalculatePlane(in polygons[p], in halfEdges, in vertices);
         }
 
-        [BurstCompile]
         public unsafe static bool GenerateSegmentedSubMesh(int horzSegments, int vertSegments, bool topCap, bool bottomCap, int topVertex, int bottomVertex, 
                                                            in ChiselBlobBuilderArray<float3> segmentVertices, 
                                                            ref NativeChiselSurfaceDefinition surfaceDefinition,
@@ -277,7 +271,6 @@ namespace Chisel.Core
 
 
         //public static bool CreateExtrudedSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, int segmentTopIndex, int segmentBottomIndex, Vector3[] vertices, in ChiselSurfaceDefinition surfaceDefinition)
-        [BurstCompile]
         public static unsafe void CreateExtrudedSubMesh(int segments, int* segmentDescriptionIndices, int segmentDescriptionLength, int segmentTopIndex, int segmentBottomIndex, 
                                                         in ChiselBlobBuilderArray<float3>                          localVertices,
                                                         in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
