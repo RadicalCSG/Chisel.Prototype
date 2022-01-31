@@ -12,7 +12,7 @@ namespace Chisel.Core
     struct BuildLookupTablesJob : IJob
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<CompactNodeID>   brushes;
+        [NoAlias, ReadOnly] public NativeList<CompactNodeID>    brushes;
         [NoAlias, ReadOnly] public int                          brushCount;
 
         // Read/Write
@@ -62,7 +62,7 @@ namespace Chisel.Core
     struct UpdateBrushIDValuesJob : IJob
     {
         // Read 
-        [NoAlias, ReadOnly] public NativeArray<CompactNodeID> brushes;
+        [NoAlias, ReadOnly] public NativeList<CompactNodeID> brushes;
         [NoAlias, ReadOnly] public int brushCount;
 
         // Read/Write

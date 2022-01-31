@@ -22,9 +22,9 @@ namespace Chisel.Core
         [NativeDisableUnsafePtrRestriction]
         [NoAlias, ReadOnly] public CompactHierarchy*                                            compactHierarchyPtr;
         [NoAlias, ReadOnly] public NativeReference<bool>                                        needRemappingRef;
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      rebuildTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushCache;
-        [NoAlias, ReadOnly] public NativeArray<CompactNodeID>                                   brushes;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                       rebuildTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>  brushesTouchedByBrushCache;
+        [NoAlias, ReadOnly] public NativeList<CompactNodeID>                                    brushes;
         [NoAlias, ReadOnly] public int                                                          brushCount;
         [NoAlias, ReadOnly] public NativeList<int>                                              nodeIDValueToNodeOrder;
         [NoAlias, ReadOnly] public NativeReference<int>                                         nodeIDValueToNodeOrderOffsetRef;

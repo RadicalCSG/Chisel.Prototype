@@ -58,14 +58,15 @@ namespace Chisel.Core
             return default;
         }
 
+        /*
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NativeArray<T> AsJobArray<T>(this NativeList<T> list, bool runInParallel)
             where T : unmanaged
         {
             if (runInParallel)
-                return list.AsDeferredJobArray();
+                return list.AsDeferredJobArray(); // <-- broken by unity
             return list.AsArray();
-        }
+        }*/
 
 
         #region CheckDependencies

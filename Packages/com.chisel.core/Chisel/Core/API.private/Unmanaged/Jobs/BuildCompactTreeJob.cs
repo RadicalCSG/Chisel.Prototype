@@ -19,8 +19,8 @@ namespace Chisel.Core
 
         // Read
         public CompactNodeID treeCompactNodeID;
-        [NoAlias, ReadOnly] public NativeArray<CompactNodeID> brushes;
-        [NoAlias, ReadOnly] public NativeArray<CompactNodeID> nodes;
+        [NoAlias, ReadOnly] public NativeList<CompactNodeID> brushes;
+        [NoAlias, ReadOnly] public NativeList<CompactNodeID> nodes;
         [NativeDisableUnsafePtrRestriction]
         [NoAlias, ReadOnly] public CompactHierarchy* compactHierarchyPtr;
 
