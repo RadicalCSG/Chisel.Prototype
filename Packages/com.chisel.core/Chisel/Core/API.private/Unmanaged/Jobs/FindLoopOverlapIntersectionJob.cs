@@ -18,13 +18,13 @@ namespace Chisel.Core
         const float kFatPlaneWidthEpsilon       = CSGConstants.kFatPlaneWidthEpsilon;
 
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public int                                                          maxNodeOrder;
-        [NoAlias, ReadOnly] public NativeArray<float3>                                          outputSurfaceVertices;        
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                       allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<float3>                                           outputSurfaceVertices;
+        [NoAlias, ReadOnly] public NativeList<BrushIntersectionLoop>                            outputSurfaces;
         [NoAlias, ReadOnly] public NativeArray<int2>                                            outputSurfacesRange;
-        [NoAlias, ReadOnly] public NativeArray<BrushIntersectionLoop>                           outputSurfaces;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BasePolygonsBlob>>      basePolygonCache;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpacePlanes>>  brushTreeSpacePlaneCache;
+        [NoAlias, ReadOnly] public int                                                          maxNodeOrder;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>       basePolygonCache;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>   brushTreeSpacePlaneCache;
 
         // Read Write
         public Allocator allocator;

@@ -12,7 +12,7 @@ namespace Chisel.Core
     struct GatherOutputSurfacesJob : IJob
     {
         // Read / Write (Sort)
-        [NoAlias] public NativeArray<BrushIntersectionLoop> outputSurfaces;
+        [NoAlias] public NativeList<BrushIntersectionLoop>  outputSurfaces;
 
         // Write
         //[NoAlias, WriteOnly] public NativeReference<BlobAssetReference<BrushIntersectionLoops>> outputSurfaceLoops;

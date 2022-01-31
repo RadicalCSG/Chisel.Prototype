@@ -14,8 +14,8 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeList<IndexOrder>   allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<ChiselAABB>  brushTreeSpaceBoundCache;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferCache;
+        [NoAlias, ReadOnly] public NativeList<ChiselAABB>   brushTreeSpaceBoundCache;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferCache;
 
         // Read, Write
         [NoAlias] public NativeHashMap<CompactNodeID, ChiselAABB> brushTreeSpaceBoundLookup;

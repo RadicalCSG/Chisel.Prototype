@@ -65,7 +65,7 @@ namespace Chisel.Core
         // Read
         [NoAlias, ReadOnly] public int meshQueryLength;
         [NoAlias, ReadOnly] public NativeList<IndexOrder>                                           allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>   brushRenderBufferCache;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>    brushRenderBufferCache;
 
         // Write
         [NoAlias, WriteOnly] public NativeList<BrushData>.ParallelWriter brushRenderData;
@@ -116,7 +116,7 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<MeshQuery>   meshQueries;
-        [NoAlias, ReadOnly] public NativeArray<BrushData>   brushRenderData;
+        [NoAlias, ReadOnly] public NativeList<BrushData>    brushRenderData;
 
         // Read, Write
         public Allocator allocator;
@@ -380,7 +380,7 @@ namespace Chisel.Core
     struct AllocateVertexBuffersJob : IJob
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<SubMeshSection> subMeshSections;
+        [NoAlias, ReadOnly] public NativeList<SubMeshSection> subMeshSections;
 
         // Read / Write
         public Allocator allocator;
@@ -410,7 +410,7 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct GenerateMeshDescriptionJob : IJob
     {
-        [NoAlias, ReadOnly] public NativeArray<SubMeshCounts> subMeshCounts;
+        [NoAlias, ReadOnly] public NativeList<SubMeshCounts> subMeshCounts;
 
         [NativeDisableParallelForRestriction]
         [NoAlias] public NativeList<GeneratedMeshDescription> meshDescriptions;
@@ -595,11 +595,11 @@ namespace Chisel.Core
     struct FindTriangleBrushIndicesJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<SubMeshSection>              subMeshSections;
-        [NoAlias, ReadOnly] public NativeArray<SubMeshCounts>               subMeshCounts;
+        [NoAlias, ReadOnly] public NativeList<SubMeshSection>               subMeshSections;
+        [NoAlias, ReadOnly] public NativeList<SubMeshCounts>                subMeshCounts;
         [NoAlias, ReadOnly] public NativeArray<UnsafeList<SubMeshSurface>>  subMeshSurfaces;
 
-        [NoAlias, ReadOnly] public NativeArray<ChiselMeshUpdate>            meshUpdates;
+        [NoAlias, ReadOnly] public NativeList<ChiselMeshUpdate>             meshUpdates;
 
         // Read / Write
         [NativeDisableContainerSafetyRestriction, NoAlias] public NativeList<UnsafeList<CompactNodeID>> triangleBrushIndices;
@@ -672,13 +672,13 @@ namespace Chisel.Core
     struct CopyToMeshJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<SubMeshSection>              subMeshSections;
-        [NoAlias, ReadOnly] public NativeArray<SubMeshCounts>               subMeshCounts;
+        [NoAlias, ReadOnly] public NativeList<SubMeshSection>               subMeshSections;
+        [NoAlias, ReadOnly] public NativeList<SubMeshCounts>                subMeshCounts;
         [NoAlias, ReadOnly] public NativeArray<UnsafeList<SubMeshSurface>>  subMeshSurfaces;
 
         [NoAlias, ReadOnly] public NativeArray<VertexAttributeDescriptor>   renderDescriptors;
         [NoAlias, ReadOnly] public NativeArray<VertexAttributeDescriptor>   colliderDescriptors;
-        [NoAlias, ReadOnly] public NativeArray<ChiselMeshUpdate>            meshUpdates;
+        [NoAlias, ReadOnly] public NativeList<ChiselMeshUpdate>             meshUpdates;
 
         // Read / Write
         [NativeDisableContainerSafetyRestriction, NoAlias] public NativeList<Mesh.MeshData> meshes;
@@ -693,12 +693,12 @@ namespace Chisel.Core
             var meshData            = meshes[meshIndex];
 
             if (update.type == ChiselMeshType.Render)
-                CopyRenderMesh(vertexBufferInit, meshData);
+                CopyRenderMesh(vertexBufferInit, ref meshData);
             else
-                CopyColliderMesh(vertexBufferInit, meshData);
+                CopyColliderMesh(vertexBufferInit, ref meshData);
         }
 
-        void CopyRenderMesh(SubMeshSection vertexBufferInit, Mesh.MeshData meshData)
+        void CopyRenderMesh(SubMeshSection vertexBufferInit, [WriteOnly] ref Mesh.MeshData meshData)
         {
             var startIndex          = vertexBufferInit.startIndex;
             var endIndex            = vertexBufferInit.endIndex;
@@ -793,7 +793,7 @@ namespace Chisel.Core
             }
         }
 
-        void CopyColliderMesh(SubMeshSection vertexBufferInit, Mesh.MeshData meshData)
+        void CopyColliderMesh(SubMeshSection vertexBufferInit, [WriteOnly] ref Mesh.MeshData meshData)
         {
             var totalVertexCount    = vertexBufferInit.totalVertexCount;
             var totalIndexCount     = vertexBufferInit.totalIndexCount;

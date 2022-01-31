@@ -322,7 +322,9 @@ namespace Chisel.Core
                         using (var profilerSample = new ProfilerSample("CSG_RunMeshInitJobs"))
                         {
                             for (int t = 0; t < treeUpdateLength; t++)
+                            {
                                 s_TreeUpdates[t].RunMeshInitJobs(generatorPoolJobHandle);
+                            }
                         }
                         #endregion
 
@@ -337,8 +339,8 @@ namespace Chisel.Core
                             for (int t = treeUpdateLength - 1; t >= 0; t--)
                             {
                                 ref var treeUpdate = ref s_TreeUpdates[t];
-
                                 // TODO: figure out if there's a way around this ....
+                                treeUpdate.JobHandles.transformTreeBrushIndicesListJobHandle.readWriteBarrier.Complete();
                                 treeUpdate.JobHandles.rebuildTreeBrushIndexOrdersJobHandle.writeBarrier.Complete();
                                 treeUpdate.updateCount = treeUpdate.Temporaries.rebuildTreeBrushIndexOrders.Length;
 
@@ -422,6 +424,7 @@ namespace Chisel.Core
                     for (int t = 0; t < treeUpdateLength; t++)
                     {
                         ref var treeUpdate = ref s_TreeUpdates[t];
+
                         // Error or not, our jobs need to be completed at this point
                         treeUpdate.dependencies.Complete();
 
@@ -487,12 +490,12 @@ namespace Chisel.Core
                 Temporaries.brushes                        = new NativeList<CompactNodeID>(defaultAllocator);
 
                 compactHierarchy.GetTreeNodes(Temporaries.nodes, Temporaries.brushes);
+                var newBrushCount = Temporaries.brushes.Length;
+                this.brushCount   = newBrushCount;
                     
                 #region Allocations/Resize
-                var newBrushCount = Temporaries.brushes.Length;
                 chiselLookupValues.EnsureCapacity(newBrushCount);
 
-                this.brushCount   = newBrushCount;
                 this.maxNodeOrder = this.brushCount;
 
                 Temporaries.meshDataArray   = default;
@@ -708,6 +711,12 @@ namespace Chisel.Core
                     using (var profilerSample = new ProfilerSample("Job_FindModifiedBrushesJob"))
                     {
                         const bool runInParallel = runInParallelDefault;
+                        Temporaries.transformTreeBrushIndicesList.Clear();
+                        Temporaries.brushBoundsUpdateList.Clear();
+                        if (Temporaries.transformTreeBrushIndicesList.Capacity < this.brushCount)
+                            Temporaries.transformTreeBrushIndicesList.SetCapacity(this.brushCount);
+                        if (Temporaries.brushBoundsUpdateList.Capacity < this.brushCount)
+                            Temporaries.brushBoundsUpdateList.SetCapacity(this.brushCount);
                         var findModifiedBrushesJob = new FindModifiedBrushesJob
                         {
                             // Read
@@ -721,11 +730,11 @@ namespace Chisel.Core
                             rebuildTreeBrushIndexOrders     = Temporaries.rebuildTreeBrushIndexOrders,
 
                             // Write
-                            transformTreeBrushIndicesList   = Temporaries.transformTreeBrushIndicesList,
-                            brushBoundsUpdateList           = Temporaries.brushBoundsUpdateList
+                            transformTreeBrushIndicesList   = Temporaries.transformTreeBrushIndicesList.AsParallelWriter(),
+                            brushBoundsUpdateList           = Temporaries.brushBoundsUpdateList.AsParallelWriter()
                         };
                         findModifiedBrushesJob.InitializeHierarchy(ref compactHierarchy);
-                        findModifiedBrushesJob.Schedule(runInParallel,
+                        var handle = findModifiedBrushesJob.Schedule(runInParallel,
                             new ReadJobHandles(
                                 ref JobHandles.brushesJobHandle,
                                 ref JobHandles.allTreeBrushIndexOrdersJobHandle),
@@ -733,6 +742,7 @@ namespace Chisel.Core
                                 ref JobHandles.rebuildTreeBrushIndexOrdersJobHandle,
                                 ref JobHandles.transformTreeBrushIndicesListJobHandle,
                                 ref JobHandles.brushBoundsUpdateListJobHandle));
+                        handle.Complete();
                     }
                     #endregion
 
@@ -823,12 +833,12 @@ namespace Chisel.Core
                         var updateTransformationsJob = new UpdateTransformationsJob
                         {
                             // Read
-                            transformTreeBrushIndicesList   = Temporaries.transformTreeBrushIndicesList.AsJobArray(runInParallel),
+                            transformTreeBrushIndicesList   = Temporaries.transformTreeBrushIndicesList,
                             //compactHierarchy              = compactHierarchy, //<-- cannot do ref or pointer here
                             //    so we set it below using InitializeHierarchy
 
                             // Write
-                            transformationCache             = chiselLookupValues.transformationCache.AsJobArray(runInParallel)
+                            transformationCache             = chiselLookupValues.transformationCache
                         };
                         updateTransformationsJob.InitializeHierarchy(ref compactHierarchy);
                         updateTransformationsJob.Schedule(runInParallel, Temporaries.transformTreeBrushIndicesList, 8,
@@ -900,7 +910,7 @@ namespace Chisel.Core
                         var invalidateBrushCacheJob = new InvalidateBrushCacheJob
                         {
                             // Read
-                            rebuildTreeBrushIndexOrders = Temporaries.rebuildTreeBrushIndexOrders.AsJobArray(runInParallel),
+                            rebuildTreeBrushIndexOrders = Temporaries.rebuildTreeBrushIndexOrders,
 
                             // Read/Write
                             basePolygonCache            = chiselLookupValues.basePolygonCache,
@@ -944,8 +954,8 @@ namespace Chisel.Core
                             nodeIDValueToNodeOrderOffsetRef = Temporaries.nodeIDValueToNodeOrderOffsetRef,
 
                             // Read Write
-                            basePolygonCache                = chiselLookupValues.basePolygonCache.AsJobArray(runInParallel),
-                            brushesTouchedByBrushCache      = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel)
+                            basePolygonCache                = chiselLookupValues.basePolygonCache,
+                            brushesTouchedByBrushCache      = chiselLookupValues.brushesTouchedByBrushCache
                         };
                         fixupBrushCacheIndicesJob.Schedule(runInParallel, Temporaries.allTreeBrushIndexOrders, 16,
                             new ReadJobHandles(
@@ -967,8 +977,8 @@ namespace Chisel.Core
                         var createTreeSpaceVerticesAndBoundsJob = new CreateTreeSpaceVerticesAndBoundsJob
                         {
                             // Read
-                            rebuildTreeBrushIndexOrders     = Temporaries.rebuildTreeBrushIndexOrders.AsJobArray(runInParallel),
-                            transformationCache             = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+                            rebuildTreeBrushIndexOrders     = Temporaries.rebuildTreeBrushIndexOrders,
+                            transformationCache             = chiselLookupValues.transformationCache,
                             brushMeshLookup                 = Temporaries.brushMeshLookup,
                             //ref hierarchyIDLookup         = ref CompactHierarchyManager.HierarchyIDLookup,    //<-- cannot do ref or pointer here
                             //    so we set it below using InitializeHierarchy
@@ -977,8 +987,8 @@ namespace Chisel.Core
                             hierarchyList                   = CompactHierarchyManager.HierarchyList,
 
                             // Write
-                            brushTreeSpaceBounds            = chiselLookupValues.brushTreeSpaceBoundCache.AsJobArray(runInParallel),
-                            treeSpaceVerticesCache          = chiselLookupValues.treeSpaceVerticesCache.AsJobArray(runInParallel)
+                            brushTreeSpaceBounds            = chiselLookupValues.brushTreeSpaceBoundCache,
+                            treeSpaceVerticesCache          = chiselLookupValues.treeSpaceVerticesCache
                         };
                         createTreeSpaceVerticesAndBoundsJob.InitializeLookups();
                         createTreeSpaceVerticesAndBoundsJob.Schedule(runInParallel, Temporaries.rebuildTreeBrushIndexOrders, 16,
@@ -1006,10 +1016,10 @@ namespace Chisel.Core
                         {
                             // Read
                             allTreeBrushIndexOrders         = Temporaries.allTreeBrushIndexOrders,
-                            transformationCache             = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+                            transformationCache             = chiselLookupValues.transformationCache,
                             brushMeshLookup                 = Temporaries.brushMeshLookup,
-                            brushTreeSpaceBounds            = chiselLookupValues.brushTreeSpaceBoundCache.AsJobArray(runInParallel),
-                            rebuildTreeBrushIndexOrders     = Temporaries.rebuildTreeBrushIndexOrders.AsJobArray(runInParallel),
+                            brushTreeSpaceBounds            = chiselLookupValues.brushTreeSpaceBoundCache,
+                            rebuildTreeBrushIndexOrders     = Temporaries.rebuildTreeBrushIndexOrders,
 
                             // Read / Write
                             allocator                       = defaultAllocator,
@@ -1062,15 +1072,15 @@ namespace Chisel.Core
                         var invalidateIndirectBrushCacheJob = new InvalidateIndirectBrushCacheJob
                         {
                             // Read
-                            brushesThatNeedIndirectUpdate = Temporaries.brushesThatNeedIndirectUpdate.AsJobArray(runInParallel),
+                            brushesThatNeedIndirectUpdate = Temporaries.brushesThatNeedIndirectUpdate,
 
                             // Read/Write
-                            basePolygonCache            = chiselLookupValues.basePolygonCache.AsJobArray(runInParallel),
-                            treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache.AsJobArray(runInParallel),
-                            brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel),
-                            routingTableCache           = chiselLookupValues.routingTableCache.AsJobArray(runInParallel),
-                            brushTreeSpacePlaneCache    = chiselLookupValues.brushTreeSpacePlaneCache.AsJobArray(runInParallel),
-                            brushRenderBufferCache      = chiselLookupValues.brushRenderBufferCache.AsJobArray(runInParallel)
+                            basePolygonCache            = chiselLookupValues.basePolygonCache,
+                            treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache,
+                            brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache,
+                            routingTableCache           = chiselLookupValues.routingTableCache,
+                            brushTreeSpacePlaneCache    = chiselLookupValues.brushTreeSpacePlaneCache,
+                            brushRenderBufferCache      = chiselLookupValues.brushRenderBufferCache
                         };
                         invalidateIndirectBrushCacheJob.Schedule(runInParallel, Temporaries.brushesThatNeedIndirectUpdate, 16,
                             new ReadJobHandles(
@@ -1093,8 +1103,8 @@ namespace Chisel.Core
                         var createTreeSpaceVerticesAndBoundsJob = new CreateTreeSpaceVerticesAndBoundsJob
                         {
                             // Read
-                            rebuildTreeBrushIndexOrders = Temporaries.brushesThatNeedIndirectUpdate.AsJobArray(runInParallel),
-                            transformationCache         = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+                            rebuildTreeBrushIndexOrders = Temporaries.brushesThatNeedIndirectUpdate,
+                            transformationCache         = chiselLookupValues.transformationCache,
                             brushMeshLookup             = Temporaries.brushMeshLookup,
                             //ref hierarchyIDLookup     = ref CompactHierarchyManager.HierarchyIDLookup,    //<-- cannot do ref or pointer here
                             //    so we set it below using InitializeHierarchy
@@ -1104,8 +1114,8 @@ namespace Chisel.Core
 
 
                             // Write
-                            brushTreeSpaceBounds        = chiselLookupValues.brushTreeSpaceBoundCache.AsJobArray(runInParallel),
-                            treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache.AsJobArray(runInParallel),
+                            brushTreeSpaceBounds        = chiselLookupValues.brushTreeSpaceBoundCache,
+                            treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache,
                         };
                         createTreeSpaceVerticesAndBoundsJob.InitializeLookups();
                         createTreeSpaceVerticesAndBoundsJob.Schedule(runInParallel, Temporaries.brushesThatNeedIndirectUpdate, 16,
@@ -1133,10 +1143,10 @@ namespace Chisel.Core
                         {
                             // Read
                             allTreeBrushIndexOrders         = Temporaries.allTreeBrushIndexOrders,
-                            transformationCache             = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+                            transformationCache             = chiselLookupValues.transformationCache,
                             brushMeshLookup                 = Temporaries.brushMeshLookup,
-                            brushTreeSpaceBounds            = chiselLookupValues.brushTreeSpaceBoundCache.AsJobArray(runInParallel),
-                            brushesThatNeedIndirectUpdate   = Temporaries.brushesThatNeedIndirectUpdate.AsJobArray(runInParallel),
+                            brushTreeSpaceBounds            = chiselLookupValues.brushTreeSpaceBoundCache,
+                            brushesThatNeedIndirectUpdate   = Temporaries.brushesThatNeedIndirectUpdate,
 
                             // Read / Write
                             allocator                       = defaultAllocator,
@@ -1163,8 +1173,8 @@ namespace Chisel.Core
                         {
                             // Read
                             allTreeBrushIndexOrders         = Temporaries.allTreeBrushIndexOrders,
-                            brushesThatNeedIndirectUpdate   = Temporaries.brushesThatNeedIndirectUpdate.AsJobArray(runInParallel),
-                            rebuildTreeBrushIndexOrders     = Temporaries.rebuildTreeBrushIndexOrders.AsJobArray(runInParallel),
+                            brushesThatNeedIndirectUpdate   = Temporaries.brushesThatNeedIndirectUpdate,
+                            rebuildTreeBrushIndexOrders     = Temporaries.rebuildTreeBrushIndexOrders,
 
                             // Write
                             allUpdateBrushIndexOrders       = Temporaries.allUpdateBrushIndexOrders.AsParallelWriter(),
@@ -1209,13 +1219,13 @@ namespace Chisel.Core
                             treeCompactNodeID           = treeCompactNodeID,
                             compactTreeRef              = Temporaries.compactTreeRef,
                             allTreeBrushIndexOrders     = Temporaries.allTreeBrushIndexOrders,
-                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
+                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders,
 
-                            brushIntersectionsWith      = Temporaries.brushIntersectionsWith.AsJobArray(runInParallel),
+                            brushIntersectionsWith      = Temporaries.brushIntersectionsWith,
                             brushIntersectionsWithRange = Temporaries.brushIntersectionsWithRange,
 
                             // Write
-                            brushesTouchedByBrushCache = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel)
+                            brushesTouchedByBrushCache = chiselLookupValues.brushesTouchedByBrushCache
                         };
                         storeBrushIntersectionsJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 16,
                             new ReadJobHandles(
@@ -1244,8 +1254,8 @@ namespace Chisel.Core
                         {
                             // Read
                             maxOrder                    = brushCount,
-                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
-                            brushesTouchedByBrushes     = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel),
+                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders,
+                            brushesTouchedByBrushes     = chiselLookupValues.brushesTouchedByBrushCache,
 
                             // Read (Re-allocate) / Write
                             uniqueBrushPairs            = Temporaries.uniqueBrushPairs
@@ -1269,8 +1279,8 @@ namespace Chisel.Core
                         var prepareBrushPairIntersectionsJob = new PrepareBrushPairIntersectionsJob
                         {
                             // Read
-                            uniqueBrushPairs        = Temporaries.uniqueBrushPairs.AsJobArray(runInParallel),
-                            transformationCache     = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+                            uniqueBrushPairs        = Temporaries.uniqueBrushPairs,
+                            transformationCache     = chiselLookupValues.transformationCache,
                             brushMeshLookup         = Temporaries.brushMeshLookup,
 
                             // Write
@@ -1292,13 +1302,13 @@ namespace Chisel.Core
                         var createBlobPolygonsBlobs = new CreateBlobPolygonsBlobsJob
                         {
                             // Read
-                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
-                            brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel),
+                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders,
+                            brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache,
                             brushMeshLookup             = Temporaries.brushMeshLookup,
-                            treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache.AsJobArray(runInParallel),
+                            treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache,
 
                             // Write
-                            basePolygonCache            = chiselLookupValues.basePolygonCache.AsJobArray(runInParallel)
+                            basePolygonCache            = chiselLookupValues.basePolygonCache
                         };
                         createBlobPolygonsBlobs.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 16,
                             new ReadJobHandles(
@@ -1317,12 +1327,12 @@ namespace Chisel.Core
                         var createBrushTreeSpacePlanesJob = new CreateBrushTreeSpacePlanesJob
                         {
                             // Read
-                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
+                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders,
                             brushMeshLookup             = Temporaries.brushMeshLookup,
-                            transformationCache         = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+                            transformationCache         = chiselLookupValues.transformationCache,
 
                             // Write
-                            brushTreeSpacePlanes        = chiselLookupValues.brushTreeSpacePlaneCache.AsJobArray(runInParallel)
+                            brushTreeSpacePlanes        = chiselLookupValues.brushTreeSpacePlaneCache
                         };
                         createBrushTreeSpacePlanesJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 16,
                             new ReadJobHandles(
@@ -1349,8 +1359,8 @@ namespace Chisel.Core
                             uniqueBrushPairs            = Temporaries.uniqueBrushPairs,
 
                             // Read
-                            brushTreeSpacePlaneCache    = chiselLookupValues.brushTreeSpacePlaneCache.AsJobArray(runInParallel),
-                            treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache.AsJobArray(runInParallel),
+                            brushTreeSpacePlaneCache    = chiselLookupValues.brushTreeSpacePlaneCache,
+                            treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache,
                             intersectingBrushesStream   = Temporaries.intersectingBrushesStream.AsReader(),
 
                             // Write
@@ -1376,7 +1386,7 @@ namespace Chisel.Core
                         var gatherOutputSurfacesJob = new GatherOutputSurfacesJob
                         {
                             // Read / Write (Sort)
-                            outputSurfaces      = Temporaries.outputSurfaces.AsJobArray(runInParallel),
+                            outputSurfaces      = Temporaries.outputSurfaces,
 
                             // Write
                             outputSurfacesRange = Temporaries.outputSurfacesRange
@@ -1404,13 +1414,13 @@ namespace Chisel.Core
                         var findLoopOverlapIntersectionsJob = new FindLoopOverlapIntersectionsJob
                         {
                             // Read
-                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
-                            outputSurfaceVertices       = Temporaries.outputSurfaceVertices.AsJobArray(runInParallel),
-                            outputSurfaces              = Temporaries.outputSurfaces.AsJobArray(runInParallel),
+                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders,
+                            outputSurfaceVertices       = Temporaries.outputSurfaceVertices,
+                            outputSurfaces              = Temporaries.outputSurfaces,
                             outputSurfacesRange         = Temporaries.outputSurfacesRange,
                             maxNodeOrder                = maxNodeOrder,
-                            brushTreeSpacePlaneCache    = chiselLookupValues.brushTreeSpacePlaneCache.AsJobArray(runInParallel),
-                            basePolygonCache            = chiselLookupValues.basePolygonCache.AsJobArray(runInParallel),
+                            brushTreeSpacePlaneCache    = chiselLookupValues.brushTreeSpacePlaneCache,
+                            basePolygonCache            = chiselLookupValues.basePolygonCache,
 
                             // Read Write
                             allocator                   = defaultAllocator,
@@ -1446,9 +1456,9 @@ namespace Chisel.Core
                         var mergeTouchingBrushVerticesIndirectJob = new MergeTouchingBrushVerticesIndirectJob
                         {
                             // Read
-                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
-                            brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel),
-                            treeSpaceVerticesArray      = chiselLookupValues.treeSpaceVerticesCache.AsJobArray(runInParallel),
+                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders,
+                            brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache,
+                            treeSpaceVerticesArray      = chiselLookupValues.treeSpaceVerticesCache,
 
                             // Read Write
                             loopVerticesLookup          = Temporaries.loopVerticesLookup,
@@ -1476,12 +1486,12 @@ namespace Chisel.Core
                         var createRoutingTableJob = new CreateRoutingTableJob // Build categorization trees for brushes
                         {
                             // Read
-                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
-                            brushesTouchedByBrushes     = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel),
+                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders,
+                            brushesTouchedByBrushes     = chiselLookupValues.brushesTouchedByBrushCache,
                             compactTreeRef              = Temporaries.compactTreeRef,
 
                             // Write
-                            routingTableLookup          = chiselLookupValues.routingTableCache.AsJobArray(runInParallel)
+                            routingTableLookup          = chiselLookupValues.routingTableCache
                         };
                         createRoutingTableJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 1,
                             new ReadJobHandles(
@@ -1508,10 +1518,10 @@ namespace Chisel.Core
                         var performCSGJob = new PerformCSGJob
                         {
                             // Read
-                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
-                            routingTableCache           = chiselLookupValues.routingTableCache.AsJobArray(runInParallel),
-                            brushTreeSpacePlaneCache    = chiselLookupValues.brushTreeSpacePlaneCache.AsJobArray(runInParallel),
-                            brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel),
+                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders,
+                            routingTableCache           = chiselLookupValues.routingTableCache,
+                            brushTreeSpacePlaneCache    = chiselLookupValues.brushTreeSpacePlaneCache,
+                            brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache,
                             loopVerticesLookup          = Temporaries.loopVerticesLookup,
                             input                       = Temporaries.dataStream1.AsReader(),
 
@@ -1544,14 +1554,14 @@ namespace Chisel.Core
                         var generateSurfaceTrianglesJob = new GenerateSurfaceTrianglesJob
                         {
                             // Read
-                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
-                            basePolygonCache            = chiselLookupValues.basePolygonCache.AsJobArray(runInParallel),
-                            transformationCache         = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+                            allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders,
+                            basePolygonCache            = chiselLookupValues.basePolygonCache,
+                            transformationCache         = chiselLookupValues.transformationCache,
                             input                       = Temporaries.dataStream2.AsReader(),
                             meshQueries                 = Temporaries.meshQueries,
 
                             // Write
-                            brushRenderBufferCache      = chiselLookupValues.brushRenderBufferCache.AsJobArray(runInParallel)
+                            brushRenderBufferCache      = chiselLookupValues.brushRenderBufferCache
                         };
                         var currentJobHandle = generateSurfaceTrianglesJob.Schedule(runInParallel, Temporaries.allUpdateBrushIndexOrders, 1,
                             new ReadJobHandles(
@@ -1588,7 +1598,7 @@ namespace Chisel.Core
                             // Read
                             meshQueryLength         = Temporaries.meshQueriesLength,
                             allTreeBrushIndexOrders = Temporaries.allTreeBrushIndexOrders,
-                            brushRenderBufferCache  = chiselLookupValues.brushRenderBufferCache.AsJobArray(runInParallel),
+                            brushRenderBufferCache  = chiselLookupValues.brushRenderBufferCache,
 
                             // Write
                             brushRenderData = Temporaries.brushRenderData.AsParallelWriter()
@@ -1636,7 +1646,7 @@ namespace Chisel.Core
                         {
                             // Read
                             meshQueries     = Temporaries.meshQueries,
-                            brushRenderData = Temporaries.brushRenderData.AsJobArray(runInParallel),
+                            brushRenderData = Temporaries.brushRenderData,
 
                             // Write
                             allocator       = defaultAllocator,
@@ -1695,7 +1705,7 @@ namespace Chisel.Core
                         var allocateVertexBuffersJob = new AllocateVertexBuffersJob
                         {
                             // Read
-                            subMeshSections         = Temporaries.vertexBufferContents.subMeshSections.AsJobArray(runInParallel),
+                            subMeshSections         = Temporaries.vertexBufferContents.subMeshSections,
 
                             // Read Write
                             allocator               = defaultAllocator,
@@ -1716,7 +1726,7 @@ namespace Chisel.Core
                         var generateMeshDescriptionJob = new GenerateMeshDescriptionJob
                         {
                             // Read
-                            subMeshCounts       = Temporaries.subMeshCounts.AsJobArray(runInParallel),
+                            subMeshCounts       = Temporaries.subMeshCounts,
 
                             // Read Write
                             meshDescriptions    = Temporaries.vertexBufferContents.meshDescriptions
@@ -1801,12 +1811,12 @@ namespace Chisel.Core
                         var copyToMeshJob = new CopyToMeshJob
                         {
                             // Read
-                            subMeshSections     = Temporaries.vertexBufferContents.subMeshSections.AsJobArray(runInParallel),
-                            subMeshCounts       = Temporaries.subMeshCounts.AsJobArray(runInParallel),
+                            subMeshSections     = Temporaries.vertexBufferContents.subMeshSections,
+                            subMeshCounts       = Temporaries.subMeshCounts,
                             subMeshSurfaces     = Temporaries.subMeshSurfaces,
                             colliderDescriptors = Temporaries.vertexBufferContents.colliderDescriptors,
                             renderDescriptors   = Temporaries.vertexBufferContents.renderDescriptors,
-                            meshUpdates         = Temporaries.meshUpdates.AsJobArray(runInParallel),
+                            meshUpdates         = Temporaries.meshUpdates,
 
                             // Read/Write
                             meshes              = Temporaries.vertexBufferContents.meshes,
@@ -1825,10 +1835,10 @@ namespace Chisel.Core
                         var renderTriangleBrushIndicesJob = new FindTriangleBrushIndicesJob
                         {
                             // Read
-                            subMeshSections         = Temporaries.vertexBufferContents.subMeshSections.AsJobArray(runInParallel),
-                            subMeshCounts           = Temporaries.subMeshCounts.AsJobArray(runInParallel),
+                            subMeshSections         = Temporaries.vertexBufferContents.subMeshSections,
+                            subMeshCounts           = Temporaries.subMeshCounts,
                             subMeshSurfaces         = Temporaries.subMeshSurfaces,
-                            meshUpdates             = Temporaries.meshUpdates.AsJobArray(runInParallel),
+                            meshUpdates             = Temporaries.meshUpdates,
 
                             // Read/Write
                             triangleBrushIndices    = Temporaries.vertexBufferContents.triangleBrushIndices,
@@ -1846,10 +1856,10 @@ namespace Chisel.Core
                         var helperTriangleBrushIndicesJob = new FindTriangleBrushIndicesJob
                         {
                             // Read
-                            subMeshSections         = Temporaries.vertexBufferContents.subMeshSections.AsJobArray(runInParallel),
-                            subMeshCounts           = Temporaries.subMeshCounts.AsJobArray(runInParallel),
+                            subMeshSections         = Temporaries.vertexBufferContents.subMeshSections,
+                            subMeshCounts           = Temporaries.subMeshCounts,
                             subMeshSurfaces         = Temporaries.subMeshSurfaces,
-                            meshUpdates             = Temporaries.debugHelperMeshes.AsJobArray(runInParallel),
+                            meshUpdates             = Temporaries.debugHelperMeshes,
 
                             // Read/Write
                             triangleBrushIndices    = Temporaries.vertexBufferContents.triangleBrushIndices,
@@ -1878,8 +1888,8 @@ namespace Chisel.Core
                         {
                             // Read
                             allTreeBrushIndexOrders     = Temporaries.allTreeBrushIndexOrders,
-                            brushTreeSpaceBoundCache    = chiselLookupValues.brushTreeSpaceBoundCache.AsJobArray(runInParallel),
-                            brushRenderBufferCache      = chiselLookupValues.brushRenderBufferCache.AsJobArray(runInParallel),
+                            brushTreeSpaceBoundCache    = chiselLookupValues.brushTreeSpaceBoundCache,
+                            brushRenderBufferCache      = chiselLookupValues.brushRenderBufferCache,
 
                             // Read Write
                             brushTreeSpaceBoundLookup   = chiselLookupValues.brushTreeSpaceBoundLookup,

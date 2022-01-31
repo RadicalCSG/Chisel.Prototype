@@ -9,13 +9,13 @@
     "BSP",
     "Boolean"
   ],
-  "unity": "2020.2",
+  "unity": "2022.1",
   "version": "0.0.1-preview",
     "dependencies": {
-        "com.unity.burst": "1.6.1",
+        "com.unity.burst": "1.6.4",
         "com.unity.jobs": "0.11.0-preview.6",
-        "com.unity.collections": "1.0.0-pre.6",
-        "com.unity.mathematics": "1.2.1"
+        "com.unity.collections": "1.1.0",
+        "com.unity.mathematics": "1.2.5"
     },
   "type": "library"
 }

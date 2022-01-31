@@ -27,8 +27,8 @@ namespace Chisel.Core
         const float kNormalDotAlignEpsilon      = CSGConstants.kNormalDotAlignEpsilon;
 
         // Read
-        [NoAlias, ReadOnly] public NativeArray<BrushPair2>                                  uniqueBrushPairs;
-        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
+        [NoAlias, ReadOnly] public NativeList<BrushPair2>                                  uniqueBrushPairs;
+        [NoAlias, ReadOnly] public NativeList<NodeTransformations>                         transformationCache;
         [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>     brushMeshLookup;
 
         // Write

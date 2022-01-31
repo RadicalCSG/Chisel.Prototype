@@ -19,8 +19,8 @@ namespace Chisel.Core
 
         // Read
         [NativeDisableUnsafePtrRestriction, NoAlias, ReadOnly] public IDManager*            hierarchyIDLookupPtr;
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  rebuildTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                   rebuildTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<NodeTransformations>                          transformationCache;
         [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>     brushMeshLookup;
 
         // Read/Write
@@ -28,9 +28,9 @@ namespace Chisel.Core
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<ChiselAABB>                                             brushTreeSpaceBounds;
+        [NoAlias, WriteOnly] public NativeList<ChiselAABB>                                              brushTreeSpaceBounds;
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
+        [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>    treeSpaceVerticesCache;
 
         static ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob> Build(ref ChiselBlobArray<float3> localVertices, float4x4 nodeToTreeSpaceMatrix)
         {
