@@ -28,14 +28,12 @@ namespace Chisel.Core
         [NoAlias] public NativeList<IndexOrder>                 rebuildTreeBrushIndexOrders;
 
         // Write
-        [NoAlias, WriteOnly] public NativeList<NodeOrderNodeID> transformTreeBrushIndicesList;
-        [NoAlias, WriteOnly] public NativeList<NodeOrderNodeID> brushBoundsUpdateList;
+        [NoAlias, WriteOnly] public NativeList<NodeOrderNodeID>.ParallelWriter transformTreeBrushIndicesList;
+        [NoAlias, WriteOnly] public NativeList<NodeOrderNodeID>.ParallelWriter brushBoundsUpdateList;
 
         public void Execute()
         {
             ref var compactHierarchy = ref UnsafeUtility.AsRef<CompactHierarchy>(compactHierarchyPtr);
-            transformTreeBrushIndicesList.Clear();
-            rebuildTreeBrushIndexOrders.Clear();
             if (rebuildTreeBrushIndexOrders.Capacity < brushCount)
                 rebuildTreeBrushIndexOrders.Capacity = brushCount;
 
@@ -60,7 +58,7 @@ namespace Chisel.Core
                             compactHierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.TransformationModified))
                         {
                             if (compactHierarchy.IsValidCompactNodeID(brushCompactNodeID))
-                                brushBoundsUpdateList.Add(new NodeOrderNodeID { nodeOrder = indexOrder.nodeOrder, compactNodeID = brushCompactNodeID });
+                                brushBoundsUpdateList.AddNoResize(new NodeOrderNodeID { nodeOrder = indexOrder.nodeOrder, compactNodeID = brushCompactNodeID });
                         }
 
                         if (compactHierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.ShapeModified))
@@ -76,7 +74,9 @@ namespace Chisel.Core
                         if (compactHierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.TransformationModified))
                         {
                             if (compactHierarchy.IsValidCompactNodeID(brushCompactNodeID))
-                                transformTreeBrushIndicesList.Add(new NodeOrderNodeID { nodeOrder = indexOrder.nodeOrder, compactNodeID = brushCompactNodeID });
+                            {
+                                transformTreeBrushIndicesList.AddNoResize(new NodeOrderNodeID { nodeOrder = indexOrder.nodeOrder, compactNodeID = brushCompactNodeID });
+                            }
                             compactHierarchy.ClearStatusFlag(brushCompactNodeID, NodeStatusFlags.TransformationModified);
                             compactHierarchy.SetStatusFlag(brushCompactNodeID, NodeStatusFlags.NeedAllTouchingUpdated);
                         }

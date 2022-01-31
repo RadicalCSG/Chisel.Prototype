@@ -67,9 +67,9 @@ namespace Chisel.Core
     struct MergeTouchingBrushVerticesIndirectJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                              allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>>         brushesTouchedByBrushCache;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>    treeSpaceVerticesArray;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                           allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>      brushesTouchedByBrushCache;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesArray;
 
         // Read Write
         [NativeDisableParallelForRestriction]

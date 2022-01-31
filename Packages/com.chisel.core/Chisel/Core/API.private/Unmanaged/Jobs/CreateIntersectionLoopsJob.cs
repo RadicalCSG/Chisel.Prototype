@@ -20,8 +20,8 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeList<BrushPair2> uniqueBrushPairs;
 
         // Read
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpacePlanes>>        brushTreeSpacePlaneCache;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesCache;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>       brushTreeSpacePlaneCache;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesCache;
         [NoAlias, ReadOnly] public NativeStream.Reader                                  intersectingBrushesStream;
 
         // Write

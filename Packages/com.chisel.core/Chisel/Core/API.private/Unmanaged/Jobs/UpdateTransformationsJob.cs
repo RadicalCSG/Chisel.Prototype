@@ -22,11 +22,11 @@ namespace Chisel.Core
         // Read
         [NativeDisableUnsafePtrRestriction]
         [NoAlias, ReadOnly] public CompactHierarchy*                    compactHierarchyPtr;
-        [NoAlias, ReadOnly] public NativeArray<NodeOrderNodeID>         transformTreeBrushIndicesList;
+        [NoAlias, ReadOnly] public NativeList<NodeOrderNodeID>          transformTreeBrushIndicesList;
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<NodeTransformations>    transformationCache;
+        [NoAlias, WriteOnly] public NativeList<NodeTransformations>    transformationCache;
 
         public void Execute(int index)
         {

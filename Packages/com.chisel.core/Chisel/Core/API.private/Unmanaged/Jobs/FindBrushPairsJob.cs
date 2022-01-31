@@ -13,8 +13,8 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public int maxOrder;
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                  allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
 
         // Read (Re-allocate) / Write
         [NoAlias] public NativeList<BrushPair2> uniqueBrushPairs;

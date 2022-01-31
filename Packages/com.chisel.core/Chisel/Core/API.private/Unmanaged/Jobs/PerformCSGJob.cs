@@ -14,11 +14,11 @@ namespace Chisel.Core
     {
         // Read
         // 'Required' for scheduling with index count
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  allUpdateBrushIndexOrders;        
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                       allUpdateBrushIndexOrders;        
 
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<RoutingTable>>          routingTableCache;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpacePlanes>>  brushTreeSpacePlaneCache;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushCache;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<RoutingTable>>           routingTableCache;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>   brushTreeSpacePlaneCache;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>  brushesTouchedByBrushCache;
         [NoAlias, ReadOnly] public NativeArray<UnsafeList<float3>>                              loopVerticesLookup;
 
         [NoAlias, ReadOnly] public NativeStream.Reader      input;

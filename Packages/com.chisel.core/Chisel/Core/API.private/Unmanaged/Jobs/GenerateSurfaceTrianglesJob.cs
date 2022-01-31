@@ -16,16 +16,16 @@ namespace Chisel.Core
     {
         // Read
         // 'Required' for scheduling with index count
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                   allUpdateBrushIndexOrders;
         
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BasePolygonsBlob>>  basePolygonCache;
-        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>   basePolygonCache;
+        [NoAlias, ReadOnly] public NativeList<NodeTransformations>                          transformationCache;
         [NoAlias, ReadOnly] public NativeStream.Reader                                      input;        
         [NoAlias, ReadOnly] public NativeArray<MeshQuery>                                   meshQueries;
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>     brushRenderBufferCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float3>               surfaceColliderVertices;

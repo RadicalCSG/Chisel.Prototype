@@ -16,13 +16,13 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public CompactNodeID                                    treeCompactNodeID;
         [NoAlias, ReadOnly] public NativeReference<ChiselBlobAssetReference<CompactTree>> compactTreeRef;
         [NoAlias, ReadOnly] public NativeList<IndexOrder>                           allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                          allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<BrushIntersectWith>                  brushIntersectionsWith;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                           allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<BrushIntersectWith>                   brushIntersectionsWith;
         [NoAlias, ReadOnly] public NativeArray<int2>                                brushIntersectionsWithRange;
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushCache;
+        [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushCache;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeList<BrushIntersection> scratch_brushIntersection;

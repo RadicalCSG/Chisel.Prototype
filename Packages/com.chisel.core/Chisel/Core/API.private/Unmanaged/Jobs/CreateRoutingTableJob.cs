@@ -17,13 +17,13 @@ namespace Chisel.Core
     struct CreateRoutingTableJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                       allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>  brushesTouchedByBrushes;
         [NoAlias, ReadOnly] public NativeReference<ChiselBlobAssetReference<CompactTree>>       compactTreeRef;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<RoutingTable>>         routingTableLookup;
+        [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<RoutingTable>>          routingTableLookup;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<QueuedEvent>         queuedEvents;
