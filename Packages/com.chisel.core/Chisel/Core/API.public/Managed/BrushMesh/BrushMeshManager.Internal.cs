@@ -392,7 +392,7 @@ namespace Chisel.Core
                     var convertToBrushMeshBlobJob = new ConvertToBrushMeshBlobJob
                     {
                         brushMeshPointers   = brushMeshPointers,
-                        surfaces            = surfaces.AsArray(),
+                        surfaces            = surfaces,
                         //brushMeshBlobCache  = brushMeshBlobCache,
                         brushMeshBlobs      = brushMeshBlobs,
                         allocator           = allocator
@@ -437,7 +437,7 @@ namespace Chisel.Core
         unsafe struct ConvertToBrushMeshBlobJob : IJobParallelFor
         {
             [NoAlias, ReadOnly] public NativeArray<BrushMeshPointers>                           brushMeshPointers;
-            [NoAlias, ReadOnly] public NativeArray<NativeChiselSurface>                         surfaces;
+            [NoAlias, ReadOnly] public NativeList<NativeChiselSurface>                          surfaces;
 
             [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>    brushMeshBlobs;
 

@@ -613,7 +613,7 @@ namespace Chisel.Core
                         var buildLookupTablesJob = new BuildLookupTablesJob
                         {
                             // Read
-                            brushes                         = Temporaries.brushes.AsArray(),
+                            brushes                         = Temporaries.brushes,
                             brushCount                      = this.brushCount,
 
                             // Read/Write
@@ -643,7 +643,7 @@ namespace Chisel.Core
                             // Read
                             nodeIDValueToNodeOrder          = Temporaries.nodeIDValueToNodeOrder,
                             nodeIDValueToNodeOrderOffsetRef = Temporaries.nodeIDValueToNodeOrderOffsetRef,
-                            brushes                         = Temporaries.brushes.AsArray(),
+                            brushes                         = Temporaries.brushes,
                             brushCount                      = this.brushCount,
                             allTreeBrushIndexOrders         = Temporaries.allTreeBrushIndexOrders,
                             brushIDValues                   = chiselLookupValues.brushIDValues,
@@ -693,7 +693,7 @@ namespace Chisel.Core
                         var updateBrushIDValuesJob = new UpdateBrushIDValuesJob
                         {
                             // Read
-                            brushes         = Temporaries.brushes.AsArray(),
+                            brushes         = Temporaries.brushes,
                             brushCount      = this.brushCount,
 
                             // Read/Write
@@ -720,7 +720,7 @@ namespace Chisel.Core
                         var findModifiedBrushesJob = new FindModifiedBrushesJob
                         {
                             // Read
-                            brushes                         = Temporaries.brushes.AsArray(),
+                            brushes                         = Temporaries.brushes,
                             brushCount                      = this.brushCount,
                             allTreeBrushIndexOrders         = Temporaries.allTreeBrushIndexOrders,
                             //ref compactHierarchy          = ref compactHierarchy, //<-- cannot do ref or pointer here
@@ -754,9 +754,9 @@ namespace Chisel.Core
                         {
                             // Read
                             needRemappingRef                = Temporaries.needRemappingRef,
-                            rebuildTreeBrushIndexOrders     = Temporaries.rebuildTreeBrushIndexOrders       .AsJobArray(runInParallel),
-                            brushesTouchedByBrushCache      = chiselLookupValues.brushesTouchedByBrushCache .AsJobArray(runInParallel),
-                            brushes                         = Temporaries.brushes                           .AsArray(),
+                            rebuildTreeBrushIndexOrders     = Temporaries.rebuildTreeBrushIndexOrders,
+                            brushesTouchedByBrushCache      = chiselLookupValues.brushesTouchedByBrushCache,
+                            brushes                         = Temporaries.brushes,
                             brushCount                      = this.brushCount,
                             nodeIDValueToNodeOrder          = Temporaries.nodeIDValueToNodeOrder,
                             nodeIDValueToNodeOrderOffsetRef = Temporaries.nodeIDValueToNodeOrderOffsetRef,
@@ -789,7 +789,7 @@ namespace Chisel.Core
                             // Read
                             brushMeshBlobs              = brushMeshBlobs,
                             brushCount                  = this.brushCount,
-                            brushes                     = Temporaries.brushes.AsArray(),
+                            brushes                     = Temporaries.brushes,
                             //compactHierarchy          = compactHierarchy, //<-- cannot do ref or pointer here
                                                                             //    so we set it below using InitializeHierarchy
 
@@ -857,8 +857,8 @@ namespace Chisel.Core
                         {
                             // Read
                             treeCompactNodeID   = this.treeCompactNodeID,
-                            brushes             = Temporaries.brushes.AsArray(),
-                            nodes               = Temporaries.nodes.AsArray(),
+                            brushes             = Temporaries.brushes,
+                            nodes               = Temporaries.nodes,
                             //compactHierarchy  = compactHierarchy,  //<-- cannot do ref or pointer here, 
                             //    so we set it below using InitializeHierarchy
 

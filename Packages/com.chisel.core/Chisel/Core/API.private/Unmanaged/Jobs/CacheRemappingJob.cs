@@ -39,7 +39,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public CompactHierarchy*            compactHierarchyPtr;
         [NoAlias, ReadOnly] public NativeList<int>              nodeIDValueToNodeOrder;
         [NoAlias, ReadOnly] public NativeReference<int>         nodeIDValueToNodeOrderOffsetRef;
-        [NoAlias, ReadOnly] public NativeArray<CompactNodeID>   brushes;
+        [NoAlias, ReadOnly] public NativeList<CompactNodeID>    brushes;
         [NoAlias, ReadOnly] public int                          brushCount;
         [NoAlias, ReadOnly] public NativeList<IndexOrder>       allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeList<CompactNodeID>    brushIDValues;
