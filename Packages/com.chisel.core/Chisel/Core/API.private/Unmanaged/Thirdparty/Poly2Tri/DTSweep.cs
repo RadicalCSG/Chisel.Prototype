@@ -56,7 +56,7 @@ using Unity.Mathematics;
 
 namespace Poly2Tri
 {
-    unsafe struct DTSweep
+    struct DTSweep
     {
         const double PI_div2     = (Math.PI / 2);
         const double PI_3div4    = (3 * Math.PI / 4);
@@ -289,24 +289,31 @@ namespace Poly2Tri
         // SweepContext
         //
 
-        [NoAlias, ReadOnly] public quaternion                        rotation;
+        // Read
+        [NoAlias, ReadOnly] public quaternion                       rotation;
         [NoAlias, ReadOnly] public float3                           normal;
-        [NoAlias, ReadOnly] public HashedVertices                   vertices;
-        [NoAlias, ReadOnly] public NativeArray<float2>              points;
         [NoAlias, ReadOnly] public int                              edgeLength;
-        [NoAlias, ReadOnly] public NativeArray<int>                 edges;
-        [NoAlias, ReadOnly] public NativeList<DirectedEdge>         allEdges;
-        [NoAlias, ReadOnly] public NativeList<DelaunayTriangle>     triangles;
-        [NoAlias, ReadOnly] public NativeList<bool>                 triangleInterior;
-        [NoAlias, ReadOnly] public NativeList<int>                  sortedPoints;
-        [NoAlias, ReadOnly] public NativeList<AdvancingFrontNode>   advancingFrontNodes;
-        [NoAlias, ReadOnly] public NativeList<UnsafeList<Edge>>     edgeLookupEdges;
-        [NoAlias, ReadOnly] public NativeHashMap<int, int>          edgeLookups;
-        [NoAlias, ReadOnly] public NativeList<UnsafeList<Edge>>     foundLoops;
-        [NoAlias, ReadOnly] public NativeList<UnsafeList<int>>      children;
-        [NoAlias, ReadOnly] public NativeList<Edge>                 inputEdgesCopy;
+        [NoAlias, ReadOnly] public UnsafeList<float3>               vertices;
         [NoAlias, ReadOnly] public UnsafeList<Edge>                 inputEdges;
+
+        // Write
         [NoAlias]           public NativeList<int>                  surfaceIndicesArray;
+
+
+        // Per thread scratch memory
+        [NativeDisableContainerSafetyRestriction] public NativeArray<int>                 edges;
+        [NativeDisableContainerSafetyRestriction] public NativeList<DirectedEdge>         allEdges;
+        [NativeDisableContainerSafetyRestriction] public NativeArray<float2>              points;
+        [NativeDisableContainerSafetyRestriction] public NativeList<DelaunayTriangle>     triangles;
+        [NativeDisableContainerSafetyRestriction] public NativeList<bool>                 triangleInterior;
+        [NativeDisableContainerSafetyRestriction] public NativeList<int>                  sortedPoints;
+        [NativeDisableContainerSafetyRestriction] public NativeList<AdvancingFrontNode>   advancingFrontNodes;
+        [NativeDisableContainerSafetyRestriction] public NativeList<UnsafeList<Edge>>     edgeLookupEdges;
+        [NativeDisableContainerSafetyRestriction] public NativeHashMap<int, int>          edgeLookups;
+        [NativeDisableContainerSafetyRestriction] public NativeList<UnsafeList<Edge>>     foundLoops;
+        [NativeDisableContainerSafetyRestriction] public NativeList<UnsafeList<int>>      children;
+        [NativeDisableContainerSafetyRestriction] public NativeList<Edge>                 inputEdgesCopy;
+
 
         void Clear()
         {
@@ -341,7 +348,7 @@ namespace Poly2Tri
         bool edgeEventRight;
 
         
-        internal static bool IsPointInPolygon(float3 right, float3 forward, UnsafeList<Edge> indices1, UnsafeList<Edge> indices2, HashedVertices vertices)
+        internal static bool IsPointInPolygon(float3 right, float3 forward, UnsafeList<Edge> indices1, UnsafeList<Edge> indices2, UnsafeList<float3> vertices)
         {
             int index = 0;
             while (index < indices2.Length &&
@@ -497,7 +504,12 @@ namespace Poly2Tri
                 children[l1] = new UnsafeList<int>(1 + (children.Length * 2), Allocator.Temp);
             }
 
-            MathExtensions.CalculateTangents(normal, out float3 right, out float3 forward);
+            //MathExtensions.CalculateTangents(normal, out float3 right, out float3 forward);            
+            var absNormal = math.abs(normal);
+            var mainAxis = (absNormal.y > absNormal.x && absNormal.y > absNormal.z) ? new float3(0, 0, 1) : new float3(0, -1, 0);
+            var right = math.normalizesafe(math.cross(normal, mainAxis));
+            var forward = math.normalizesafe(math.cross(normal, right));
+
             for (int l1 = foundLoops.Length - 1; l1 >= 0; l1--)
             {
                 if (foundLoops[l1].Length == 0)
@@ -867,7 +879,7 @@ namespace Poly2Tri
             var min = new float2(float.PositiveInfinity, float.PositiveInfinity);
             var max = new float2(float.NegativeInfinity, float.NegativeInfinity);
 
-            var s_KnownVertices = stackalloc bool[vertices.Length];
+            var s_KnownVertices = new NativeArray<bool>(vertices.Length, Allocator.Temp);
             for (int e = 0; e < inputEdgesArray.Length; e++)
             {
                 var edge = inputEdgesArray[e];
@@ -917,7 +929,7 @@ namespace Poly2Tri
             pointComparer.points = points;
 
             // Sort the points along y-axis
-            NativeSortExtension.Sort<int, PointComparer>((int*)sortedPoints.GetUnsafePtr(), sortedPoints.Length, pointComparer);
+            NativeSortExtension.Sort<int, PointComparer>(sortedPoints, pointComparer);
 
             headPointIndex = (int)(vertices.Length);
             tailPointIndex = (int)(vertices.Length + 1);
@@ -2207,7 +2219,7 @@ namespace Poly2Tri
             return true;
         }
 
-        const double kEpsilon = 1e-8f;//12f;
+        const double kEpsilon = 1e-12f;
 
         /// Forumla to calculate signed area
         /// Positive if CCW

@@ -71,7 +71,7 @@ namespace Chisel.Core
 
         static readonly CompareSortByBasePlaneIndex compareSortByBasePlaneIndex = new CompareSortByBasePlaneIndex();
 
-        public void Execute(int index)
+        public unsafe void Execute(int index)
         {
             var count = input.BeginForEachIndex(index);
             if (count == 0)
@@ -233,9 +233,14 @@ namespace Chisel.Core
                     
                     var context = new Poly2Tri.DTSweep
                     {
-                        vertices            = brushVertices,
-                        points              = context_points,
+                        vertices            = *brushVertices.m_Vertices,
                         edgeLength          = pointCount,
+                        rotation            = rotation,
+                        normal              = normal,
+                        inputEdges          = loopEdges,
+                        surfaceIndicesArray = outputSurfaceIndicesArray,
+                        
+                        points              = context_points,
                         edges               = context_edges,
                         allEdges            = context_allEdges,
                         triangles           = context_triangles,
@@ -246,11 +251,7 @@ namespace Chisel.Core
                         edgeLookups         = context_edgeLookups,
                         foundLoops          = context_foundLoops,
                         children            = context_children,
-                        inputEdgesCopy      = context_inputEdgesCopy,
-                        rotation            = rotation,
-                        normal              = normal,
-                        inputEdges          = loopEdges,
-                        surfaceIndicesArray = outputSurfaceIndicesArray
+                        inputEdgesCopy      = context_inputEdgesCopy
                     };
                     context.Execute();
 

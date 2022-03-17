@@ -37,7 +37,7 @@ namespace Chisel.Core
     };
     
     [BurstCompatible]
-    public struct CompactHierarchyID : IComparable<CompactHierarchyID>, IEquatable<CompactHierarchyID>
+    public readonly struct CompactHierarchyID : IComparable<CompactHierarchyID>, IEquatable<CompactHierarchyID>
     {
         public static readonly CompactHierarchyID Invalid = default;
 
