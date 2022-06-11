@@ -79,7 +79,7 @@ namespace Chisel.Core
                 for (int i = 0; i < hierarchies.Length; i++)
                     tempHierarchyList[i] = hierarchies[i];
 
-                using (tempHierarchyList)
+                try
                 {
                     for (int i = 0; i < tempHierarchyList.Length; i++)
                     {
@@ -90,6 +90,7 @@ namespace Chisel.Core
                                 // Note: calling dispose will remove it from hierarchies, 
                                 // which is why we need to copy the list to dispose them all efficiently
                                 tempHierarchyList[i].Dispose();
+                                tempHierarchyList[i] = default;
                             }
                             catch (Exception ex)
                             {
@@ -97,6 +98,10 @@ namespace Chisel.Core
                             }
                         }
                     }
+                }
+                finally
+                {
+                    tempHierarchyList.Dispose();
                 }
             }
             defaultHierarchyID = CompactHierarchyID.Invalid;
@@ -116,7 +121,10 @@ namespace Chisel.Core
             var hierarchyID = CreateHierarchyID(out var hierarchyIndex);
             var hierarchy = CompactHierarchy.CreateHierarchy(hierarchyID, rootNodeID, userID, Allocator.Persistent);
             if (hierarchies[hierarchyIndex].IsCreated)
+            {
                 hierarchies[hierarchyIndex].Dispose();
+                hierarchies[hierarchyIndex] = default;
+            }
             hierarchies[hierarchyIndex] = hierarchy;
             nodes[rootNodeIndex] = hierarchy.RootID;
             return ref ((CompactHierarchy*)hierarchies.GetUnsafePtr())[hierarchyIndex];
@@ -186,9 +194,8 @@ namespace Chisel.Core
 
             nodes[index] = CompactNodeID.Invalid;
         }
-        
-        
-        [BurstCompile]
+
+
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsValidNodeID(NodeID nodeID, out int index)
@@ -209,7 +216,6 @@ namespace Chisel.Core
             return true;
         }
 
-        [BurstCompile]
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValidNodeID(CSGTreeNode treeNode)
@@ -232,7 +238,6 @@ namespace Chisel.Core
             return true;
         }
 
-        [BurstCompile]
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValidNodeID(NodeID nodeID)
@@ -240,7 +245,6 @@ namespace Chisel.Core
             return IsValidNodeID(ref nodeIDLookup, ref hierarchyIDLookup, hierarchies, nodes, nodeID);
         }
 
-        [BurstCompile]
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsValidNodeID(ref IDManager nodeIDLookup, ref IDManager hierarchyIDLookup, NativeList<CompactHierarchy> hierarchies, NativeList<CompactNodeID> nodes, NodeID nodeID)
@@ -265,7 +269,7 @@ namespace Chisel.Core
 
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe bool IsValidCompactNodeID(CompactNodeID compactNodeID)
+        public bool IsValidCompactNodeID(CompactNodeID compactNodeID)
         {
             return IsValidCompactNodeID(ref hierarchyIDLookup, hierarchies, compactNodeID);
         }
@@ -342,7 +346,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe ref BrushOutline GetBrushOutline(NodeID nodeID)
+        public ref BrushOutline GetBrushOutline(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID))
                 throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
@@ -389,7 +393,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe ref CompactHierarchy GetHierarchy(CSGTree tree)
+        public ref CompactHierarchy GetHierarchy(CSGTree tree)
         {
             return ref GetHierarchy(tree.nodeID);
         }
@@ -519,6 +523,25 @@ namespace Chisel.Core
                 throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             nodes[index] = compactNodeID;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void MoveNodeIDs(ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, UnsafeList<CompactChildNode> compactNodes, int offset, int count)
+        {
+            for (int i = offset, lastIndex = (offset + count); i < lastIndex; i++)
+            {
+                var nodeID          = compactNodes[i].nodeID;
+                if (nodeID == NodeID.Invalid)
+                    //throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
+                    continue;
+
+                if (!nodeIDLookup.IsValidIDUnsafe(nodeID.value, nodeID.generation, out var index))
+                    //throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
+                    continue;
+
+                var compactNodeID = compactNodes[i].compactNodeID;
+                nodes[index] = compactNodeID;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -684,7 +707,7 @@ namespace Chisel.Core
 
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe bool SetChildrenDirty(CompactNodeID compactNodeID)
+        internal bool SetChildrenDirty(CompactNodeID compactNodeID)
         {
             if (!IsValidCompactNodeID(compactNodeID))
                 return false;
@@ -740,7 +763,6 @@ namespace Chisel.Core
         }
         #endregion
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal CSGNodeType GetTypeOfNode(NodeID nodeID)
         {
@@ -992,7 +1014,6 @@ namespace Chisel.Core
         #endregion
 
         [return: MarshalAs(UnmanagedType.U1)]
-        [BurstCompile]
         public bool DestroyNode(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID, out var index))
@@ -1026,6 +1047,7 @@ namespace Chisel.Core
 
                 hierarchies[hierarchyIndex] = default;
                 currHierarchy.Dispose();
+                currHierarchy = default;
                 FreeNodeID(nodeID);
                 return true;
             }
@@ -1058,7 +1080,6 @@ namespace Chisel.Core
             return hierarchy.GetNodeID(parentCompactNodeID);
         }
 
-        [BurstCompile]
         internal CompactNodeID DeepMove(int nodeIndex, CompactNodeID destinationParentCompactNodeID, ref CompactHierarchy destinationHierarchy, ref CompactHierarchy sourceHierarchy, ref CompactChildNode sourceNode)
         {
             Debug.Assert(destinationHierarchy.IsCreated, "Hierarchy has not been initialized");
@@ -1092,7 +1113,6 @@ namespace Chisel.Core
         }
 
         // unchecked
-        [BurstCompile]
         internal CompactNodeID MoveChildNode(CompactNodeID compactNodeID, ref CompactHierarchy sourceHierarchy, ref CompactHierarchy destinationHierarchy, [MarshalAs(UnmanagedType.U1)] bool recursive = true)
         {
             Debug.Assert(sourceHierarchy.IsCreated, "Source hierarchy has not been initialized");
@@ -1100,13 +1120,16 @@ namespace Chisel.Core
 
             ref var sourceNode = ref sourceHierarchy.GetNodeRef(compactNodeID);
             if (recursive)
-                return DeepMove(Int32.MaxValue, CompactNodeID.Invalid, ref destinationHierarchy, ref sourceHierarchy, ref sourceNode);
+            {
+                var result = DeepMove(Int32.MaxValue, CompactNodeID.Invalid, ref destinationHierarchy, ref sourceHierarchy, ref sourceNode);
+                return result;
+            }
 
-            return destinationHierarchy.CreateNode(sourceNode.nodeID, sourceNode.nodeInformation);
+            var result2 = destinationHierarchy.CreateNode(sourceNode.nodeID, sourceNode.nodeInformation);
+            return result2;
         }
 
         // Move nodes from one hierarchy to another
-        [BurstCompile]
         public CompactNodeID MoveChildNode(NodeID nodeID, CompactHierarchyID destinationParentID, [MarshalAs(UnmanagedType.U1)] bool recursive = true)
         {
             if (!IsValidNodeID(nodeID, out var index))
@@ -1144,7 +1167,6 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        [BurstCompile]
         public bool AddChildNode(NodeID parent, NodeID childNode)
         {
             if (parent == NodeID.Invalid)
@@ -1253,7 +1275,6 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        [BurstCompile]
         internal unsafe bool InsertChildNodeRange(NodeID parent, int index, CSGTreeNode* arrayPtr, int arrayLength)
         {
             if (!IsValidNodeID(parent, out var parentNodeIndex))
@@ -1379,7 +1400,6 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        [BurstCompile]
         internal unsafe bool SetChildNodes(NodeID parent, CSGTreeNode* arrayPtr, int arrayLength)
         {
             if (!IsValidNodeID(parent, out var newParentNodeIndex))
@@ -1393,10 +1413,8 @@ namespace Chisel.Core
             if (newParentHierarchyID == CompactHierarchyID.Invalid)
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(parent)} (value: {newParentCompactNodeID.value}, generation: {newParentCompactNodeID.generation}) is invalid", nameof(parent));
 
-            UnityEngine.Profiling.Profiler.BeginSample("Detach");
             ref var hierarchy = ref GetHierarchy(newParentCompactNodeID);
             hierarchy.DetachAllChildrenFromParent(newParentCompactNodeID);
-            UnityEngine.Profiling.Profiler.EndSample();
 
             if (arrayLength == 0)
                 return true;
@@ -1405,7 +1423,8 @@ namespace Chisel.Core
 
             using (var newChildren = new NativeList<CompactNodeID>(arrayLength, Allocator.Temp))
             {
-                UnityEngine.Profiling.Profiler.BeginSample("Check");
+                newParentHierarchy.ReserveChildren(arrayLength);
+
                 using (var usedTreeNodes = new NativeHashSet<CSGTreeNode>(arrayLength, Allocator.Temp))
                 {
                     for (int i = 0; i < arrayLength; i++)
@@ -1459,56 +1478,47 @@ namespace Chisel.Core
                             return false;
                         }
 
-                        UnityEngine.Profiling.Profiler.BeginSample("ParentOf");
                         var oldParentNodeID = oldParentHierarchy.ParentOf(childCompactNodeID);
-                        UnityEngine.Profiling.Profiler.EndSample();
                         if (currParentHierarchyID != newParentHierarchyID)
                         {
-                            UnityEngine.Profiling.Profiler.BeginSample("MoveChildNode");
                             // Create new copy of item in new hierarchy
                             var newCompactNodeID = MoveChildNode(childCompactNodeID, ref oldParentHierarchy, ref newParentHierarchy, true);
-                            UnityEngine.Profiling.Profiler.EndSample();
 
                             nodes[childIndex] = newCompactNodeID;
 
                             // Delete item in old hierarchy
-                            UnityEngine.Profiling.Profiler.BeginSample("DeleteRecursive");
                             oldParentHierarchy.DeleteRecursive(childCompactNodeID);
                             childCompactNodeID = newCompactNodeID;
-                            UnityEngine.Profiling.Profiler.EndSample();
 
                             SetDirty(oldParentHierarchy.RootID);
                         } else
                         {
                             if (oldParentHierarchy.GetTypeOfNode(childCompactNodeID) != CSGNodeType.Brush)
                             {
-                                UnityEngine.Profiling.Profiler.BeginSample("IsDescendant");
                                 // We cannot add a child to its own descendant (would create a loop)
                                 if (oldParentHierarchy.IsDescendant(childCompactNodeID, newParentCompactNodeID))
                                 {
                                     Debug.LogError("Cannot add child to one of its ancestors (would create infinite loop)");
                                     return false;
                                 }
-                                UnityEngine.Profiling.Profiler.EndSample();
                             }
                         }
 
                         if (oldParentNodeID != CompactNodeID.Invalid)
+                        {
                             oldParentHierarchy.SetDirty(oldParentNodeID);
+                        }
 
-                        newChildren.Add(childCompactNodeID);
+                        newChildren.AddNoResize(childCompactNodeID);
 
                         SetDirty(childNode);
                     }
                 }
-                UnityEngine.Profiling.Profiler.EndSample();
 
                 if (newChildren.Length == 0)
                     return true;
 
-                UnityEngine.Profiling.Profiler.BeginSample("AttachToParent");
                 newParentHierarchy.SetChildrenUnchecked(ref hierarchyIDLookup, hierarchies, ref nodeIDLookup, nodes, newParentCompactNodeID, newChildren, ignoreBrushMeshHashes: true);
-                UnityEngine.Profiling.Profiler.EndSample();
             }
 
             SetDirty(newParentHierarchy.RootID);
@@ -1517,7 +1527,6 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        [BurstCompile]
         public bool RemoveChildNode(NodeID parent, NodeID item)
         {
             if (!IsValidNodeID(parent, out var parentNodeIndex))
@@ -1564,7 +1573,6 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        [BurstCompile]
         public bool RemoveChildNodeAt(NodeID parent, int index)
         {
             if (!IsValidNodeID(parent, out var parentNodeIndex))
@@ -1593,7 +1601,6 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        [BurstCompile]
         internal bool RemoveChildNodeRange(NodeID parent, int index, int range)
         {
             if (index < 0)
@@ -1651,7 +1658,6 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [BurstCompile]
         internal void ClearChildNodes(NodeID parent)
         {
             if (!IsValidNodeID(parent, out var parentNodeIndex))
@@ -1668,7 +1674,6 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [BurstCompile]
         internal void DestroyChildNodes(CSGTreeNode treeNode)
         {
             var parent = treeNode.nodeID;
@@ -1684,7 +1689,6 @@ namespace Chisel.Core
             hierarchy.DestroyAllChildrenFromParent(parentCompactNodeID);
             SetDirty(parentCompactNodeID);
         }
-
     }
 
     // TODO: create "ReadOnlyCompact...Manager" wrapper can be used in jobs
@@ -1715,7 +1719,7 @@ namespace Chisel.Core
         }
          
 #if UNITY_EDITOR
-        static void OnBeforeAssemblyReload() { instance.Dispose(); }
+        static void OnBeforeAssemblyReload() { instance.Dispose(); instance = default; }
 
         // TODO: need a runtime equivalent
         static void OnAfterAssemblyReload() { instance.Initialize(); }
@@ -1871,26 +1875,26 @@ namespace Chisel.Core
         #endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe ref BrushOutline GetBrushOutline(NodeID nodeID) { return ref instance.GetBrushOutline(nodeID); }
+        public static ref BrushOutline GetBrushOutline(NodeID nodeID) { return ref instance.GetBrushOutline(nodeID); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref BrushOutline GetBrushOutline(ref CompactHierarchy hierarchy, CompactNodeID compactNodeID) { return ref CompactHierarchyManagerInstance.GetBrushOutline(ref hierarchy, compactNodeID); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static ref CompactHierarchy CreateHierarchy(Int32 userID = 0) { return ref instance.CreateHierarchy(userID); }
+        public static ref CompactHierarchy CreateHierarchy(Int32 userID = 0) { return ref instance.CreateHierarchy(userID); }
 
         #region GetHierarchy
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static ref CompactHierarchy GetHierarchy(CompactHierarchyID hierarchyID) { return ref instance.GetHierarchy(hierarchyID); }
+        public static ref CompactHierarchy GetHierarchy(CompactHierarchyID hierarchyID) { return ref instance.GetHierarchy(hierarchyID); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static ref CompactHierarchy GetHierarchy(ref IDManager hierarchyIDLookup, NativeList<CompactHierarchy> hierarchies, CompactHierarchyID hierarchyID) { return ref CompactHierarchyManagerInstance.GetHierarchy(ref hierarchyIDLookup, hierarchies, hierarchyID); }
+        internal static ref CompactHierarchy GetHierarchy(ref IDManager hierarchyIDLookup, NativeList<CompactHierarchy> hierarchies, CompactHierarchyID hierarchyID) { return ref CompactHierarchyManagerInstance.GetHierarchy(ref hierarchyIDLookup, hierarchies, hierarchyID); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static ref CompactHierarchy GetHierarchy(CSGTree tree) { return ref instance.GetHierarchy(tree); }
+        public static ref CompactHierarchy GetHierarchy(CSGTree tree) { return ref instance.GetHierarchy(tree); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static ref CompactHierarchy GetHierarchy(CompactHierarchyID hierarchyID, out int hierarchyIndex) { return ref instance.GetHierarchy(hierarchyID, out hierarchyIndex); }
+        internal static ref CompactHierarchy GetHierarchy(CompactHierarchyID hierarchyID, out int hierarchyIndex) { return ref instance.GetHierarchy(hierarchyID, out hierarchyIndex); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref CompactHierarchy GetHierarchy(CompactNodeID compactNodeID) { return ref instance.GetHierarchy(compactNodeID); }
@@ -1925,6 +1929,9 @@ namespace Chisel.Core
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void MoveNodeID(ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, NodeID nodeID, CompactNodeID compactNodeID) { CompactHierarchyManagerInstance.MoveNodeID(ref nodeIDLookup, nodes, nodeID, compactNodeID); }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void MoveNodeIDs(ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, UnsafeList<CompactChildNode> compactNodes, int offset, int count) { CompactHierarchyManagerInstance.MoveNodeIDs(ref nodeIDLookup, nodes, compactNodes, offset, count); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static CompactNodeID GetCompactNodeIDNoError(ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, NodeID nodeID, out int index) { return CompactHierarchyManagerInstance.GetCompactNodeIDNoError(ref nodeIDLookup, nodes, nodeID, out index); }
@@ -1994,7 +2001,7 @@ namespace Chisel.Core
 
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static bool SetChildrenDirty(CompactNodeID compactNodeID) { return instance.SetChildrenDirty(compactNodeID); }
+        internal static bool SetChildrenDirty(CompactNodeID compactNodeID) { return instance.SetChildrenDirty(compactNodeID); }
 
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2022,11 +2029,11 @@ namespace Chisel.Core
         
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static bool IsValidCompactNodeID(CompactNodeID compactNodeID) { return instance.IsValidCompactNodeID(compactNodeID); }
+        public static bool IsValidCompactNodeID(CompactNodeID compactNodeID) { return instance.IsValidCompactNodeID(compactNodeID); }
 
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static bool IsValidCompactNodeID(ref IDManager hierarchyIDLookup, NativeList<CompactHierarchy> hierarchies, CompactNodeID compactNodeID) { return CompactHierarchyManagerInstance.IsValidCompactNodeID(ref hierarchyIDLookup, hierarchies, compactNodeID); }
+        internal static bool IsValidCompactNodeID(ref IDManager hierarchyIDLookup, NativeList<CompactHierarchy> hierarchies, CompactNodeID compactNodeID) { return CompactHierarchyManagerInstance.IsValidCompactNodeID(ref hierarchyIDLookup, hierarchies, compactNodeID); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetUserIDOfNode(NodeID nodeID) { return instance.GetUserIDOfNode(nodeID); }
@@ -2090,7 +2097,7 @@ namespace Chisel.Core
 
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static bool InsertChildNode(NodeID parent, int index, NodeID item) { return instance.InsertChildNode(parent, index, item); }
+        internal static bool InsertChildNode(NodeID parent, int index, NodeID item) { return instance.InsertChildNode(parent, index, item); }
 
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

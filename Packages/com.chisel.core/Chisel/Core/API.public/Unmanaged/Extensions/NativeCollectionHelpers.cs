@@ -33,26 +33,13 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void EnsureSizeAndClear<T>(ref NativeListArray<T> array, int exactSize, Allocator allocator = Allocator.Temp)
+        public static void EnsureSizeAndClear<T>(ref NativeList<UnsafeList<T>> list, int exactSize, Allocator allocator = Allocator.Temp)
             where T : unmanaged
         {
-            if (!array.IsCreated || array.Capacity < exactSize)
-            {
-                if (array.IsCreated) array.Dispose();
-                array = new NativeListArray<T>(exactSize, allocator);
-            } else
-                array.ClearChildren();
-            array.ResizeExact(exactSize);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void EnsureConstantSizeAndClear<T>(ref NativeListArray<T> array, int constantSize, Allocator allocator = Allocator.Temp)
-            where T : unmanaged
-        {
-            if (!array.IsCreated)
-                array = new NativeListArray<T>(constantSize, allocator);
-            else
-                array.ClearChildren();
+            if (!list.IsCreated)
+                list = new NativeList<UnsafeList<T>>(exactSize, allocator);
+            list.Clear();
+            list.Resize(exactSize, NativeArrayOptions.ClearMemory);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

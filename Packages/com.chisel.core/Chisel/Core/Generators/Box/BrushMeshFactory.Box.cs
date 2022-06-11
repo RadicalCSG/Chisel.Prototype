@@ -24,7 +24,6 @@ namespace Chisel.Core
             Front   = 5,
         }
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CreateBox(float3 min, float3 max, 
                                      in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
@@ -223,8 +222,7 @@ namespace Chisel.Core
             }
         }
 
-        
-        [BurstCompile]
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ChiselBlobAssetReference<BrushMeshBlob> CreateBox(float3 vertex0,
                                                                   float3 vertex1,

@@ -351,8 +351,11 @@ namespace Chisel.Core
             }
 
             sortedPatches.Dispose();
+            sortedPatches = default;
             sortedAllocs.Dispose();
+            sortedAllocs = default;
             offsets.Dispose();
+            offsets = default;
 
             ChiselBlobAssetHeader* header = (ChiselBlobAssetHeader*)buffer;
             *header = new ChiselBlobAssetHeader();

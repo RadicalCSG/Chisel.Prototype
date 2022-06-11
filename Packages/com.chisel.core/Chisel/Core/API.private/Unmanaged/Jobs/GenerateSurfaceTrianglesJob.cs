@@ -16,16 +16,16 @@ namespace Chisel.Core
     {
         // Read
         // 'Required' for scheduling with index count
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                              allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                   allUpdateBrushIndexOrders;
         
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BasePolygonsBlob>>  basePolygonCache;
-        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>   basePolygonCache;
+        [NoAlias, ReadOnly] public NativeList<NodeTransformations>                          transformationCache;
         [NoAlias, ReadOnly] public NativeStream.Reader                                      input;        
         [NoAlias, ReadOnly] public NativeArray<MeshQuery>                                   meshQueries;
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<ChiselBlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferCache;
+        [NoAlias] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float3>               surfaceColliderVertices;
@@ -33,22 +33,21 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeArray<int>                  indexRemap;
         [NativeDisableContainerSafetyRestriction] NativeList<int>                   loops;
         [NativeDisableContainerSafetyRestriction] NativeList<ChiselQuerySurface>    querySurfaceList;
-
-        [NativeDisableContainerSafetyRestriction] HashedVertices            brushVertices;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<int>      surfaceLoopIndices;
-        [NativeDisableContainerSafetyRestriction] NativeArray<SurfaceInfo>  surfaceLoopAllInfos;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>     surfaceLoopAllEdges;
-        [NativeDisableContainerSafetyRestriction] NativeList<int>           surfaceIndexList;
-        [NativeDisableContainerSafetyRestriction] NativeList<int>           outputSurfaceIndicesArray;
-        [NativeDisableContainerSafetyRestriction] NativeArray<float2>       context_points;
-        [NativeDisableContainerSafetyRestriction] NativeArray<int>          context_edges;
-        [NativeDisableContainerSafetyRestriction] NativeList<int>           context_sortedPoints;
-        [NativeDisableContainerSafetyRestriction] NativeList<bool>          context_triangleInterior;
-        [NativeDisableContainerSafetyRestriction] NativeList<Edge>          context_inputEdgesCopy; 
-        [NativeDisableContainerSafetyRestriction] NativeListArray<Chisel.Core.Edge> context_edgeLookupEdges;
+        [NativeDisableContainerSafetyRestriction] HashedVertices                    brushVertices;
+        [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<int>>       surfaceLoopIndices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<SurfaceInfo>          surfaceLoopAllInfos;
+        [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<Edge>>      surfaceLoopAllEdges;
+        [NativeDisableContainerSafetyRestriction] NativeList<int>                   surfaceIndexList;
+        [NativeDisableContainerSafetyRestriction] NativeList<int>                   outputSurfaceIndicesArray;
+        [NativeDisableContainerSafetyRestriction] NativeArray<float2>               context_points;
+        [NativeDisableContainerSafetyRestriction] NativeArray<int>                  context_edges;
+        [NativeDisableContainerSafetyRestriction] NativeList<int>                   context_sortedPoints;
+        [NativeDisableContainerSafetyRestriction] NativeList<bool>                  context_triangleInterior;
+        [NativeDisableContainerSafetyRestriction] NativeList<Edge>                  context_inputEdgesCopy; 
+        [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<Edge>>      context_edgeLookupEdges;
         [NativeDisableContainerSafetyRestriction] NativeHashMap<int, int>           context_edgeLookups;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<Chisel.Core.Edge> context_foundLoops;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<int>              context_children;
+        [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<Edge>>      context_foundLoops;
+        [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<int>>       context_children;
         [NativeDisableContainerSafetyRestriction] NativeList<Poly2Tri.DTSweep.DirectedEdge>         context_allEdges;
         [NativeDisableContainerSafetyRestriction] NativeList<Poly2Tri.DTSweep.DelaunayTriangle>     context_triangles;
         [NativeDisableContainerSafetyRestriction] NativeList<Poly2Tri.DTSweep.AdvancingFrontNode>   context_advancingFrontNodes;
@@ -93,16 +92,18 @@ namespace Chisel.Core
             NativeCollectionHelpers.EnsureSizeAndClear(ref surfaceLoopIndices, surfaceOuterCount);
             for (int o = 0; o < surfaceOuterCount; o++)
             {
+                UnsafeList<int> inner = default;
                 var surfaceInnerCount = input.Read<int>();
                 if (surfaceInnerCount > 0)
                 {
-                    var inner = surfaceLoopIndices.AllocateWithCapacityForIndex(o, surfaceInnerCount);
+                    inner = new UnsafeList<int>(surfaceInnerCount, Allocator.Temp);
                     //inner.ResizeUninitialized(surfaceInnerCount);
                     for (int i = 0; i < surfaceInnerCount; i++)
                     {
                         inner.AddNoResize(input.Read<int>());
                     }
                 }
+                surfaceLoopIndices[o] = inner;
             }
 
             var surfaceLoopCount = input.Read<int>();
@@ -114,12 +115,13 @@ namespace Chisel.Core
                 var edgeCount   = input.Read<int>();
                 if (edgeCount > 0)
                 { 
-                    var edgesInner  = surfaceLoopAllEdges.AllocateWithCapacityForIndex(l, edgeCount);
+                    var edgesInner  = new UnsafeList<Edge>(edgeCount, Allocator.Temp);
                     //edgesInner.ResizeUninitialized(edgeCount);
                     for (int e = 0; e < edgeCount; e++)
                     {
                         edgesInner.AddNoResize(input.Read<Edge>());
                     }
+                    surfaceLoopAllEdges[l] = edgesInner;
                 }
             }
             input.EndForEachIndex();
@@ -133,7 +135,7 @@ namespace Chisel.Core
             var maxIndices = 0;
             for (int s = 0; s < surfaceLoopIndices.Length; s++)
             {
-                if (!surfaceLoopIndices.IsIndexCreated(s))
+                if (!surfaceLoopIndices[s].IsCreated)
                     continue;
                 var length = surfaceLoopIndices[s].Length;
                 maxIndices += length;
@@ -174,7 +176,7 @@ namespace Chisel.Core
                 var surfaceIndex = s;
                 surfaceRenderBuffer.surfaceIndex = surfaceIndex;
 
-                if (!surfaceLoopIndices.IsIndexCreated(s))
+                if (!surfaceLoopIndices[s].IsCreated)
                     continue;
 
                 loops.Clear();
@@ -271,7 +273,6 @@ namespace Chisel.Core
                         for (int n = 0; n < outputSurfaceIndicesArray.Length; n++)
                             surfaceIndexList.Add(outputSurfaceIndicesArray[n]);
                     }
-                    outputSurfaceIndicesArray.Dispose();
                 }
 
                 if (surfaceIndexList.Length == 0)
@@ -396,7 +397,10 @@ namespace Chisel.Core
             var brushRenderBuffer = builder.CreateBlobAssetReference<ChiselBrushRenderBuffer>(Allocator.Persistent);
 
             if (brushRenderBufferCache[brushNodeOrder].IsCreated)
+            {
                 brushRenderBufferCache[brushNodeOrder].Dispose();
+                brushRenderBufferCache[brushNodeOrder] = default;
+            }
 
             brushRenderBufferCache[brushNodeOrder] = brushRenderBuffer;
         }

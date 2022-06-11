@@ -7,6 +7,7 @@ using Unity.Mathematics;
 using Unity.Burst;
 using Unity.Collections;
 using System.Runtime.CompilerServices;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
 {
@@ -192,7 +193,21 @@ namespace Chisel.Core
                 throw new ArgumentOutOfRangeException(nameof(length));
             if (length == 0)
                 return true;
-            return CompactHierarchyManager.InsertChildNodeRange(nodeID, Count, arrayPtr, length); 
+            return CompactHierarchyManager.InsertChildNodeRange(nodeID, Count, arrayPtr, length);
+        }
+
+        /// <summary>Adds the <see cref="Chisel.Core.CSGTreeNode"/>s of the specified array to the end of the  <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
+        /// <param name="arrayPtr">The pointer to the array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be added to the end of the <see cref="Chisel.Core.CSGTreeBranch"/>. The array itself cannot be null.</param>
+        /// <param name="length">The length of the array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be added to the end of the <see cref="Chisel.Core.CSGTreeBranch"/>. </param>
+        /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe bool AddRange(NativeArray<CSGTreeNode> array, int length)
+        {
+            if (length < 0 || array.Length < length)
+                throw new ArgumentOutOfRangeException(nameof(length));
+            if (length == 0)
+                return true;
+            return CompactHierarchyManager.InsertChildNodeRange(nodeID, Count, (CSGTreeNode*)array.GetUnsafePtr(), length);
         }
 
         /// <summary>Inserts an element into the <see cref="Chisel.Core.CSGTreeNode"/> at the specified index.</summary>

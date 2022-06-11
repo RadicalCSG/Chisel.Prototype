@@ -45,7 +45,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override unsafe int GetHashCode()
+        public override int GetHashCode()
         {
             unchecked
             {

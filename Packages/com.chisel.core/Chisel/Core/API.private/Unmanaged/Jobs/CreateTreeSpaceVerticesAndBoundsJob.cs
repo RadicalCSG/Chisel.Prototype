@@ -19,20 +19,20 @@ namespace Chisel.Core
 
         // Read
         [NativeDisableUnsafePtrRestriction, NoAlias, ReadOnly] public IDManager*            hierarchyIDLookupPtr;
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  rebuildTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                   rebuildTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<NodeTransformations>                          transformationCache;
         [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>     brushMeshLookup;
-
-        // Write
-        [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<ChiselAABB>                                     brushTreeSpaceBounds;
-        [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesCache;
 
         // Read/Write
         [NativeDisableContainerSafetyRestriction, NoAlias, ReadOnly] public NativeArray<CompactHierarchy> hierarchyList;
 
-        unsafe static ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob> Build(ref ChiselBlobArray<float3> localVertices, float4x4 nodeToTreeSpaceMatrix)
+        // Write
+        [NativeDisableParallelForRestriction]
+        [NoAlias, WriteOnly] public NativeList<ChiselAABB>                                              brushTreeSpaceBounds;
+        [NativeDisableParallelForRestriction]
+        [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>    treeSpaceVerticesCache;
+
+        static ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob> Build(ref ChiselBlobArray<float3> localVertices, float4x4 nodeToTreeSpaceMatrix)
         {
             var totalSize   = localVertices.Length * sizeof(float3);
             var builder     = new ChiselBlobBuilder(Allocator.Temp, math.max(4, totalSize));

@@ -66,7 +66,6 @@ namespace Chisel.Core
             return true;
         }
 
-        [BurstCompile]
         public static unsafe bool GenerateExtrudedShape(NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes, 
                                                         in UnsafeList<SegmentVertex>    polygonVerticesArray, 
                                                         in UnsafeList<int>              polygonVerticesSegments,

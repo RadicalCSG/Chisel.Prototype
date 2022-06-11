@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -9,7 +9,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 
 namespace Chisel.Core
 {        
-    [BurstCompile]
+    [BurstCompile(CompileSynchronously = true)]
     unsafe struct FindModifiedBrushesJob : IJob
     {
         public void InitializeHierarchy(ref CompactHierarchy hierarchy)
@@ -19,23 +19,21 @@ namespace Chisel.Core
 
         // Read
         [NativeDisableUnsafePtrRestriction]
-        [NoAlias, ReadOnly] public CompactHierarchy*                compactHierarchyPtr;
-        [NoAlias, ReadOnly] public NativeList<CompactNodeID>        brushes;
-        [NoAlias, ReadOnly] public int                              brushCount;
-        [NoAlias, ReadOnly] public NativeList<IndexOrder>           allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public CompactHierarchy*            compactHierarchyPtr;
+        [NoAlias, ReadOnly] public NativeList<CompactNodeID>    brushes;
+        [NoAlias, ReadOnly] public int                          brushCount;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>       allTreeBrushIndexOrders;
 
         // Read/Write
-        [NoAlias] public NativeList<IndexOrder>                     rebuildTreeBrushIndexOrders;
+        [NoAlias] public NativeList<IndexOrder>                 rebuildTreeBrushIndexOrders;
 
         // Write
-        [NoAlias, WriteOnly] public NativeList<NodeOrderNodeID>     transformTreeBrushIndicesList;
-        [NoAlias, WriteOnly] public NativeList<NodeOrderNodeID>     brushBoundsUpdateList;
+        [NoAlias, WriteOnly] public NativeList<NodeOrderNodeID>.ParallelWriter transformTreeBrushIndicesList;
+        [NoAlias, WriteOnly] public NativeList<NodeOrderNodeID>.ParallelWriter brushBoundsUpdateList;
 
         public void Execute()
         {
             ref var compactHierarchy = ref UnsafeUtility.AsRef<CompactHierarchy>(compactHierarchyPtr);
-            transformTreeBrushIndicesList.Clear();
-            rebuildTreeBrushIndexOrders.Clear();
             if (rebuildTreeBrushIndexOrders.Capacity < brushCount)
                 rebuildTreeBrushIndexOrders.Capacity = brushCount;
 
@@ -60,7 +58,7 @@ namespace Chisel.Core
                             compactHierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.TransformationModified))
                         {
                             if (compactHierarchy.IsValidCompactNodeID(brushCompactNodeID))
-                                brushBoundsUpdateList.Add(new NodeOrderNodeID { nodeOrder = indexOrder.nodeOrder, compactNodeID = brushCompactNodeID });
+                                brushBoundsUpdateList.AddNoResize(new NodeOrderNodeID { nodeOrder = indexOrder.nodeOrder, compactNodeID = brushCompactNodeID });
                         }
 
                         if (compactHierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.ShapeModified))
@@ -76,7 +74,9 @@ namespace Chisel.Core
                         if (compactHierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.TransformationModified))
                         {
                             if (compactHierarchy.IsValidCompactNodeID(brushCompactNodeID))
-                                transformTreeBrushIndicesList.Add(new NodeOrderNodeID { nodeOrder = indexOrder.nodeOrder, compactNodeID = brushCompactNodeID });
+                            {
+                                transformTreeBrushIndicesList.AddNoResize(new NodeOrderNodeID { nodeOrder = indexOrder.nodeOrder, compactNodeID = brushCompactNodeID });
+                            }
                             compactHierarchy.ClearStatusFlag(brushCompactNodeID, NodeStatusFlags.TransformationModified);
                             compactHierarchy.SetStatusFlag(brushCompactNodeID, NodeStatusFlags.NeedAllTouchingUpdated);
                         }

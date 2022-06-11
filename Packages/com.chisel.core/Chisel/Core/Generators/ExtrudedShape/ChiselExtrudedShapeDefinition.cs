@@ -28,7 +28,6 @@ namespace Chisel.Core
         [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<int>                      polygonVerticesSegments;
 
         #region Generate
-        [BurstCompile]
         public int PrepareAndCountRequiredBrushMeshes()
         {
             if (!curveBlob.IsCreated)
@@ -41,31 +40,38 @@ namespace Chisel.Core
             return polygonVerticesSegments.Length;
         }
 
-        [BurstCompile]
         public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
             // TODO: maybe just not bother with pathblob and just convert to path-matrices directly?
             using (var pathMatrices = pathBlob.Value.GetUnsafeMatrices(Allocator.Temp))
-            using (var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp))
             {
-                generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
-                if (!BrushMeshFactory.GenerateExtrudedShape(generatedBrushMeshes,
-                                                            in polygonVerticesList,
-                                                            in polygonVerticesSegments,
-                                                            in pathMatrices,
-                                                            in surfaceDefinitionBlob,
-                                                            allocator))
+                var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
+                try
                 {
-                    for (int i = 0; i < generatedBrushMeshes.Length; i++)
+                    generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
+                    if (!BrushMeshFactory.GenerateExtrudedShape(generatedBrushMeshes,
+                                                                in polygonVerticesList,
+                                                                in polygonVerticesSegments,
+                                                                in pathMatrices,
+                                                                in surfaceDefinitionBlob,
+                                                                allocator))
                     {
-                        if (generatedBrushMeshes[i].IsCreated)
-                            generatedBrushMeshes[i].Dispose();
+                        for (int i = 0; i < generatedBrushMeshes.Length; i++)
+                        {
+                            if (generatedBrushMeshes[i].IsCreated)
+                                generatedBrushMeshes[i].Dispose();
+                            generatedBrushMeshes[i] = default;
+                        }
+                        return false;
                     }
-                    return false;
+                    for (int i = 0; i < generatedBrushMeshes.Length; i++)
+                        nodes[i] = GeneratedNode.GenerateBrush(generatedBrushMeshes[i]);
+                    return true;
                 }
-                for (int i = 0; i < generatedBrushMeshes.Length; i++)
-                    nodes[i] = GeneratedNode.GenerateBrush(generatedBrushMeshes[i]);
-                return true;
+                finally
+                {
+                    generatedBrushMeshes.Dispose();
+                }
             }
         }
 
@@ -132,10 +138,11 @@ namespace Chisel.Core
             base.Validate();
         }
 
+        const Allocator defaultAllocator = Allocator.TempJob;
         public override ChiselExtrudedShape GetBranchGenerator()
         {
-            settings.pathBlob = ChiselPathBlob.Convert(path, Allocator.TempJob);
-            settings.curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob);
+            settings.pathBlob = ChiselPathBlob.Convert(path, defaultAllocator);
+            settings.curveBlob = ChiselCurve2DBlob.Convert(shape, defaultAllocator);
             return base.GetBranchGenerator();
         }
 

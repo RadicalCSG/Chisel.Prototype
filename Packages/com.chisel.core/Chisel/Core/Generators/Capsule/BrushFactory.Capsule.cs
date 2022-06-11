@@ -18,8 +18,6 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-
-        [BurstCompile]
         public static bool GenerateCapsule(in ChiselCapsule                                   settings,
                                            in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition,
                                            out ChiselBlobAssetReference<BrushMeshBlob>                brushMesh,
@@ -61,7 +59,6 @@ namespace Chisel.Core
             }
         }
 
-        [BurstCompile]
         public static bool GenerateCapsuleVertices(in ChiselCapsule             settings,
                                                    in ChiselBlobBuilder               builder, 
                                                    ref BrushMeshBlob            root,

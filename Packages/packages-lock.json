@@ -22,10 +22,10 @@
       "depth": 0,
       "source": "embedded",
       "dependencies": {
-        "com.unity.burst": "1.6.0",
+        "com.unity.burst": "1.6.4",
         "com.unity.jobs": "0.11.0-preview.6",
-        "com.unity.collections": "1.0.0-pre.5",
-        "com.unity.mathematics": "1.2.1"
+        "com.unity.collections": "1.1.0",
+        "com.unity.mathematics": "1.2.5"
       }
     },
     "com.chisel.core.tests": {
@@ -52,7 +52,7 @@
       "dependencies": {}
     },
     "com.unity.burst": {
-      "version": "1.6.3",
+      "version": "1.6.4",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -78,7 +78,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.rider": {
-      "version": "3.0.7",
+      "version": "3.0.12",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -87,7 +87,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.visualstudio": {
-      "version": "2.0.12",
+      "version": "2.0.14",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -107,7 +107,7 @@
     },
     "com.unity.mathematics": {
       "version": "1.2.5",
-      "depth": 1,
+      "depth": 0,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
@@ -134,7 +134,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.test-framework": {
-      "version": "1.1.29",
+      "version": "1.1.30",
       "depth": 1,
       "source": "registry",
       "dependencies": {

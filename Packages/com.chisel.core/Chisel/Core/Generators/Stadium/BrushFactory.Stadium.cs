@@ -18,7 +18,6 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        [BurstCompile]
         public static unsafe bool GenerateStadium(float width, float height, float length,
                                                   float topLength,     int topSides,
                                                   float bottomLength,  int bottomSides, 
@@ -60,8 +59,7 @@ namespace Chisel.Core
                 return true;
             }
         }
-        
-        [BurstCompile]
+
         public static bool GenerateStadiumVertices(float diameter, float height, float length,
                                                    float topLength, int topSides,
                                                    float bottomLength, int bottomSides, 

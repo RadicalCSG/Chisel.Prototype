@@ -322,8 +322,8 @@ namespace Chisel.Core
             var compactNodeID = new CompactNodeID(hierarchyID: HierarchyID, value: id, generation: generation);
             if (index >= compactNodes.Length)
             {
-                compactNodes.Resize(index + 1, NativeArrayOptions.ClearMemory);
-                brushOutlines.Resize(index + 1, NativeArrayOptions.ClearMemory);
+                compactNodes .Resize(index + 1, NativeArrayOptions.UninitializedMemory);
+                brushOutlines.Resize(index + 1, NativeArrayOptions.UninitializedMemory);
             }
             brushOutlines[index] = default;
             compactNodes[index] = new CompactChildNode
@@ -472,7 +472,6 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [BurstCompile]
         public unsafe void FillOutline(CompactNodeID compactNodeID, ref BrushMeshBlob brushMesh)
         {
             Debug.Assert(IsCreated);
@@ -496,11 +495,15 @@ namespace Chisel.Core
             return compactNodes[index].nodeInformation.brushMeshHash;
         }
 
-#region ID / Memory Management
+        #region ID / Memory Management
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void RemoveMeshReference(CompactNodeID compactNodeID, int brushMeshID)
         {
             if (brushMeshID == Int32.MaxValue)
                 return;
+
+            brushMeshToBrush.Remove(brushMeshID, compactNodeID.value);
+            /*
             var value = compactNodeID.value;
 
             bool found = true;
@@ -519,7 +522,7 @@ namespace Chisel.Core
                         }
                     } while (brushMeshToBrush.TryGetNextValue(out item, ref iterator));
                 }
-            }
+            }*/
         }
 
         void FreeIndexRange(int index, int range)
@@ -580,7 +583,7 @@ namespace Chisel.Core
             compactNodes[parentNodeIndex] = parentNode;
             return parentNode.childOffset;
         }
-#endregion
+        #endregion
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -723,7 +726,7 @@ namespace Chisel.Core
             return index;
         }
 
-        unsafe bool DeleteRangeInternal(int parentIndex, int siblingIndex, int range, bool deleteChildren)
+        bool DeleteRangeInternal(int parentIndex, int siblingIndex, int range, bool deleteChildren)
         {
             if (range == 0)
                 return false;
@@ -830,14 +833,14 @@ namespace Chisel.Core
         }
 
         // "optimize" - remove holes, reorder them in hierarchy order
-        unsafe bool CompactInternal()
+        bool CompactInternal()
         {
             // TODO: implement
             //       could just create a new hierarchy and insert everything in it in order, and replace the hierarchy with this one
             throw new NotImplementedException();
         }
 
-        unsafe bool DetachAllChildrenInternal(int parentIndex)
+        bool DetachAllChildrenInternal(int parentIndex)
         {
             Debug.Assert(parentIndex >= 0 && parentIndex < compactNodes.Length);
             var parentHierarchy     = compactNodes[parentIndex];
@@ -845,7 +848,7 @@ namespace Chisel.Core
             return DetachRangeInternal(parentIndex, 0, parentChildCount);
         }
 
-        unsafe bool DeleteAllChildrenInternal(int parentIndex)
+        bool DeleteAllChildrenInternal(int parentIndex)
         {
             Debug.Assert(parentIndex >= 0 && parentIndex < compactNodes.Length);
             var parentHierarchy     = compactNodes[parentIndex];
@@ -935,12 +938,197 @@ namespace Chisel.Core
             return true;
         }
 
+        // Note: assumes the given compactNodeID and their respective nodeIDs are consecutive 
+        internal int SetChildrenUncheckedSlowPath(int parentChildOffset, int parentChildCount, int insertStartIndex, CompactNodeID parentID, NativeList<CompactNodeID> compactNodeIDs, int startCompactNodeIndex, int count)
+        {
+            var compactNodeID       = compactNodeIDs[startCompactNodeIndex];
+            var nodeIndex           = HierarchyIndexOfInternal(compactNodeID);
+            var prevChildOffset     = parentChildOffset;
+            var prevChildCount      = parentChildCount;
+            var insertIndex         = insertStartIndex;
+
+            Debug.Assert(!idManager.IsAnyIndexFree(nodeIndex, count));
+
+            // Find (or create) a span of enough elements that we can use to copy our children into
+            parentChildOffset = idManager.InsertIndexRange(prevChildOffset, prevChildCount, srcIndex: nodeIndex, dstIndex: insertIndex, count);
+            Debug.Assert(parentChildOffset >= 0 && parentChildOffset < compactNodes.Length + prevChildCount + count);
+            //Debug.Log($"{parentChildCount} {count} | {parentChildOffset} {prevChildOffset} | {prevChildCount - insertIndex} | {parentChildOffset} {insertIndex} | {nodeIndex} {parentChildOffset + insertIndex}");
+
+            if (compactNodes.Length < parentChildOffset + prevChildCount + count)
+            {
+                compactNodes.Resize(parentChildOffset + prevChildCount + count, NativeArrayOptions.ClearMemory);
+                brushOutlines.Resize(parentChildOffset + prevChildCount + count, NativeArrayOptions.ClearMemory);
+            }
+
+            // We first move the last nodes to the correct new offset ..
+            var items = prevChildCount - insertIndex;
+            if (items != 0)
+            {
+                compactNodes.MemMove(parentChildOffset + insertIndex + count, prevChildOffset + insertIndex, items);
+                brushOutlines.MemMove(parentChildOffset + insertIndex + count, prevChildOffset + insertIndex, items);
+            }
+
+            // If our offset is different then the front section will not be in the right location, so we might need to copy this
+            // We'd also need to reset the old nodes to invalid, if we don't we'd create new dangling nodes
+            if (prevChildOffset != parentChildOffset && insertIndex != 0)
+            {
+                // Then we move the first part (if necesary)
+                compactNodes.MemMove(parentChildOffset, prevChildOffset, insertIndex);
+                brushOutlines.MemMove(parentChildOffset, prevChildOffset, insertIndex);
+            }
+
+            compactNodes .MemClear(parentChildOffset + insertIndex, count);
+            brushOutlines.MemClear(parentChildOffset + insertIndex, count);
+
+            for (int c = 0; c < count; c++)
+            {
+                // Then we copy our node to the new location
+                var oldNodeIndex        = nodeIndex + c;
+                var newNodeIndex        = parentChildOffset + insertIndex + c;
+                var nodeItem            = compactNodes[oldNodeIndex];
+                var brushOutlineItem    = brushOutlines[oldNodeIndex];
+                nodeItem.parentID = parentID;
+                brushOutlines[newNodeIndex] = brushOutlineItem;
+                compactNodes[newNodeIndex] = nodeItem;
+
+                // Then we set the old indices to 0
+                if (oldNodeIndex < parentChildOffset || oldNodeIndex > (parentChildOffset + parentChildCount + count))
+                {
+                    brushOutlines[oldNodeIndex] = default;
+                    compactNodes[oldNodeIndex] = default;
+                }
+            }
+
+            if (prevChildOffset != parentChildOffset)
+            {
+                // Set the old indices to 0
+                for (int c = prevChildOffset; c < prevChildOffset + prevChildCount; c++)
+                {
+                    if (c < parentChildOffset || c > (parentChildOffset + parentChildCount + count))
+                    {
+                        brushOutlines[c] = default;
+                        compactNodes[c] = default;
+                    }
+                }
+            }
+
+            /*
+            // Then we set the old indices to 0
+            var newCount = parentChildCount + count + 1;
+            if (nodeIndex < parentChildOffset || nodeIndex + count >= parentChildOffset + newCount)
+            {
+                //if (brushOutlines[nodeIndex].IsCreated) brushOutlines[nodeIndex].Dispose(); 
+                brushOutlines[nodeIndex] = default; 
+                compactNodes[nodeIndex] = default;
+            }
+            for (int i = originalChildOffset, lastIndex = (originalChildOffset + parentChildCount + c); i < lastIndex; i++)
+            {
+                if (i >= parentChildOffset && i <= (parentChildOffset + parentChildCount + c))
+                    continue;
+
+                //if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); 
+                brushOutlines[i] = default;
+                compactNodes[i] = default;
+            }
+
+            /*
+            for (int c = 0; c < count; c++)
+            {
+                prevChildCount          = parentChildCount + c;
+                //currChildCount        = parentChildCount + c + 1;
+                var compactNodeIndex    = startCompactNodeIndex + c;
+                insertIndex             = insertStartIndex + c;
+                Debug.Assert(insertIndex >= 0 && insertIndex <= prevChildCount);
+                compactNodeID           = compactNodeIDs[compactNodeIndex];
+                nodeIndex               = HierarchyIndexOfInternal(compactNodeID);
+                var nodeItem            = compactNodes[nodeIndex];
+                var brushOutlineItem    = brushOutlines[nodeIndex];
+                //var prevChildOffset     = parentChildOffset;
+                
+                Debug.Assert(!idManager.IsIndexFree(nodeIndex));
+
+                // Find (or create) a span of enough elements that we can use to copy our children into
+                parentChildOffset = idManager.InsertIndexRange(prevChildOffset, prevChildCount, srcIndex: nodeIndex, dstIndex: insertIndex, 1);
+                Debug.Assert(parentChildOffset >= 0 && parentChildOffset < compactNodes.Length + currChildCount);
+                //Debug.Log($"{c} {parentChildOffset} {parentChildCount} {prevChildCount - insertIndex}");
+
+                if (compactNodes.Length < parentChildOffset + currChildCount)
+                {
+                    compactNodes.Resize(parentChildOffset + currChildCount, NativeArrayOptions.ClearMemory);
+                    brushOutlines.Resize(parentChildOffset + currChildCount, NativeArrayOptions.ClearMemory);
+                }
+
+                // We first move the last nodes to the correct new offset ..
+                var items = prevChildCount - insertIndex;
+                if (items != 0)
+                {
+                    compactNodes.MemMove(parentChildOffset + insertIndex + 1, prevChildOffset + insertIndex, items);
+                    brushOutlines.MemMove(parentChildOffset + insertIndex + 1, prevChildOffset + insertIndex, items);
+                }
+
+                // If our offset is different then the front section will not be in the right location, so we might need to copy this
+                // We'd also need to reset the old nodes to invalid, if we don't we'd create new dangling nodes
+                if (prevChildOffset != parentChildOffset && insertIndex != 0)
+                {
+                    // Then we move the first part (if necesary)
+                    compactNodes.MemMove(parentChildOffset, prevChildOffset, insertIndex);
+                    brushOutlines.MemMove(parentChildOffset, prevChildOffset, insertIndex);
+                }
+
+                // Then we copy our node to the new location
+                var newNodeIndex = parentChildOffset + insertIndex;
+                nodeItem.parentID = parentID;
+                brushOutlines[newNodeIndex] = brushOutlineItem;
+                compactNodes[newNodeIndex] = nodeItem;
+
+                // Then we set the old indices to 0
+                var newCount = parentChildCount + c + 1;
+                if (nodeIndex < parentChildOffset || nodeIndex >= parentChildOffset + newCount)
+                {
+                    //if (brushOutlines[nodeIndex].IsCreated) brushOutlines[nodeIndex].Dispose(); 
+                    brushOutlines[nodeIndex] = default; 
+                    compactNodes[nodeIndex] = default;
+                }
+                for (int i = originalChildOffset, lastIndex = (originalChildOffset + parentChildCount + c); i < lastIndex; i++)
+                {
+                    if (i >= parentChildOffset && i <= (parentChildOffset + parentChildCount + c))
+                        continue;
+
+                    //if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); 
+                    brushOutlines[i] = default;
+                    compactNodes[i] = default;
+                }
+            }*/
+            return parentChildOffset;
+        }
+
         internal bool SetChildrenUnchecked(ref IDManager hierarchyIDLookup, NativeList<CompactHierarchy> hierarchies, ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, CompactNodeID parentID, NativeList<CompactNodeID> compactNodeIDs, bool ignoreBrushMeshHashes = false)
         {
             Debug.Assert(IsCreated);
             var parentIndex = HierarchyIndexOfInternal(parentID);
             if (parentIndex == -1)
                 throw new ArgumentException(nameof(parentID), $"{nameof(parentID)} is invalid");
+
+            Debug.Assert(parentID != CompactNodeID.Invalid);
+            var parentHierarchy = compactNodes[parentIndex];
+
+            bool noChange = true;
+            for (int c = compactNodeIDs.Length - 1; c >= 0; c--)
+            {
+                var compactNodeID = compactNodeIDs[c];
+                var nodeIndex = HierarchyIndexOfInternal(compactNodeID);
+                if (nodeIndex == -1)
+                    throw new ArgumentException($"{nameof(CompactNodeID)} is invalid", nameof(compactNodeID));
+
+                var parentChildOffset   = parentHierarchy.childOffset;
+                var desiredIndex        = parentChildOffset + c;
+                if (desiredIndex != nodeIndex)
+                    noChange = false;
+            }
+
+            if (noChange &&
+                parentHierarchy.childCount == compactNodeIDs.Length)
+                return true;
 
             DetachAllChildrenInternal(parentIndex);
             /*
@@ -961,33 +1149,27 @@ namespace Chisel.Core
             }
             */
 
-            bool success = true;
+            
+            //Debug.Log($"Start {compactNodeIDs.Length}");
+            bool needIdFixup = false;
             int insertIndex = 0;
             for (int c = 0; c < compactNodeIDs.Length; c++)
             {
-                Debug.Assert(parentID != CompactNodeID.Invalid);
+                var parentChildCount    = parentHierarchy.childCount;
+                Debug.Assert(insertIndex >= 0 && insertIndex <= parentChildCount);
 
-                var parentHierarchy   = compactNodes[parentIndex];
-                var parentChildCount  = parentHierarchy.childCount;
-                if (insertIndex < 0 || insertIndex > parentChildCount)
-                {
-                    Debug.LogError($"Index ({insertIndex}) must be between 0 .. {parentChildCount}");
-                    success = false;
-                    continue;
-                }
+                var compactNodeID       = compactNodeIDs[c];
+                var nodeIndex           = HierarchyIndexOfInternal(compactNodeID);
 
-                var compactNodeID = compactNodeIDs[c];
-                var nodeIndex = HierarchyIndexOfInternal(compactNodeID);
-                if (nodeIndex == -1)
-                    throw new ArgumentException($"{nameof(CompactNodeID)} is invalid", nameof(compactNodeID));
-
+                var parentChildOffset   = parentHierarchy.childOffset;
+                var desiredIndex        = parentChildOffset + insertIndex;
+                
+                /*
                 // Make a temporary copy of our node in case we need to move it
                 var nodeItem            = compactNodes[nodeIndex];
                 var brushOutlineItem    = brushOutlines[nodeIndex];
                 var oldParentID         = nodeItem.parentID; 
-                var parentChildOffset   = parentHierarchy.childOffset;
-                var desiredIndex        = parentChildOffset + insertIndex;
-                /*
+
                 // If the node is already a child of a parent, then we need to remove it from that parent
                 if (oldParentID != CompactNodeID.Invalid)
                 {
@@ -1019,7 +1201,10 @@ namespace Chisel.Core
                 // our node as the location for our children
                 if (parentChildCount == 0)
                 {
-                    UnityEngine.Profiling.Profiler.BeginSample("Fast path");
+                    // Make a temporary copy of our node in case we need to move it
+                    var nodeItem            = compactNodes[nodeIndex];
+                    var brushOutlineItem    = brushOutlines[nodeIndex];
+
                     parentHierarchy.childOffset = nodeIndex;
                     parentHierarchy.childCount = 1;
                     compactNodes[parentIndex] = parentHierarchy;
@@ -1028,16 +1213,16 @@ namespace Chisel.Core
                     brushOutlines[nodeIndex] = brushOutlineItem;
                     compactNodes[nodeIndex] = nodeItem;
                     insertIndex++;
-                    UnityEngine.Profiling.Profiler.EndSample();
                     continue;
                 }
-
-                //Debug.Log($"{c}: {nodeItem.nodeID} {nodeIndex} {desiredIndex} / {parentChildCount} / {parentChildOffset}");
 
                 // If the desired index of our node is already at the index we want it to be, things are simple
                 if (desiredIndex == nodeIndex)
                 {
-                    UnityEngine.Profiling.Profiler.BeginSample("Fast path");
+                    // Make a temporary copy of our node in case we need to move it
+                    var nodeItem            = compactNodes[nodeIndex];
+                    var brushOutlineItem    = brushOutlines[nodeIndex];
+
                     parentHierarchy.childCount ++;
                     compactNodes[parentIndex] = parentHierarchy;
 
@@ -1045,109 +1230,61 @@ namespace Chisel.Core
                     brushOutlines[nodeIndex] = brushOutlineItem;
                     compactNodes[nodeIndex] = nodeItem;
                     insertIndex++;
-                    UnityEngine.Profiling.Profiler.EndSample();
                     continue;
                 }
 
-                
                 // If, however, the desired index of our node is NOT at the index we want it to be, 
                 // we need to move nodes around
 
-                UnityEngine.Profiling.Profiler.BeginSample("Slow path");
-
-                // If it's a different parent then we need to change the size of our child list
+                // find all nodes that are consecutive so we can move them together
+                var prevNodeIndex = nodeIndex;
+                var lastCompactNodeIndex = c;
+                do
                 {
-                    var originalOffset = parentChildOffset;
-                    var originalCount  = parentChildCount;
+                    lastCompactNodeIndex++;
+                    if (lastCompactNodeIndex >= compactNodeIDs.Length)
+                        break;
+                    var nextNodeIndex = HierarchyIndexOfInternal(compactNodeIDs[lastCompactNodeIndex]);
+                    if (nextNodeIndex - prevNodeIndex != 1)
+                        break;
+                    prevNodeIndex = nextNodeIndex;
+                } while (true);
 
-                    Debug.Assert(!idManager.IsIndexFree(nodeIndex));
+                //Debug.Log($"{lastCompactNodeIndex - c} | {c} {lastCompactNodeIndex} {compactNodeIDs.Length} | {nodeIndex}");
 
-                    UnityEngine.Profiling.Profiler.BeginSample("InsertIntoIndexRange");
-                    // Find (or create) a span of enough elements that we can use to copy our children into
-                    parentChildCount++;
-                    parentChildOffset = idManager.InsertIntoIndexRange(originalOffset, originalCount, insertIndex, nodeIndex);
-                    Debug.Assert(parentChildOffset >= 0 && parentChildOffset < compactNodes.Length + parentChildCount);
-                    UnityEngine.Profiling.Profiler.EndSample();
+                needIdFixup = true;
+                UnityEngine.Profiling.Profiler.BeginSample("Slow path");
+                var count = (lastCompactNodeIndex - c);
+                var insertStartIndex = insertIndex;
+                parentChildOffset = SetChildrenUncheckedSlowPath(parentChildOffset, parentChildCount, insertStartIndex, parentID, compactNodeIDs, c, count);
+                parentHierarchy.childOffset = parentChildOffset; // We make sure we set the parent child offset correctly
+                parentHierarchy.childCount += count;             // And we increase the childCount of our parent
+                insertIndex = insertStartIndex + count;
+                compactNodes[parentIndex] = parentHierarchy;
+                UnityEngine.Profiling.Profiler.EndSample();
 
-                    if (compactNodes.Length < parentChildOffset + parentChildCount)
-                    {
-                        UnityEngine.Profiling.Profiler.BeginSample("Resize");
-                        compactNodes.Resize(parentChildOffset + parentChildCount, NativeArrayOptions.ClearMemory);
-                        brushOutlines.Resize(parentChildOffset + parentChildCount, NativeArrayOptions.ClearMemory);
-                        UnityEngine.Profiling.Profiler.EndSample();
-                    }
+                c = lastCompactNodeIndex - 1;
+            }
 
-                    UnityEngine.Profiling.Profiler.BeginSample("MemMove1");
-                    // We first move the last nodes to the correct new offset ..
-                    var items = originalCount - insertIndex;
-                    compactNodes.MemMove(parentChildOffset + insertIndex + 1, originalOffset + insertIndex, items);
-                    brushOutlines.MemMove(parentChildOffset + insertIndex + 1, originalOffset + insertIndex, items);
-                    UnityEngine.Profiling.Profiler.EndSample();
-
-                    // If our offset is different then the front section will not be in the right location, so we might need to copy this
-                    // We'd also need to reset the old nodes to invalid, if we don't we'd create new dangling nodes
-                    if (originalOffset != parentChildOffset)
-                    {
-                        UnityEngine.Profiling.Profiler.BeginSample("MemMove2");
-                        // Then we move the first part (if necesary)
-                        items = insertIndex;
-                        compactNodes.MemMove(parentChildOffset, originalOffset, items);
-                        brushOutlines.MemMove(parentChildOffset, originalOffset, items);
-                        UnityEngine.Profiling.Profiler.EndSample();
-                    }
-
-                    // Then we copy our node to the new location
-                    var newNodeIndex = parentChildOffset + insertIndex;
-                    nodeItem.parentID = parentID;
-                    brushOutlines[newNodeIndex] = brushOutlineItem;
-                    compactNodes[newNodeIndex] = nodeItem;
-
-                    UnityEngine.Profiling.Profiler.BeginSample("Cleanup");
-                    // Then we set the old indices to 0
-                    var newCount = originalCount + 1;
-                    if (nodeIndex < parentChildOffset || nodeIndex >= parentChildOffset + newCount)
-                    {
-                        //if (brushOutlines[nodeIndex].IsCreated) brushOutlines[nodeIndex].Dispose(); 
-                        brushOutlines[nodeIndex] = default; 
-                        compactNodes[nodeIndex] = default;
-                    }
-                    for (int i = originalOffset, lastIndex = (originalOffset + originalCount); i < lastIndex; i++)
-                    {
-                        if (i >= parentChildOffset && i < parentChildOffset + newCount)
-                            continue;
-
-                        //if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); 
-                        brushOutlines[i] = default;
-                        compactNodes[i] = default;
-                    }
-                    UnityEngine.Profiling.Profiler.EndSample();
-
-                    UnityEngine.Profiling.Profiler.BeginSample("MoveNodeID");
+            if (needIdFixup)
+            {
+                UnityEngine.Profiling.Profiler.BeginSample("MoveNodeID");
+                {
                     // And fixup the id to index lookup
-                    for (int i = parentChildOffset, lastIndex = (parentChildOffset + newCount); i < lastIndex; i++)
-                    {
-                        if (compactNodes[i].nodeID != default)
-                            CompactHierarchyManager.MoveNodeID(ref nodeIDLookup, nodes, compactNodes[i].nodeID, compactNodes[i].compactNodeID);
-                    }
-                    UnityEngine.Profiling.Profiler.EndSample();
-
-                    parentHierarchy.childOffset = parentChildOffset; // We make sure we set the parent child offset correctly
-                    parentHierarchy.childCount++;                    // And we increase the childCount of our parent
-                    compactNodes[parentIndex] = parentHierarchy;
-                    insertIndex++;
-                    UnityEngine.Profiling.Profiler.EndSample();
+                    CompactHierarchyManager.MoveNodeIDs(ref nodeIDLookup, nodes, compactNodes, parentHierarchy.childOffset, parentHierarchy.childCount);
                 }
+                UnityEngine.Profiling.Profiler.EndSample();
             }
 
             // TODO: comment this out after adding enough tests 
             UnityEngine.Profiling.Profiler.BeginSample("CheckConsistency");
             Debug.Assert(CheckConsistency(ref hierarchyIDLookup, hierarchies, ref nodeIDLookup, nodes, ignoreBrushMeshHashes));
             UnityEngine.Profiling.Profiler.EndSample();
-            return success;
+            return true;
         }
 
 
-        unsafe bool AttachInternal(ref IDManager hierarchyIDLookup, NativeList<CompactHierarchy> hierarchies, ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, CompactNodeID parentID, int parentIndex, int insertIndex, CompactNodeID compactNodeID, bool ignoreBrushMeshHashes = false)
+        bool AttachInternal(ref IDManager hierarchyIDLookup, NativeList<CompactHierarchy> hierarchies, ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, CompactNodeID parentID, int parentIndex, int insertIndex, CompactNodeID compactNodeID, bool ignoreBrushMeshHashes = false)
         {
             Debug.Assert(parentID != CompactNodeID.Invalid);
 
@@ -1232,7 +1369,7 @@ namespace Chisel.Core
 
                 // Find (or create) a span of enough elements that we can use to copy our children into
                 parentChildCount++;
-                parentChildOffset = idManager.InsertIntoIndexRange(originalOffset, originalCount, insertIndex, nodeIndex);
+                parentChildOffset = idManager.InsertIndexRange(originalOffset, originalCount, srcIndex: nodeIndex, dstIndex: insertIndex, 1);
                 Debug.Assert(parentChildOffset >= 0 && parentChildOffset < compactNodes.Length + parentChildCount);
 
                 if (compactNodes.Length < parentChildOffset + parentChildCount)
@@ -1295,6 +1432,16 @@ namespace Chisel.Core
             // TODO: comment this out after adding enough tests 
             Debug.Assert(CheckConsistency(ref hierarchyIDLookup, hierarchies, ref nodeIDLookup, nodes, ignoreBrushMeshHashes)); 
             return true;
+        }
+
+        internal void ReserveChildren(int arrayLength)
+        {
+            if (arrayLength <= 0)
+                return;
+            if (compactNodes.Capacity < compactNodes.Length + arrayLength)
+                compactNodes.SetCapacity((int)((compactNodes.Length + arrayLength) * 1.5f));
+            if (brushOutlines.Capacity < brushOutlines.Length + arrayLength)
+                brushOutlines.SetCapacity((int)((brushOutlines.Length + arrayLength) * 1.5f));
         }
 
         public unsafe void GetTreeNodes(NativeList<CompactNodeID> nodes, NativeList<CompactNodeID> brushes)
@@ -1448,7 +1595,7 @@ namespace Chisel.Core
         }
 
         // This method might be removed/renamed in the future
-        internal unsafe bool SetChildrenDirty(CompactNodeID compactNodeID)
+        internal bool SetChildrenDirty(CompactNodeID compactNodeID)
         {
             if (!IsValidCompactNodeID(compactNodeID))
                 return false;
@@ -1525,7 +1672,6 @@ namespace Chisel.Core
             return true;
         }
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal CSGNodeType GetTypeOfNode(CompactNodeID compactNodeID)
         {
@@ -1547,7 +1693,6 @@ namespace Chisel.Core
             return GetChildRef(compactNodeID).userID;
         }
 
-        [BurstCompile]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal CSGOperationType GetOperation(CompactNodeID compactNodeID)
         {

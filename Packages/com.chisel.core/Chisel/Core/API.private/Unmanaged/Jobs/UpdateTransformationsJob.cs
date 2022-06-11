@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -11,7 +11,7 @@ namespace Chisel.Core
 {
     internal struct NodeOrderNodeID { public int nodeOrder; public CompactNodeID compactNodeID; }
 
-    [BurstCompile]
+    [BurstCompile(CompileSynchronously = true)]
     unsafe struct UpdateTransformationsJob: IJobParallelForDefer
     {                
         public void InitializeHierarchy(ref CompactHierarchy hierarchy)
@@ -21,12 +21,12 @@ namespace Chisel.Core
 
         // Read
         [NativeDisableUnsafePtrRestriction]
-        [NoAlias, ReadOnly] public CompactHierarchy*                 compactHierarchyPtr;
-        [NoAlias, ReadOnly] public NativeArray<NodeOrderNodeID>      transformTreeBrushIndicesList;
+        [NoAlias, ReadOnly] public CompactHierarchy*                    compactHierarchyPtr;
+        [NoAlias, ReadOnly] public NativeList<NodeOrderNodeID>          transformTreeBrushIndicesList;
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<NodeTransformations> transformationCache;
+        [NoAlias, WriteOnly] public NativeList<NodeTransformations>    transformationCache;
 
         public void Execute(int index)
         {

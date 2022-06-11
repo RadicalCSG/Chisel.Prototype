@@ -16,7 +16,6 @@ namespace Chisel.Core
         }
 
 
-        [BurstCompile]
         public static ChiselBlobAssetReference<CompactTree> Create(ref CompactHierarchy       compactHierarchy, 
                                                              NativeArray<CompactNodeID> nodes, 
                                                              NativeArray<CompactNodeID> brushes, 

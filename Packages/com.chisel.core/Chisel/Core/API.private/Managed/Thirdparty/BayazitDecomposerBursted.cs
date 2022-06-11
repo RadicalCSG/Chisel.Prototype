@@ -40,7 +40,6 @@ namespace Chisel.Core.External
         /// Decompose the polygon into several smaller non-concave polygon.
         /// If the polygon is already convex, it will return the original polygon, unless it is over MaxPolygonVertices.
         /// </summary>
-        [BurstCompile]
         public static bool ConvexPartition(NativeList<SegmentVertex> srcVertices, NativeList<SegmentVertex> outputVertices, NativeList<int> outputRanges, int defaultSegment = 0)
         {
             Debug.Assert(srcVertices.Length > 3);
@@ -209,16 +208,17 @@ namespace Chisel.Core.External
             finally
             {
                 allVertices.Dispose();
+                allVertices = default;
                 ranges.Dispose();
+                ranges = default;
             }
         }
-        
+
 
         /// <summary>
         /// Decompose the polygon into several smaller non-concave polygon.
         /// If the polygon is already convex, it will return the original polygon, unless it is over MaxPolygonVertices.
         /// </summary>
-        [BurstCompile]
         public static bool ConvexPartition(NativeList<SegmentVertex> srcVertices, ref UnsafeList<SegmentVertex> outputVertices, ref UnsafeList<int> outputRanges, int defaultSegment = 0)
         {
             Debug.Assert(srcVertices.Length > 3);
@@ -387,7 +387,9 @@ namespace Chisel.Core.External
             finally
             {
                 allVertices.Dispose();
+                allVertices = default;
                 ranges.Dispose();
+                ranges = default;
             }
         }
 

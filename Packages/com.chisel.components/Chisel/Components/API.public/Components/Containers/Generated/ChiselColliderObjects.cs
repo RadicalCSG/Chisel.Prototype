@@ -87,10 +87,10 @@ namespace Chisel.Components
             public void Execute(int index)
             {
                 if (bakingSettings[index].instanceID != 0)
-                    Physics.BakeMesh(bakingSettings[index].instanceID, bakingSettings[index].convex);
+                    Physics.BakeMesh(bakingSettings[index].instanceID, bakingSettings[index].convex, bakingSettings[index].cookingOptions);
             }
         }
-        /*
+        /*/
         [BurstCompile(CompileSynchronously = true)]
         struct BakeColliderJob : IJob
         {
@@ -98,14 +98,15 @@ namespace Chisel.Components
             public void Execute()
             {
                 if (bakingSettings.instanceID != 0)
-                    Physics.BakeMesh(bakingSettings.instanceID, bakingSettings.convex);
+                    Physics.BakeMesh(bakingSettings.instanceID, bakingSettings.convex, bakingSettings.cookingOptions);
             }
         }
-        */
+        //*/
         struct BakeData
         {
-            public bool convex;
-            public int  instanceID;
+            public bool                         convex;
+            public MeshColliderCookingOptions   cookingOptions;
+            public int                          instanceID;
         }
 
         //*/
@@ -120,8 +121,8 @@ namespace Chisel.Components
 
                 // If the cookingOptions are not the default values it would force a full slow rebake later, 
                 // even if we already did a Bake in a job
-                //if (meshCollider.cookingOptions != colliderSettings.cookingOptions)
-                //    meshCollider.cookingOptions = colliderSettings.cookingOptions;
+                if (meshCollider.cookingOptions != colliderSettings.cookingOptions)
+                    meshCollider.cookingOptions = colliderSettings.cookingOptions;
 
                 if (meshCollider.convex != colliderSettings.convex)
                     meshCollider.convex = colliderSettings.convex;
@@ -135,13 +136,15 @@ namespace Chisel.Components
             }
         }
 
+        const Allocator defaultAllocator = Allocator.TempJob;
+
         public static void ScheduleColliderBake(ChiselModel model, ChiselColliderObjects[] colliders)
         {
             var colliderSettings = model.ColliderSettings;
             //*
             // TODO: find all the instanceIDs before we start doing CSG, then we can do the Bake's in the same job that sets the meshes
             //          hopefully that will make it easier for Unity to not screw up the scheduling
-            var bakingSettings = new NativeArray<BakeData>(colliders.Length, Allocator.TempJob);
+            var bakingSettings = new NativeArray<BakeData>(colliders.Length, defaultAllocator);
             for (int i = 0; i < colliders.Length; i++)
             {
                 var meshCollider = colliders[i].meshCollider;
@@ -157,11 +160,19 @@ namespace Chisel.Components
                 var sharedMesh = colliders[i].sharedMesh;
                 bakingSettings[i] = new BakeData
                 {
-                    convex      = colliderSettings.convex,
-                    instanceID  = sharedMesh.GetInstanceID()
+                    convex          = colliderSettings.convex,
+                    cookingOptions  = colliderSettings.cookingOptions,
+                    instanceID      = sharedMesh.GetInstanceID()
                 };
             }
-            /*
+            //*
+            var bakeColliderJob = new BakeColliderJobParallel
+            {
+                bakingSettings = bakingSettings
+            };
+            // WHY ARE ALL OF THESE JOBS SEQUENTIAL ON A SINGLE WORKER THREAD?
+            var allJobHandles = bakeColliderJob.Schedule(colliders.Length, 1);
+            /*/
             var allJobHandles = default(JobHandle);
             for (int i = 0; i < bakingSettings.Length; i++)
             {
@@ -172,16 +183,13 @@ namespace Chisel.Components
                 var jobHandle = bakeColliderJob.Schedule();
                 allJobHandles = JobHandle.CombineDependencies(allJobHandles, jobHandle);
             }
-            /*/
-            var bakeColliderJob = new BakeColliderJobParallel
-            {
-                bakingSettings = bakingSettings
-            };
-            // WHY ARE ALL OF THESE JOBS SEQUENTIAL ON A SINGLE WORKER THREAD?
-            var allJobHandles = bakeColliderJob.Schedule(colliders.Length, 1);
             //*/
 
             bakingSettings.Dispose(allJobHandles);
+            bakingSettings = default;
+
+            allJobHandles.Complete();
+
             //*/
             //*
             // TODO: is there a way to defer forcing the collider to update?
