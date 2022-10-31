@@ -345,12 +345,20 @@ namespace Chisel.Editors
                 hotControl = GUIUtility.hotControl;
             }
 
+            int pickingControlId = 0;
+
+            bool click = false;
             if (hotControl != rectSelectionID)
             {
                 prevStartGUIPoint = Vector2.zero;
                 prevMouseGUIPoint = Vector2.zero;
                 rectFoundGameObjects.Clear();
                 rectFoundTreeNodes.Clear();
+
+
+                // Register a control so that if no other handle is engaged, we can use the event.
+                pickingControlId = GUIUtility.GetControlID(FocusType.Passive);
+
             } /*else
             if (ignoreRect)
             {
@@ -359,7 +367,6 @@ namespace Chisel.Editors
             }
             */
 
-            bool click = false;
             var evt = Event.current;
             switch (typeForControl)
             {
@@ -381,11 +388,13 @@ namespace Chisel.Editors
                         Event.current.Use();
                     }
                     rectClickDown = false;
+                    mouseDragged = false;
                     break;
                 }
                 case EventType.MouseMove:
                 {
                     rectClickDown = false;
+                    mouseDragged = false;
                     break;
                 }
                 case EventType.MouseDrag:
@@ -401,6 +410,7 @@ namespace Chisel.Editors
                         if (Mathf.Abs(delta.x) > 4 || Mathf.Abs(delta.y) > 4) { mouseDragged = true; }
                     }
                     if (mouseDragged || !rectClickDown || Event.current.button != 0 || ChiselRectSelection.RectSelecting) { rectClickDown = false; break; }
+
 
                     click = true;
                     Event.current.Use();
@@ -522,8 +532,45 @@ namespace Chisel.Editors
                     break;
                 }
                 */
-            }		
-            
+            }
+
+            if (pickingControlId != 0)
+            {
+                HandleUtility.AddDefaultControl(pickingControlId);
+                var pickingType = Event.current.GetTypeForControl(pickingControlId);
+                switch (pickingType)
+                {
+                    case EventType.MouseDown:
+                    {
+                        GUIUtility.hotControl = pickingControlId;
+                        rectClickDown = true;
+                        break;
+                    }
+                    case EventType.MouseUp:
+                    {
+                        if (GUIUtility.hotControl != pickingControlId)
+                            break;
+                        GUIUtility.hotControl = 0;
+                        if (!mouseDragged)
+                        {
+                            var delta = Event.current.mousePosition - clickMousePosition;
+                            if (Mathf.Abs(delta.x) > 4 || Mathf.Abs(delta.y) > 4)
+                            { mouseDragged = true; }
+                        }
+                        GUIUtility.hotControl = pickingControlId;
+                        if (mouseDragged || !rectClickDown || Event.current.button != 0 || ChiselRectSelection.RectSelecting)
+                        {
+                            rectClickDown = false; 
+                            break; 
+                        }
+
+                        click = true;
+                        Event.current.Use();
+                        break;
+                    }
+                }
+            }
+
             if (click)
             {
                 // make sure GeneratedMeshes are not part of our selection

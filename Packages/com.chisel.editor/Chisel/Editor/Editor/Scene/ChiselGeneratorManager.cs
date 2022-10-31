@@ -28,6 +28,8 @@ namespace Chisel.Editors
         [InitializeOnLoadMethod]
         static void InitializeEditModes()
         {
+            ReflectionExtensions.Initialize();
+
             // First, for every generator definition we find the component type
             generatorComponentLookup = new Dictionary<Type, Type>();
             foreach (var type in ReflectionExtensions.AllNonAbstractClasses)

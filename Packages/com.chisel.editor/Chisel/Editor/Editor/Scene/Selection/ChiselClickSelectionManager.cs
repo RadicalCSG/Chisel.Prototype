@@ -95,13 +95,16 @@ namespace Chisel.Editors
 
         public delegate bool IntersectRayMeshFunc(Ray ray, Mesh mesh, Matrix4x4 matrix, out RaycastHit hit);
         public static IntersectRayMeshFunc IntersectRayMesh = typeof(HandleUtility).CreateDelegate<IntersectRayMeshFunc>("IntersectRayMesh");
+#if !UNITY_2023_1_OR_NEWER
 #if UNITY_2020_2_OR_NEWER
         public delegate GameObject PickClosestGameObjectFunc(Camera camera, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, bool drawGizmos, out int materialIndex);
 #else
         public delegate GameObject PickClosestGameObjectFunc(Camera camera, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex);
 #endif
         public static PickClosestGameObjectFunc PickClosestGO = typeof(HandleUtility).CreateDelegate<PickClosestGameObjectFunc>("Internal_PickClosestGO");
-         
+#endif
+
+
         public void OnReset()
         {
             UpdateSelection();
@@ -304,6 +307,9 @@ namespace Chisel.Editors
             int materialIndex = -1;
             try
             {
+#if UNITY_2023_1_OR_NEWER
+                gameObject = HandleUtility.PickGameObject(pickposition, false, ignore, filter, out materialIndex);
+#else
                 if (PickClosestGO != null)
                 {
 #if UNITY_2020_2_OR_NEWER
@@ -315,7 +321,8 @@ namespace Chisel.Editors
                 {
                     gameObject = HandleUtility.PickGameObject(pickposition, ignore, out materialIndex);
                 }
-            }
+#endif
+        }
             finally
             {
                 foundGameObject = ChiselGeneratedComponentManager.EndPicking(flagState, gameObject, out model) && model;
