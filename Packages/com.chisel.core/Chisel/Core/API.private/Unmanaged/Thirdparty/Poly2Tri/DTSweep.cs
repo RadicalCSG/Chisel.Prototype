@@ -309,7 +309,7 @@ namespace Poly2Tri
         [NativeDisableContainerSafetyRestriction] public NativeList<int>                  sortedPoints;
         [NativeDisableContainerSafetyRestriction] public NativeList<AdvancingFrontNode>   advancingFrontNodes;
         [NativeDisableContainerSafetyRestriction] public NativeList<UnsafeList<Edge>>     edgeLookupEdges;
-        [NativeDisableContainerSafetyRestriction] public NativeHashMap<int, int>          edgeLookups;
+        [NativeDisableContainerSafetyRestriction] public NativeParallelHashMap<int, int>          edgeLookups;
         [NativeDisableContainerSafetyRestriction] public NativeList<UnsafeList<Edge>>     foundLoops;
         [NativeDisableContainerSafetyRestriction] public NativeList<UnsafeList<int>>      children;
         [NativeDisableContainerSafetyRestriction] public NativeList<Edge>                 inputEdgesCopy;

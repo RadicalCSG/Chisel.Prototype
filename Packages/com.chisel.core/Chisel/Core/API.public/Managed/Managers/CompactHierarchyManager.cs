@@ -1425,7 +1425,7 @@ namespace Chisel.Core
             {
                 newParentHierarchy.ReserveChildren(arrayLength);
 
-                using (var usedTreeNodes = new NativeHashSet<CSGTreeNode>(arrayLength, Allocator.Temp))
+                using (var usedTreeNodes = new NativeParallelHashSet<CSGTreeNode>(arrayLength, Allocator.Temp))
                 {
                     for (int i = 0; i < arrayLength; i++)
                     {

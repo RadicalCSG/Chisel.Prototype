@@ -45,7 +45,7 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeList<bool>                  context_triangleInterior;
         [NativeDisableContainerSafetyRestriction] NativeList<Edge>                  context_inputEdgesCopy; 
         [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<Edge>>      context_edgeLookupEdges;
-        [NativeDisableContainerSafetyRestriction] NativeHashMap<int, int>           context_edgeLookups;
+        [NativeDisableContainerSafetyRestriction] NativeParallelHashMap<int, int>           context_edgeLookups;
         [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<Edge>>      context_foundLoops;
         [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<int>>       context_children;
         [NativeDisableContainerSafetyRestriction] NativeList<Poly2Tri.DTSweep.DirectedEdge>         context_allEdges;

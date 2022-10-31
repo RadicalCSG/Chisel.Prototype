@@ -12,10 +12,9 @@
   "unity": "2022.1",
   "version": "0.0.1-preview",
     "dependencies": {
-        "com.unity.burst": "1.6.4",
-        "com.unity.jobs": "0.11.0-preview.6",
-        "com.unity.collections": "1.1.0",
-        "com.unity.mathematics": "1.2.5"
+        "com.unity.burst": "1.7.4",
+        "com.unity.collections": "1.4.0",
+        "com.unity.mathematics": "1.2.6"
     },
   "type": "library"
 }

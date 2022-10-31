@@ -636,7 +636,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool		IsBrushMeshIDValid		(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash)
+        internal static bool		IsBrushMeshIDValid		(NativeParallelHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash)
         {
             if (!brushMeshBlobCache.IsCreated)
                 return false;
@@ -650,7 +650,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool			AssertBrushMeshIDValid	(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash)
+        private static bool			AssertBrushMeshIDValid	(NativeParallelHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash)
         {
             if (!IsBrushMeshIDValid(brushMeshBlobCache, brushMeshHash))
             {
@@ -719,7 +719,7 @@ namespace Chisel.Core
             return brushMeshHash;
         }
 
-        internal static void RegisterBrushMeshHash(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 newBrushMeshHash, Int32 oldBrushMeshHash = 0)
+        internal static void RegisterBrushMeshHash(NativeParallelHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 newBrushMeshHash, Int32 oldBrushMeshHash = 0)
         {
             if (oldBrushMeshHash != 0)
             {
@@ -737,7 +737,7 @@ namespace Chisel.Core
             brushMeshBlobCache[newBrushMeshHash] = refCountedBrushMeshBlob;
         }
 
-        internal static Int32 RegisterBrushMesh(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, ChiselBlobAssetReference<BrushMeshBlob> brushMeshBlobRef, Int32 oldBrushMeshHash = 0)
+        internal static Int32 RegisterBrushMesh(NativeParallelHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, ChiselBlobAssetReference<BrushMeshBlob> brushMeshBlobRef, Int32 oldBrushMeshHash = 0)
         {
             if (!brushMeshBlobRef.IsCreated)
                 return 0;
@@ -776,7 +776,7 @@ namespace Chisel.Core
             return DecreaseRefCount(ChiselMeshLookup.Value.brushMeshBlobCache, brushMeshHash);
         }
 
-        internal static bool DecreaseRefCount(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash)
+        internal static bool DecreaseRefCount(NativeParallelHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash)
         {
             if (brushMeshBlobCache.IsCreated && brushMeshBlobCache.TryGetValue(brushMeshHash, out var refCountedBrushMeshBlob))
             {
@@ -803,10 +803,10 @@ namespace Chisel.Core
             [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>    brushMeshBlobs;
 
             [NoAlias] public NativeList<GeneratedNodeDefinition>            generatedNodeDefinition;
-            [NoAlias] public NativeHashMap<int, RefCountedBrushMeshBlob>    brushMeshBlobCache;
+            [NoAlias] public NativeParallelHashMap<int, RefCountedBrushMeshBlob>    brushMeshBlobCache;
 
             // TODO: this is based on RegisterBrushMesh in BrushMeshManager, remove redundancy
-            internal Int32 RegisterBrushMesh(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, ChiselBlobAssetReference<BrushMeshBlob> brushMeshBlobRef)
+            internal Int32 RegisterBrushMesh(NativeParallelHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, ChiselBlobAssetReference<BrushMeshBlob> brushMeshBlobRef)
             {
                 if (brushMeshBlobRef == ChiselBlobAssetReference<BrushMeshBlob>.Null || !brushMeshBlobRef.IsCreated)
                     return BrushMeshInstance.InvalidInstance.BrushMeshID;

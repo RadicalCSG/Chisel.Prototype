@@ -242,7 +242,7 @@ namespace Chisel.Core
             [NoAlias] public NativeList<CompactNodeID>                          nodesLookup;
             [NoAlias] public NativeList<CompactHierarchy>                       hierarchyList;
             [NativeDisableContainerSafetyRestriction]
-            [NoAlias] public NativeHashMap<int, RefCountedBrushMeshBlob>        brushMeshBlobCache;
+            [NoAlias] public NativeParallelHashMap<int, RefCountedBrushMeshBlob>        brushMeshBlobCache;
              
             public void Execute()
             {

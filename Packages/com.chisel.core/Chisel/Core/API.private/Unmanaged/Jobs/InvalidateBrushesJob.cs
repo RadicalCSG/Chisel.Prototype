@@ -30,7 +30,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeReference<int>                                         nodeIDValueToNodeOrderOffsetRef;
 
         // Write
-        [NoAlias, WriteOnly] public NativeHashSet<IndexOrder>   brushesThatNeedIndirectUpdateHashMap;
+        [NoAlias, WriteOnly] public NativeParallelHashSet<IndexOrder>   brushesThatNeedIndirectUpdateHashMap;
 
         public void Execute()
         {

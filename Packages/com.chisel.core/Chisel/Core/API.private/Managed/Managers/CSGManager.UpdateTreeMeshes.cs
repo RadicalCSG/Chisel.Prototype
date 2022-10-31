@@ -115,7 +115,7 @@ namespace Chisel.Core
                 public NativeList<BrushIntersectWith>       brushIntersectionsWith;
                 public NativeArray<int2>                    brushIntersectionsWithRange;
                 public NativeList<IndexOrder>               brushesThatNeedIndirectUpdate;
-                public NativeHashSet<IndexOrder>            brushesThatNeedIndirectUpdateHashMap;
+                public NativeParallelHashSet<IndexOrder>            brushesThatNeedIndirectUpdateHashMap;
 
                 public NativeList<BrushPair2>               uniqueBrushPairs;
 
@@ -501,7 +501,7 @@ namespace Chisel.Core
                 Temporaries.meshDataArray   = default;
                 Temporaries.meshDatas       = new NativeList<UnityEngine.Mesh.MeshData>(defaultAllocator);
 
-                Temporaries.brushesThatNeedIndirectUpdateHashMap = new NativeHashSet<IndexOrder>(brushCount, defaultAllocator);
+                Temporaries.brushesThatNeedIndirectUpdateHashMap = new NativeParallelHashSet<IndexOrder>(brushCount, defaultAllocator);
                 Temporaries.brushesThatNeedIndirectUpdate   = new NativeList<IndexOrder>(brushCount, defaultAllocator);
 
                 // TODO: find actual vertex count

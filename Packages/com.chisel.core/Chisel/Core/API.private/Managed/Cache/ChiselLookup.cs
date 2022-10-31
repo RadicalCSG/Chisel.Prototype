@@ -18,7 +18,7 @@ namespace Chisel.Core
 
             public NativeList<CompactNodeID>                brushIDValues;
             public NativeArray<ChiselLayerParameters>       parameters;
-            public NativeHashSet<int>                       allKnownBrushMeshIndices;
+            public NativeParallelHashSet<int>                       allKnownBrushMeshIndices;
 
             public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
             public NativeList<ChiselBlobAssetReference<RoutingTable>>                 routingTableCache;
@@ -29,17 +29,17 @@ namespace Chisel.Core
             public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
             public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
             
-            public NativeHashMap<CompactNodeID, ChiselAABB>                                     brushTreeSpaceBoundLookup;
-            public NativeHashMap<CompactNodeID, ChiselBlobAssetReference<ChiselBrushRenderBuffer>>    brushRenderBufferLookup;
+            public NativeParallelHashMap<CompactNodeID, ChiselAABB>                                     brushTreeSpaceBoundLookup;
+            public NativeParallelHashMap<CompactNodeID, ChiselBlobAssetReference<ChiselBrushRenderBuffer>>    brushRenderBufferLookup;
 
             internal void Initialize()
             {
                 brushIDValues               = new NativeList<CompactNodeID>(1000, Allocator.Persistent);
-                allKnownBrushMeshIndices    = new NativeHashSet<int>(1000, Allocator.Persistent);
+                allKnownBrushMeshIndices    = new NativeParallelHashSet<int>(1000, Allocator.Persistent);
 
                 // TODO: not used??
-                brushTreeSpaceBoundLookup   = new NativeHashMap<CompactNodeID, ChiselAABB>(1000, Allocator.Persistent);
-                brushRenderBufferLookup     = new NativeHashMap<CompactNodeID, ChiselBlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
+                brushTreeSpaceBoundLookup   = new NativeParallelHashMap<CompactNodeID, ChiselAABB>(1000, Allocator.Persistent);
+                brushRenderBufferLookup     = new NativeParallelHashMap<CompactNodeID, ChiselBlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
 
                 // brushIndex
                 basePolygonCache            = new NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>(1000, Allocator.Persistent);
@@ -304,11 +304,11 @@ namespace Chisel.Core
     {
         public class Data
         {
-            public NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache;
+            public NativeParallelHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache;
 
             internal void Initialize()
             {
-                brushMeshBlobCache = new NativeHashMap<int, RefCountedBrushMeshBlob>(1000, Allocator.Persistent);
+                brushMeshBlobCache = new NativeParallelHashMap<int, RefCountedBrushMeshBlob>(1000, Allocator.Persistent);
             }
 
             public void EnsureCapacity(int capacity)
