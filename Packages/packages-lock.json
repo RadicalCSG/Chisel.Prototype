@@ -22,8 +22,8 @@
       "depth": 0,
       "source": "embedded",
       "dependencies": {
-        "com.unity.burst": "1.7.4",
-        "com.unity.collections": "1.4.0",
+        "com.unity.burst": "1.8.1",
+        "com.unity.collections": "2.1.0-exp.4",
         "com.unity.mathematics": "1.2.6"
       }
     },
@@ -50,17 +50,8 @@
       "source": "embedded",
       "dependencies": {}
     },
-    "com.unity.ai.navigation": {
-      "version": "1.1.0-pre.1",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.modules.ai": "1.0.0"
-      },
-      "url": "https://packages.unity.com"
-    },
     "com.unity.burst": {
-      "version": "1.7.4",
+      "version": "1.8.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -69,13 +60,13 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.collections": {
-      "version": "1.4.0",
+      "version": "2.1.0-exp.4",
       "depth": 0,
       "source": "registry",
       "dependencies": {
-        "com.unity.burst": "1.6.6",
+        "com.unity.burst": "1.7.3",
         "com.unity.nuget.mono-cecil": "1.11.4",
-        "com.unity.test-framework": "1.1.31"
+        "com.unity.test-framework": "1.1.33"
       },
       "url": "https://packages.unity.com"
     },

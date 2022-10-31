@@ -150,8 +150,8 @@ namespace Chisel.Core
                 { 
                     ref var compactTree = ref compactTreeRef.Value.Value;
                     var result = GenerateBrushesTouchedByBrush(ref compactTree, 
-                                                               allTreeBrushIndexOrders, brushIndexOrder, treeCompactNodeID,
-                                                               brushIntersectionsWith, 
+                                                               allTreeBrushIndexOrders.AsArray(), brushIndexOrder, treeCompactNodeID,
+                                                               brushIntersectionsWith.AsArray(), 
                                                                intersectionOffset: brushIntersectionsWithRange[brushNodeOrder].x, 
                                                                intersectionCount:  brushIntersectionsWithRange[brushNodeOrder].y, 
                                                                ref scratch_brushIntersection);

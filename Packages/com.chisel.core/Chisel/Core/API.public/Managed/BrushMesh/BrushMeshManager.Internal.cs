@@ -391,7 +391,7 @@ namespace Chisel.Core
                     var brushMeshBlobCache = ChiselMeshLookup.Value.brushMeshBlobCache;
                     var convertToBrushMeshBlobJob = new ConvertToBrushMeshBlobJob
                     {
-                        brushMeshPointers   = brushMeshPointers,
+                        brushMeshPointers   = brushMeshPointers.AsArray(),
                         surfaces            = surfaces,
                         //brushMeshBlobCache  = brushMeshBlobCache,
                         brushMeshBlobs      = brushMeshBlobs,

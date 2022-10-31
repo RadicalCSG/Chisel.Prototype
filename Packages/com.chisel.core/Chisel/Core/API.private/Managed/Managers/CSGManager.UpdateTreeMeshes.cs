@@ -984,7 +984,7 @@ namespace Chisel.Core
                             //    so we set it below using InitializeHierarchy
 
                             // Read/Write
-                            hierarchyList                   = CompactHierarchyManager.HierarchyList,
+                            hierarchyList                   = CompactHierarchyManager.HierarchyList.AsArray(),
 
                             // Write
                             brushTreeSpaceBounds            = chiselLookupValues.brushTreeSpaceBoundCache,
@@ -1110,7 +1110,7 @@ namespace Chisel.Core
                             //    so we set it below using InitializeHierarchy
 
                             // Read/Write
-                            hierarchyList               = CompactHierarchyManager.HierarchyList,
+                            hierarchyList               = CompactHierarchyManager.HierarchyList.AsArray(),
 
 
                             // Write

@@ -36,7 +36,7 @@ namespace Chisel.Core
         NeedUpdateDirectOnly        = TransformationModified | OutlineModified
     };
     
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public readonly struct CompactHierarchyID : IComparable<CompactHierarchyID>, IEquatable<CompactHierarchyID>
     {
         public static readonly CompactHierarchyID Invalid = default;
@@ -76,7 +76,7 @@ namespace Chisel.Core
         #endregion
     }
     
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public readonly struct CompactNodeID : IComparable<CompactNodeID>, IEquatable<CompactNodeID>
     {
         public static readonly CompactNodeID Invalid = default;
@@ -127,7 +127,7 @@ namespace Chisel.Core
         #endregion
     }
 
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public struct CompactNode
     {
         public Int32                userID;
@@ -145,7 +145,7 @@ namespace Chisel.Core
         public override string ToString() { return $"{nameof(brushMeshHash)} = {brushMeshHash}, {nameof(operation)} = {operation}, {nameof(userID)} = {userID}, {nameof(transformation)} = {transformation}"; }
     }
 
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public struct CompactChildNode // TODO: rename
     {
         // TODO: probably need to split this up into multiple pieces, figure out how this will actually be used in practice first
@@ -163,7 +163,7 @@ namespace Chisel.Core
     }
 
     // TODO: make sure everything is covered in tests
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public partial struct CompactHierarchy //: IDisposable
     {
         #region CreateHierarchy
@@ -184,7 +184,7 @@ namespace Chisel.Core
         {
             var compactHierarchy = new CompactHierarchy
             {
-                brushMeshToBrush = new UnsafeParallelMultiHashMap<int, CompactNodeID>(16384, allocator),
+                brushMeshToBrush = new UnsafeParallelHashMap<int, CompactNodeID>(16384, allocator),
                 compactNodes     = new UnsafeList<CompactChildNode>(1024, allocator),
                 brushOutlines    = new UnsafeList<BrushOutline>(1024, allocator),
                 idManager        = IDManager.Create(allocator),

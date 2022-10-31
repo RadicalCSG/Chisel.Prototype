@@ -39,7 +39,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTree"/>
     /// <seealso cref="Chisel.Core.CSGTreeBranch"/>
     /// <seealso cref="Chisel.Core.CSGTreeBrush"/>
-    [StructLayout(LayoutKind.Sequential), BurstCompatible, Serializable]
+    [StructLayout(LayoutKind.Sequential), GenerateTestsForBurstCompatibility, Serializable]
     public struct CSGTreeNode : IEquatable<CSGTreeNode>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -31,7 +31,7 @@ namespace Chisel.Core
         public void Execute()
         {
             ref var compactHierarchy = ref UnsafeUtility.AsRef<CompactHierarchy>(compactHierarchyPtr);
-            compactTreeRef.Value = CompactTreeBuilder.Create(ref compactHierarchy, nodes, brushes, treeCompactNodeID);
+            compactTreeRef.Value = CompactTreeBuilder.Create(ref compactHierarchy, nodes.AsArray(), brushes.AsArray(), treeCompactNodeID);
         }
     }
 }

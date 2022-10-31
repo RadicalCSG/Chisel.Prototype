@@ -16,7 +16,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     // TODO: make sure everything is covered in tests
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public struct SectionManager : IDisposable
     {
         // TODO: use uints instead?

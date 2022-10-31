@@ -12,7 +12,7 @@ namespace Chisel.Core
 {
     // TODO: make sure everything is covered in tests
     // TODO: use native containers, make hierarchy use this as well
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     struct IDManager : IDisposable
     {
         [DebuggerDisplay("Index = {index}, Generation = {generation}")]
@@ -29,7 +29,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] UnsafeList<int>         freeIDs; // TODO: use SectionManager, or something like that, so we can easily allocate ids/id ranges in order
 
 
-        [BurstCompatible]
+        [GenerateTestsForBurstCompatibility]
         public bool CheckConsistency()
         {
             for (int id = 0; id < idToIndex.Length; id++)
