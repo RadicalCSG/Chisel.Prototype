@@ -161,7 +161,6 @@ namespace Chisel.Core
             NativeCollectionHelpers.EnsureSizeAndClear(ref context_foundLoops, pointCount);
             NativeCollectionHelpers.EnsureConstantSizeAndClear(ref context_children, 64);
             NativeCollectionHelpers.EnsureConstantSizeAndClear(ref context_inputEdgesCopy, 64);
-            NativeCollectionHelpers.EnsureConstantSizeAndClear(ref context_inputEdgesCopy, 64);
             NativeCollectionHelpers.EnsureCapacityAndClear(ref context_edgeLookups, pointCount);
             NativeCollectionHelpers.EnsureCapacityAndClear(ref loops, maxLoops);
             NativeCollectionHelpers.EnsureCapacityAndClear(ref surfaceIndexList, maxIndices);

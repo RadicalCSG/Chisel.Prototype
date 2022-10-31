@@ -236,6 +236,7 @@ namespace Chisel.Core
             [NoAlias, ReadOnly] public NativeList<GeneratedNodeDefinition>      generatedNodeDefinitions;
 
             // Read/Write
+            [NoAlias] public PointerReference<IDManager>                        hierarchyIDLookupRef;
             [NativeDisableUnsafePtrRestriction, NoAlias] public IDManager*      hierarchyIDLookupPtr;
             [NativeDisableUnsafePtrRestriction, NoAlias] public IDManager*      nodeIDLookupPtr;
             [NoAlias] public NativeList<CompactNodeID>                          nodesLookup;
@@ -248,7 +249,8 @@ namespace Chisel.Core
                 if (!generatedNodeDefinitions.IsCreated)
                     return;
 
-                ref var hierarchyIDLookup   = ref UnsafeUtility.AsRef<IDManager>(hierarchyIDLookupPtr);
+                ref var hierarchyIDLookup   = ref hierarchyIDLookupRef.Value;// UnsafeUtility.AsRef<IDManager>(hierarchyIDLookupPtr);
+                //ref var hierarchyIDLookup   = ref UnsafeUtility.AsRef<IDManager>(hierarchyIDLookupPtr);
                 ref var nodeIDLookup        = ref UnsafeUtility.AsRef<IDManager>(nodeIDLookupPtr);
 
                 // TODO: set all unique hierarchies dirty separately, somehow. Make this job parallel
@@ -298,8 +300,9 @@ namespace Chisel.Core
             {
                 // Read
                 generatedNodeDefinitions = generatedNodeDefinitions,
-                
+
                 // Read/Write
+                hierarchyIDLookupRef     = new PointerReference<IDManager>(ref CompactHierarchyManager.HierarchyIDLookup),
                 //hierarchyIDLookupPtr
                 //nodeIDLookupPtr
                 //nodesLookup

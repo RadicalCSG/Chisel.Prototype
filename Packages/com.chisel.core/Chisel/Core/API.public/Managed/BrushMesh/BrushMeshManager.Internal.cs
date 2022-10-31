@@ -818,7 +818,7 @@ namespace Chisel.Core
                 if (edgeCount < 12 || polygonCount < 4 || vertexCount < 4)
                     return BrushMeshInstance.InvalidInstance.BrushMeshID;
 
-                int brushMeshHash = brushMeshBlob.GetHashCode();                
+                int brushMeshHash = brushMeshBlob.GetHashCode();
                 if (!brushMeshBlobCache.TryGetValue(brushMeshHash, out var refCountedBrushMeshBlob))
                     refCountedBrushMeshBlob = new RefCountedBrushMeshBlob { refCount = 1, brushMeshBlob = brushMeshBlobRef };
                 else

@@ -115,7 +115,7 @@ namespace Chisel.Core
                             [NoAlias] ref NativeList<UnsafeList<Edge>>  allEdges,
 
                             [NoAlias] in UnsafeList<Edge>               intersectionLoop, 
-                            CategoryGroupIndex                          intersectionCategory,
+                            byte                                        intersectionCategory,
                             IndexSurfaceInfo                            intersectionInfo)
         {
             if (intersectionLoop.Length == 0)
@@ -922,7 +922,7 @@ namespace Chisel.Core
                     continue;
 
                 var info = basePolygonSurfaceInfos[surfaceIndex];
-                info.interiorCategory = CategoryGroupIndex.First; // TODO: make sure that it's always set to "First" so we don't need to do this
+                info.interiorCategory = 0; // TODO: make sure that it's always set to "0" so we don't need to do this
 
                 var maxAllocation       = 1 + (2 * (routingLookupsLength + allEdges.Length)); // TODO: find a more reliable "max"
                 var maxEdgeAllocation   = 1 + (hashedTreeSpaceVertices.Length * 2);
@@ -974,7 +974,7 @@ namespace Chisel.Core
                             continue;
                         } else
                         {
-                            surfaceLoopInfo.interiorCategory = routingRow.OutsideCategory;
+                            surfaceLoopInfo.interiorCategory = routingRow.outside;
                             allInfos[surfaceLoopIndex] = surfaceLoopInfo;
                         }
 
@@ -982,7 +982,7 @@ namespace Chisel.Core
                         if (intersectionLoop.IsCreated && intersectionLoop.Length != 0)
                         {
                             // Categorize between original surface & intersection
-                            var intersectionCategory = routingRow[(int)intersectionInfo.interiorCategory];
+                            var intersectionCategory = routingRow[intersectionInfo.interiorCategory];
 
                             // If the intersection polygon would get the same category, we don't need to do a pointless intersection
                             if (intersectionCategory == surfaceLoopInfo.interiorCategory)

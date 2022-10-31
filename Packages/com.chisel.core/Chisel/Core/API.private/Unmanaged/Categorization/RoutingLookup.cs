@@ -12,9 +12,9 @@ namespace Chisel.Core
         //public const int kRoutingOffset = 1 + (int)CategoryIndex.LastCategory;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryGetRoute([NoAlias] ref RoutingTable table, CategoryGroupIndex inputIndex, out CategoryRoutingRow routingRow)
+        public bool TryGetRoute([NoAlias] ref RoutingTable table, byte inputIndex, out CategoryRoutingRow routingRow)
         {
-            var tableIndex = startIndex + (int)inputIndex;// (inputIndex == CategoryGroupIndex.First) ? (int)CategoryGroupIndex.First : ((int)inputIndex - kRoutingOffset);
+            var tableIndex = startIndex + (int)inputIndex;// (inputIndex == 0) ? (int)0 : ((int)inputIndex - kRoutingOffset);
 
             if (tableIndex < startIndex || tableIndex >= endIndex)
             {
