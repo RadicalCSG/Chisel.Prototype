@@ -8,6 +8,8 @@ using UnityEditor;
 using UnityEngine;
 using UnitySceneExtensions;
 using System.Runtime.CompilerServices;
+using System.Reflection;
+using UnityEngine.Profiling;
 
 namespace Chisel.Editors
 {
@@ -95,7 +97,71 @@ namespace Chisel.Editors
 
         public delegate bool IntersectRayMeshFunc(Ray ray, Mesh mesh, Matrix4x4 matrix, out RaycastHit hit);
         public static IntersectRayMeshFunc IntersectRayMesh = typeof(HandleUtility).CreateDelegate<IntersectRayMeshFunc>("IntersectRayMesh");
-#if !UNITY_2023_1_OR_NEWER
+#if UNITY_2022_3_OR_NEWER
+        public static MethodInfo internalGetClosestPickingIDMethod = typeof(HandleUtility).GetMethod("Internal_GetClosestPickingID", BindingFlags.Default | BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        public static Type pickingObjectType = ReflectionExtensions.GetTypeByName("UnityEditor.PickingObject");
+        public static ConstructorInfo pickingObjectConstructor = pickingObjectType.GetConstructors(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault(c => !c.GetParameters().Any());
+
+        static object ToPickingObjectArray(GameObject[] gameObjects)
+        {
+            Profiler.BeginSample("ToPickingObjectArray");
+            try
+            {
+                if (gameObjects == null)
+                    return null;
+
+                var pickingObjectArray = Array.CreateInstance(pickingObjectType, gameObjects.Length);
+                for (int i = 0; i < gameObjects.Length; i++)
+                {
+                    var instance = pickingObjectConstructor.Invoke(new object[] { gameObjects[i] });
+                    pickingObjectArray.SetValue(instance, i);
+                }
+
+                return pickingObjectArray;
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
+        }
+
+        public static GameObject PickClosestGameObject(Camera cam, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, bool drawGizmos, ref int materialIndex)
+        {
+            Profiler.BeginSample("PickClosestGameObject");
+            try
+            {
+                var ignoreArray = ignore == null ? null : Array.CreateInstance(pickingObjectType, ignore.Length);
+                var filterArray = filter == null ? null : Array.CreateInstance(pickingObjectType, filter.Length);
+
+                var arguments = new object[]
+                {
+                cam,//0
+                layers,//1
+                position,//2
+                ignoreArray, //3
+                filterArray, //4
+                true, //5
+                materialIndex, //6
+                false//isEntity//7
+                };
+                uint num = (uint)internalGetClosestPickingIDMethod.Invoke(null, arguments);
+                materialIndex = (int)arguments[6];
+                bool isEntity = (bool)arguments[7];
+
+                // .. not sure how to handle non-gameobjects??
+                if (isEntity)
+                    return null;
+
+                int instanceID = (int)num;
+                return EditorUtility.InstanceIDToObject(instanceID) as GameObject;
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
+        }
+
+#else
 #if UNITY_2020_2_OR_NEWER
         public delegate GameObject PickClosestGameObjectFunc(Camera camera, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, bool drawGizmos, out int materialIndex);
 #else
@@ -230,58 +296,66 @@ namespace Chisel.Editors
 
         public static GameObject PickClosestGameObject(Vector2 screenPos, out ChiselIntersection intersection)
         {
-            intersection = ChiselIntersection.None;
-            var camera = Camera.current;
-            if (!camera)
-                return null;
-
-            // If we moved our mouse, reset our ignore list
-            if (_prevSceenPos != screenPos ||
-                _prevCamera != camera)
-                ResetDeepClick();
-
-            _prevSceenPos = screenPos;
-            _prevCamera = camera;
-
-            // Get the first click that is not in our ignore list
-            GameObject[] ignore = deepClickIgnoreGameObjectList.ToArray();
-            GameObject[] filter = null;
-            var foundObject = PickClosestGameObjectDelegated(screenPos, ref ignore, ref filter, out intersection);
-            
-            // If we haven't found anything, try getting the first item in our list that's either a brush or a regular gameobject (loop around)
-            if (object.Equals(foundObject, null))
-            {
-                bool found = false;
-                for (int i = 0; i < deepClickIgnoreGameObjectList.Count; i++)
-                {
-                    foundObject = deepClickIgnoreGameObjectList[i];
-
-                    // We don't want models or mesh containers since they're in this list to skip, and should never be selected
-                    if (!IsValidNodeToBeSelected(foundObject))
-                        continue;
-
-                    found = true;
-                    break;
-                }
-
-                if (!found)
-                {
-                    // We really didn't find anything
-                    intersection = ChiselIntersection.None;
-                    ResetDeepClick();
+            Profiler.BeginSample("PickClosestGameObject");
+            try
+            { 
+                intersection = ChiselIntersection.None;
+                var camera = Camera.current;
+                if (!camera)
                     return null;
-                } else
-                {
-                    // Reset our list so we only skip our current selection on the next click
-                    ResetDeepClick(
-                        resetPosition: false // But make sure we remember our current mouse position
-                        );
-                }
-            }
 
-            // Remember our gameobject so we don't select it on the next click
-            deepClickIgnoreGameObjectList.Add(foundObject);
-            return foundObject;
+                // If we moved our mouse, reset our ignore list
+                if (_prevSceenPos != screenPos ||
+                    _prevCamera != camera)
+                    ResetDeepClick();
+
+                _prevSceenPos = screenPos;
+                _prevCamera = camera;
+
+                // Get the first click that is not in our ignore list
+                GameObject[] ignore = deepClickIgnoreGameObjectList.ToArray();
+                GameObject[] filter = null;
+                var foundObject = PickClosestGameObjectDelegated(screenPos, ref ignore, ref filter, out intersection);
+
+                // If we haven't found anything, trPOy getting the first item in our list that's either a brush or a regular gameobject (loop around)
+                if (object.Equals(foundObject, null))
+                {
+                    bool found = false;
+                    for (int i = 0; i < deepClickIgnoreGameObjectList.Count; i++)
+                    {
+                        foundObject = deepClickIgnoreGameObjectList[i];
+
+                        // We don't want models or mesh containers since they're in this list to skip, and should never be selected
+                        if (!IsValidNodeToBeSelected(foundObject))
+                            continue;
+
+                        found = true;
+                        break;
+                    }
+
+                    if (!found)
+                    {
+                        // We really didn't find anything
+                        intersection = ChiselIntersection.None;
+                        ResetDeepClick();
+                        return null;
+                    } else
+                    {
+                        // Reset our list so we only skip our current selection on the next click
+                        ResetDeepClick(
+                            resetPosition: false // But make sure we remember our current mouse position
+                            );
+                    }
+                }
+
+                // Remember our gameobject so we don't select it on the next click
+                deepClickIgnoreGameObjectList.Add(foundObject);
+                return foundObject;
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
 
@@ -296,19 +370,33 @@ namespace Chisel.Editors
         }
 
         static List<Material> sSharedMaterials = new List<Material>();
-        static GameObject PickModelOrGameObject(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModel model, out Material material)
+        public static GameObject PickModelOrGameObject(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModel model, out Material material)
         {
-            model = null;
-            material = null;
-
-            var flagState = ChiselGeneratedComponentManager.BeginPicking();
-            GameObject gameObject = null;
-            bool foundGameObject = false;
-            int materialIndex = -1;
+            Profiler.BeginSample("PickNodeOrGameObject");
             try
             {
-#if UNITY_2023_1_OR_NEWER
-                gameObject = HandleUtility.PickGameObject(pickposition, false, ignore, filter, out materialIndex);
+                model = null;
+                material = null;
+
+                Profiler.BeginSample("BeginPicking");
+                ChiselGeneratedComponentManager.HideFlagsState flagState;
+                try
+                {
+                    flagState = ChiselGeneratedComponentManager.BeginPicking();
+                }
+                finally
+                {
+                    Profiler.EndSample();
+                }
+
+                GameObject gameObject = null;
+                bool foundGameObject = false;
+                int materialIndex = -1;
+                try
+                {
+#if UNITY_2022_3_OR_NEWER
+                    //gameObject = HandleUtility.PickGameObject(pickposition, ignore, out materialIndex);
+                    gameObject = PickClosestGameObject(camera, layers, pickposition, ignore, filter, false, ref materialIndex);
 #else
                 if (PickClosestGO != null)
                 {
@@ -322,26 +410,39 @@ namespace Chisel.Editors
                     gameObject = HandleUtility.PickGameObject(pickposition, ignore, out materialIndex);
                 }
 #endif
-        }
+                }
+                finally
+                {
+                    Profiler.BeginSample("EndPicking");
+                    try
+                    {
+                        foundGameObject = ChiselGeneratedComponentManager.EndPicking(flagState, gameObject, out model) && model;
+                    }
+                    finally
+                    {
+                        Profiler.EndSample();
+                    }
+                }
+                if (object.Equals(gameObject, null))
+                    return null;
+
+                if (!foundGameObject)
+                    return gameObject;
+
+                if (materialIndex >= 0 &&
+                    gameObject.TryGetComponent<Renderer>(out var renderer))
+                {
+                    renderer.GetSharedMaterials(sSharedMaterials);
+                    material = materialIndex < sSharedMaterials.Count ? sSharedMaterials[materialIndex] : null;
+                    sSharedMaterials.Clear(); // We don't want to keep references to Materials alive
+                    if (!material) material = null;
+                }
+                return gameObject;
+            }
             finally
             {
-                foundGameObject = ChiselGeneratedComponentManager.EndPicking(flagState, gameObject, out model) && model;
+                Profiler.EndSample();
             }
-            if (object.Equals(gameObject, null))
-                return null;
-
-            if (!foundGameObject)
-                return gameObject;
-            
-            if (materialIndex >= 0 &&
-                gameObject.TryGetComponent<Renderer>(out var renderer))
-            {
-                renderer.GetSharedMaterials(sSharedMaterials);
-                material = materialIndex < sSharedMaterials.Count ? sSharedMaterials[materialIndex] : null;
-                sSharedMaterials.Clear(); // We don't want to keep references to Materials alive
-                if (!material) material = null;
-            }
-            return gameObject;
         }
 
         static PlaneIntersection GetPlaneIntersection(Vector2 mousePosition)
@@ -482,79 +583,104 @@ namespace Chisel.Editors
             return FindSurfaceReferences(position, selectAllSurfaces, foundSurfaces, out _, out _);
         }
 
-        static GameObject PickNodeOrGameObject(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModel model, out ChiselNode node, out ChiselIntersection intersection)
+        public static GameObject PickNodeOrGameObject(Camera camera, Vector2 pickposition, int layers, LayerUsageFlags visibleLayerFlags, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModel model, out ChiselNode node, out ChiselIntersection intersection)
         {
+            Profiler.BeginSample("PickNodeOrGameObject");
+            try
+            {
             TryNextSelection:
-            intersection = ChiselIntersection.None;
+                intersection = ChiselIntersection.None;
 
-            node = null;
-            var gameObject = PickModelOrGameObject(camera, pickposition, layers, ref ignore, ref filter, out model, out Material sharedMaterial);
-            if (object.Equals(gameObject, null))
-                return null;
+                node = null;
+                var gameObject = PickModelOrGameObject(camera, pickposition, layers, ref ignore, ref filter, out model, out Material sharedMaterial);
+                if (object.Equals(gameObject, null))
+                    return null;
 
-            if (ChiselGeneratedComponentManager.IsValidModelToBeSelected(model))
-            { 
+                if (ChiselGeneratedComponentManager.IsValidModelToBeSelected(model))
                 {
-                    var worldRay		= camera.ScreenPointToRay(pickposition);
-                    var worldRayStart	= worldRay.origin;
-                    var worldRayVector	= (worldRay.direction * (camera.farClipPlane - camera.nearClipPlane));
-                    var worldRayEnd		= worldRayStart + worldRayVector;
-
-                    if (ChiselSceneQuery.FindFirstWorldIntersection(model, worldRayStart, worldRayEnd, layers, ignore, filter, out var tempIntersection))
                     {
-                        node = tempIntersection.treeNode;
-                        if (node)
+                        var worldRay = camera.ScreenPointToRay(pickposition);
+                        var worldRayStart = worldRay.origin;
+                        var worldRayVector = (worldRay.direction * (camera.farClipPlane - camera.nearClipPlane));
+                        var worldRayEnd = worldRayStart + worldRayVector;
+
+                        if (ChiselSceneQuery.FindFirstWorldIntersection(model, worldRayStart, worldRayEnd, layers, visibleLayerFlags, ignore, filter, out var tempIntersection))
                         {
-                            if (ignore != null &&
-                                ignore.Contains(node.gameObject))
+                            node = tempIntersection.treeNode;
+                            if (node)
+                            {
+                                if (ignore != null &&
+                                    ignore.Contains(node.gameObject))
+                                {
+                                    node = null;
+                                    return null;
+                                }
+                                intersection = tempIntersection;
+                                return node.gameObject;
+                            }
+                            else
                             {
                                 node = null;
-                                return null;
                             }
-                            intersection = tempIntersection;
-                            return node.gameObject;
-                        } else
-                        {
-                            node = null;
                         }
                     }
+
+                    if (ignore == null)
+                    {
+                        return null;
+                    }
+
+                    if (ArrayUtility.Contains(ignore, gameObject))
+                    {
+                        //Debug.Log("Found gameObject that's in ignore list, this should not happen");
+                        return null;
+                    }
+                    ArrayUtility.Add(ref ignore, gameObject);
+                    goto TryNextSelection;
                 }
 
-                if (ignore == null)
-                {
+                if (object.Equals(gameObject, null))
                     return null;
-                }
 
-                ArrayUtility.Add(ref ignore, gameObject);
-                goto TryNextSelection;
+                if (ignore != null &&
+                    ignore.Contains(gameObject))
+                    return null;
+
+                return gameObject;
             }
-
-            if (object.Equals(gameObject, null))
-                return null;
-
-            if (ignore != null &&
-                ignore.Contains(gameObject))
-                return null;
-
-            return gameObject;
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
         
         static GameObject PickClosestGameObjectDelegated(Vector2 position, ref GameObject[] ignore, ref GameObject[] filter, out ChiselIntersection intersection)
         {
-            var camera = Camera.current;
-            int layers = camera.cullingMask;
-            var pickposition = GUIClip.GUIClipUnclip(position);
-            pickposition = EditorGUIUtility.PointsToPixels(pickposition);
-            pickposition.y = camera.pixelRect.height -pickposition.y - camera.pixelRect.yMin;
-            
-            var gameObject = PickNodeOrGameObject(camera, pickposition, layers, ref ignore, ref filter, out var model, out var node, out intersection);
-            if (!model)
-                return gameObject;
-                
-            if (node)
-                return gameObject;
+            Profiler.BeginSample("PickClosestGameObjectDelegated");
+            try
+            {
+                var camera = Camera.current;
+                int layers = camera.cullingMask;
+                var pickposition = GUIClip.GUIClipUnclip(position);
+                pickposition = EditorGUIUtility.PointsToPixels(pickposition);
+                pickposition.y = camera.pixelRect.height - pickposition.y - camera.pixelRect.yMin;
 
-            return null;
+                // TODO: modify this depending on debug rendermode
+                LayerUsageFlags visibleLayerFlags = LayerUsageFlags.Renderable;
+
+                var gameObject = PickNodeOrGameObject(camera, pickposition, layers, visibleLayerFlags, ref ignore, ref filter, out var model, out var node, out intersection);
+                if (!model)
+                    return gameObject;
+
+                if (node)
+                    return gameObject;
+
+                return null;
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
     }
 }

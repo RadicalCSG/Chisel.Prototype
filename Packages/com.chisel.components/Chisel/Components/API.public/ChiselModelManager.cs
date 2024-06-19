@@ -4,6 +4,7 @@ using System.Linq;
 using Chisel.Core;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Pool;
 
 namespace Chisel.Components
 {
@@ -50,10 +51,21 @@ namespace Chisel.Components
 
         public void OnBeforeSerialize()
         {
-            var foundModels = new List<SceneModelPair>();
-            foreach(var pair in activeModels)
-                foundModels.Add(new SceneModelPair { Key = pair.Key, Value = pair.Value });
-            activeModelsArray = foundModels.ToArray();
+            var foundModels = ListPool<SceneModelPair>.Get();
+            //if (foundModels != null)
+            {
+                if (foundModels.Capacity < activeModels.Count)
+                    foundModels.Capacity = activeModels.Count;
+                foreach (var pair in activeModels)
+                    foundModels.Add(new SceneModelPair { Key = pair.Key, Value = pair.Value });
+                if (activeModelsArray != null && activeModelsArray.Length == foundModels.Count)
+                {
+                    foundModels.CopyTo(activeModelsArray);
+                }
+                else
+                    activeModelsArray = foundModels.ToArray();
+                ListPool<SceneModelPair>.Release(foundModels);
+            }
         }
 
         public void OnAfterDeserialize()

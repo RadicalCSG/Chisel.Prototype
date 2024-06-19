@@ -34,10 +34,18 @@ namespace Chisel.Editors
                     return;
                 sceneView = value;
                 rectSelection = rectSelectionField.GetValue(sceneView);
+#if UNITY_2022_3_OR_NEWER
+                RectSelectionID = (int)rectSelectionIDField.GetValue(rectSelection);
+#endif
             }
         }
-        
+
+#if UNITY_2022_3_OR_NEWER
+        public static bool      RectSelecting       { get { return RectSelectionID != 0 && (GUIUtility.hotControl == RectSelectionID || HandleUtility.nearestControl == RectSelectionID); } }
+        public static bool      IsNearestControl    { get { return (bool)isNearestControlField.GetValue(rectSelection); } }
+#else
         public static bool		RectSelecting		{ get { return (bool)rectSelectingField.GetValue(rectSelection); } }
+#endif
         public static Vector2	SelectStartPoint	{ get { return (Vector2)selectStartPointField.GetValue(rectSelection); } }
         public static Vector2	SelectMousePoint	{ get { return (Vector2)selectMousePointField.GetValue(rectSelection); } }
         public static UnityEngine.Object[]			SelectionStart		{ get { return (UnityEngine.Object[])selectionStartField.GetValue(rectSelection); } set { selectionStartField.SetValue(rectSelection, value); } }
@@ -54,6 +62,16 @@ namespace Chisel.Editors
                 case SelectionType.Subtractive:	selectionType = selectionTypeSubtractive; break;
             }
 
+#if UNITY_2022_3_OR_NEWER
+            updateSelectionMethod.Invoke(rectSelection,
+                new object[]
+                {
+                    existingSelection,
+                    newObjects,
+                    selectionType,
+                    RectSelecting
+                });
+#else
             updateSelectionMethod.Invoke(null,
                 new object[] 
                 {
@@ -62,6 +80,7 @@ namespace Chisel.Editors
                     selectionType,
                     RectSelecting
                 });
+#endif
         }
 
         static Type			unityRectSelectionType;
@@ -72,8 +91,11 @@ namespace Chisel.Editors
         static object		selectionTypeNormal;
             
         static FieldInfo	rectSelectionField;
+#if !UNITY_2022_3_OR_NEWER
         static FieldInfo	rectSelectingField;
+#endif
         static FieldInfo	selectStartPointField;
+        static FieldInfo    isNearestControlField;
         static FieldInfo	selectMousePointField;
         static FieldInfo	selectionStartField;
         static FieldInfo	lastSelectionField;
@@ -99,7 +121,28 @@ namespace Chisel.Editors
             
             rectSelectionField			= typeof(SceneView).GetField("m_RectSelection",			BindingFlags.NonPublic | BindingFlags.Instance);
             if (rectSelectionField == null) return;
-            
+
+#if UNITY_2022_3_OR_NEWER
+            rectSelectionIDField        = unityRectSelectionType.GetField("k_RectSelectionID",  BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+            if (rectSelectionIDField == null) return;
+
+            RectSelectionID             = 0;
+            selectStartPointField		= unityRectSelectionType.GetField("m_StartPoint",	    BindingFlags.NonPublic | BindingFlags.Instance);
+            isNearestControlField       = unityRectSelectionType.GetField("m_IsNearestControl",	BindingFlags.NonPublic | BindingFlags.Instance);
+            selectionStartField			= unityRectSelectionType.GetField("m_SelectionStart",	BindingFlags.NonPublic | BindingFlags.Instance);
+            lastSelectionField			= unityRectSelectionType.GetField("m_LastSelection",	BindingFlags.NonPublic | BindingFlags.Instance);
+            currentSelectionField		= unityRectSelectionType.GetField("m_CurrentSelection",	BindingFlags.NonPublic | BindingFlags.Instance);
+            selectMousePointField		= unityRectSelectionType.GetField("m_SelectMousePoint",	BindingFlags.NonPublic | BindingFlags.Instance);
+            updateSelectionMethod       = unityRectSelectionType.GetMethod("UpdateSelection",   BindingFlags.NonPublic | BindingFlags.Instance,
+                                                                            null,
+                                                                            new Type[] {
+                                                                                typeof(UnityEngine.Object[]),
+                                                                                typeof(UnityEngine.Object[]),
+                                                                                unityEnumSelectionType,
+                                                                                typeof(bool)
+                                                                            },
+                                                                            null);
+#else
             rectSelectionIDField		= unityRectSelectionType.GetField("s_RectSelectionID",	BindingFlags.NonPublic | BindingFlags.Static);
             if (rectSelectionIDField == null) return;
 
@@ -110,8 +153,7 @@ namespace Chisel.Editors
             lastSelectionField			= unityRectSelectionType.GetField("m_LastSelection",	BindingFlags.NonPublic | BindingFlags.Instance);
             currentSelectionField		= unityRectSelectionType.GetField("m_CurrentSelection",	BindingFlags.NonPublic | BindingFlags.Instance);
             selectMousePointField		= unityRectSelectionType.GetField("m_SelectMousePoint",	BindingFlags.NonPublic | BindingFlags.Instance);
-            
-            updateSelectionMethod		= unityRectSelectionType.GetMethod("UpdateSelection", BindingFlags.NonPublic | BindingFlags.Static,
+            updateSelectionMethod = unityRectSelectionType.GetMethod("UpdateSelection", BindingFlags.NonPublic | BindingFlags.Static,
                                                                             null,
                                                                             new Type[] {
                                                                                 typeof(UnityEngine.Object[]),
@@ -120,11 +162,17 @@ namespace Chisel.Editors
                                                                                 typeof(bool)
                                                                             },
                                                                             null);
-            selectionTypeAdditive		= Enum.Parse(unityEnumSelectionType, "Additive");
+#endif
+
+            selectionTypeAdditive       = Enum.Parse(unityEnumSelectionType, "Additive");
             selectionTypeSubtractive	= Enum.Parse(unityEnumSelectionType, "Subtractive");
             selectionTypeNormal			= Enum.Parse(unityEnumSelectionType, "Normal");
             
-            reflectionSucceeded =	rectSelectingField			!= null &&
+            reflectionSucceeded =
+#if !UNITY_2022_3_OR_NEWER
+                                    rectSelectingField          != null &&
+#endif
+
                                     selectStartPointField		!= null &&
                                     selectionStartField			!= null &&
                                     lastSelectionField			!= null &&
@@ -149,6 +197,7 @@ namespace Chisel.Editors
         static Vector2  prevMouseScreenPoint;
 
 
+        static int[]    previousSelection   = null;
         static bool     rectClickDown       = false;
         static bool     mouseDragged        = false;
         static Vector2  clickMousePosition  = Vector2.zero;
@@ -156,6 +205,7 @@ namespace Chisel.Editors
         // TODO: put somewhere else
         public static SelectionType GetCurrentSelectionType()
         {
+            
             var selectionType = SelectionType.Replace;
             // shift only
             if ( Event.current.shift && !EditorGUI.actionKey && !Event.current.alt) { selectionType = SelectionType.Additive; } else
@@ -195,8 +245,8 @@ namespace Chisel.Editors
             }
             return false;
         }
-        
-        internal static void Update(SceneView sceneView)
+
+        internal static void Update(SceneView sceneview)
         {
             if (!ChiselRectSelection.Valid)
             {
@@ -209,13 +259,14 @@ namespace Chisel.Editors
                 return;
             }
 
-            ChiselRectSelection.SceneView = sceneView;
+            ChiselRectSelection.SceneView = sceneview;
+
 
             var rectSelectionID		= ChiselRectSelection.RectSelectionID;
             var hotControl			= GUIUtility.hotControl;
-            var areRectSelecting	= hotControl == rectSelectionID;
+            var areRectSelecting	= rectSelectionID != 0 && hotControl == rectSelectionID;
             var typeForControl		= Event.current.GetTypeForControl(rectSelectionID);
-            
+
             // check if we're rect-selecting
             if (areRectSelecting)
             {
@@ -231,14 +282,22 @@ namespace Chisel.Editors
                     if (prevStartGUIPoint != selectStartPoint)
                     {
                         prevStartGUIPoint		= selectStartPoint;
-                        prevStartScreenPoint	= Event.current.mousePosition;
-                        needUpdate				= true;
+#if UNITY_2022_3_OR_NEWER
+                        prevStartScreenPoint    = selectStartPoint;
+#else
+                        prevStartScreenPoint    = Event.current.mousePosition;
+#endif
+                        needUpdate = true;
                     }
                     if (prevMouseGUIPoint != selectMousePoint)
                     {
-                        prevMouseGUIPoint		= selectMousePoint;
-                        prevMouseScreenPoint	= Event.current.mousePosition;
-                        needUpdate				= true;
+                        prevMouseGUIPoint	 = selectMousePoint;
+#if UNITY_2022_3_OR_NEWER
+                        prevMouseScreenPoint = selectMousePoint;
+#else
+                        prevMouseScreenPoint = Event.current.mousePosition;
+#endif
+                        needUpdate = true;
                     }
                     if (needUpdate)
                     {
@@ -255,9 +314,11 @@ namespace Chisel.Editors
                                 rectFoundGameObjects.Clear();
                             }
 
+                            // TODO: modify this depending on debug rendermode
+                            LayerUsageFlags visibleLayerFlags = LayerUsageFlags.Renderable;
 
                             // Find all the brushes (and it's gameObjects) that are inside the frustum
-                            if (!ChiselSceneQuery.GetNodesInFrustum(frustum, UnityEditor.Tools.visibleLayers, ref rectFoundTreeNodes))
+                            if (!ChiselSceneQuery.GetNodesInFrustum(frustum, UnityEditor.Tools.visibleLayers, visibleLayerFlags, ref rectFoundTreeNodes))
                             {
                                 if (rectFoundGameObjects != null &&
                                     rectFoundGameObjects.Count > 0)
@@ -306,25 +367,29 @@ namespace Chisel.Editors
                     var originalLastSelection	= ChiselRectSelection.LastSelection;
                     var originalSelectionStart	= ChiselRectSelection.SelectionStart;
 
-                    if (modified &&
-                        rectFoundGameObjects != null &&
-                        rectFoundGameObjects.Count > 0)
+                    if (originalLastSelection != null)
                     {
-                        foreach(var obj in rectFoundGameObjects)
+                        if (modified &&
+                            rectFoundGameObjects != null &&
+                            rectFoundGameObjects.Count > 0)
                         {
-                            // if it hasn't already been added, add the obj
-                            if (!originalLastSelection.ContainsKey(obj))
+                            foreach (var obj in rectFoundGameObjects)
                             {
-                                originalLastSelection.Add(obj, false);
+                                // if it hasn't already been added, add the obj
+                                if (!originalLastSelection.ContainsKey(obj))
+                                {
+                                    originalLastSelection.Add(obj, false);
+                                }
                             }
+
+                            currentSelection = originalLastSelection.Keys.ToArray();
+                            ChiselRectSelection.CurrentSelection = currentSelection;
+                        } else
+                        {
+                            if (currentSelection == null || modified) { currentSelection = originalLastSelection.Keys.ToArray(); }
                         }
-                            
-                        currentSelection = originalLastSelection.Keys.ToArray();
-                        ChiselRectSelection.CurrentSelection = currentSelection;
                     } else
-                    {
-                        if (currentSelection == null || modified) { currentSelection = originalLastSelection.Keys.ToArray(); }
-                    }
+                        currentSelection = null;
                     
                     if (RemoveGeneratedMeshesFromArray(ref originalSelectionStart))
                         modified = true;
@@ -345,7 +410,9 @@ namespace Chisel.Editors
                 hotControl = GUIUtility.hotControl;
             }
 
+#if !UNITY_2022_3_OR_NEWER
             int pickingControlId = 0;
+#endif
 
             bool click = false;
             if (hotControl != rectSelectionID)
@@ -356,16 +423,11 @@ namespace Chisel.Editors
                 rectFoundTreeNodes.Clear();
 
 
+#if !UNITY_2022_3_OR_NEWER
                 // Register a control so that if no other handle is engaged, we can use the event.
                 pickingControlId = GUIUtility.GetControlID(FocusType.Passive);
-
-            } /*else
-            if (ignoreRect)
-            {
-                hotControl = 0;
-                GUIUtility.hotControl = 0;
+#endif
             }
-            */
 
             var evt = Event.current;
             switch (typeForControl)
@@ -470,70 +532,9 @@ namespace Chisel.Editors
                     Event.current.Use();
                     break;
                 }
-
-                /*
-                case EventType.ValidateCommand:
-                {
-                    if (Event.current.commandName == "SelectAll")
-                    {
-                        Event.current.Use();
-                        break;
-                    }
-                    if (Keys.HandleSceneValidate(EditModeManager.CurrentTool, true))
-                    {
-                        Event.current.Use();
-                        HandleUtility.Repaint();
-                    }
-                    break; 
-                }
-                case EventType.ExecuteCommand:
-                {
-                    if (Event.current.commandName == "SelectAll")
-                    {
-                        var transforms = new List<UnityEngine.Object>();
-                        for (int sceneIndex = 0; sceneIndex < SceneManager.sceneCount; sceneIndex++)
-                        {
-                            var scene = SceneManager.GetSceneAt(sceneIndex);
-                            foreach (var gameObject in scene.GetRootGameObjects())
-                            {
-                                foreach (var transform in gameObject.GetComponentsInChildren<Transform>())
-                                {
-                                    if ((transform.hideFlags & (HideFlags.NotEditable | HideFlags.HideInHierarchy)) == (HideFlags.NotEditable | HideFlags.HideInHierarchy))
-                                        continue;
-                                    transforms.Add(transform.gameObject);
-                                }
-                            }
-                        }
-                        Selection.objects = transforms.ToArray();
-
-                        Event.current.Use();
-                        break;
-                    }
-                    break;
-                }
-
-                case EventType.KeyDown:
-                {
-                    if (Keys.HandleSceneKeyDown(EditModeManager.CurrentTool, true))
-                    {
-                        Event.current.Use();
-                        HandleUtility.Repaint();
-                    }
-                    break;
-                }
-
-                case EventType.KeyUp:
-                {
-                    if (Keys.HandleSceneKeyUp(EditModeManager.CurrentTool, true))
-                    {
-                        Event.current.Use();
-                        HandleUtility.Repaint();
-                    }
-                    break;
-                }
-                */
             }
 
+#if !UNITY_2022_3_OR_NEWER
             if (pickingControlId != 0)
             {
                 HandleUtility.AddDefaultControl(pickingControlId);
@@ -570,25 +571,49 @@ namespace Chisel.Editors
                     }
                 }
             }
+#else
+            if (!(sceneview == null) && Event.current.commandName == "SceneViewPickingEventCommand" && ChiselRectSelection.IsNearestControl)
+            {
+                // We call unity's own click method after we detected we need to handle click, which sends the exact same message again *sigh*
+                if (previousSelection == null)
+                {
+                    click = true;
+                } else
+                {
+                    Selection.instanceIDs = previousSelection;
+                }
+                previousSelection = null;
+            }
+#endif
 
             if (click)
             {
+                click = false;
                 // make sure GeneratedMeshes are not part of our selection
                 RemoveGeneratedMeshesFromSelection();
 
-                DoSelectionClick(sceneView, Event.current.mousePosition);
+#if UNITY_2022_3_OR_NEWER
+                Selection.instanceIDs = DoSelectionClick(ChiselRectSelection.SelectStartPoint);
+                previousSelection = Selection.instanceIDs;
+#else
+                Selection.instanceIDs = DoSelectionClick(Event.current.mousePosition);
+#endif
             }
         }
         
         // TODO: make selecting variants work when selecting in hierarchy/rect-select too
-        public static void DoSelectionClick(SceneView sceneView, Vector2 mousePosition)
+        public static int[] DoSelectionClick(Vector2 mousePosition)
         {
             ChiselIntersection intersection;
             var gameobject = ChiselClickSelectionManager.PickClosestGameObject(mousePosition, out intersection);
 
             // If we're a child of an composite that has a "handle as one" flag set, return that instead
-            gameobject = ChiselSceneQuery.FindSelectionBase(gameobject); 
-            
+            gameobject = ChiselSceneQuery.FindSelectionBase(gameobject);
+            if (!gameobject)
+            {
+                return Array.Empty<int>();
+            }
+
             var selectionType = GetCurrentSelectionType();
 
             var selectedObjectsOnClick = new List<int>(Selection.instanceIDs);
@@ -603,7 +628,6 @@ namespace Chisel.Editors
                     var instanceID = gameobject.GetInstanceID();
                     selectedObjectsOnClick.Add(instanceID);
                     ChiselClickSelectionManager.ignoreSelectionChanged = true;
-                    Selection.instanceIDs = selectedObjectsOnClick.ToArray();
                     break;
                 }
                 case SelectionType.Subtractive:
@@ -620,18 +644,24 @@ namespace Chisel.Editors
                         selectedObjectsOnClick.Remove(instanceID);
                     }
                     ChiselClickSelectionManager.ignoreSelectionChanged = true;
-                    Selection.instanceIDs = selectedObjectsOnClick.ToArray();
-                    return;
+                    break;
                 }
                 default:
-                { 
+                {
+                    if (!gameobject)
+                        break;
+                    
                     Undo.RecordObject(ChiselSyncSelection.Instance, "Selected brush variant");
                     ChiselSyncSelection.SelectBrushVariant(intersection.brushIntersection.brush, uniqueSelection: true);
                     ChiselClickSelectionManager.ignoreSelectionChanged = true;
-                    Selection.activeGameObject = gameobject;
+                    var instanceID = gameobject.GetInstanceID();
+                    selectedObjectsOnClick.Clear();
+                    selectedObjectsOnClick.Add(instanceID);
                     break;
                 }
             }
+            return selectedObjectsOnClick.ToArray();
         }
+
     }
 }
