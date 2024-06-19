@@ -7,12 +7,12 @@ using Unity.Mathematics;
 // Note: Based on Unity.Entities.Memory
 namespace Chisel.Core.Memory
 {
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     unsafe internal struct ChiselMemory
     {
         internal const long k_MaximumRamSizeInBytes = 1L << 40; // a terabyte
 
-        [BurstCompatible]
+        [GenerateTestsForBurstCompatibility]
         internal struct Unmanaged
         {
             internal static void* Allocate(long size, int align, Allocator allocator)
@@ -27,13 +27,13 @@ namespace Chisel.Core.Memory
                 Array.Resize(pointer, 1, 0, allocator, 1, 1);
             }
 
-            [BurstCompatible(GenericTypeArguments = new[] { typeof(int) })]
+            [GenerateTestsForBurstCompatibility]
             internal static T* Allocate<T>(Allocator allocator) where T : unmanaged
             {
                 return Array.Resize<T>(null, 0, 1, allocator);
             }
 
-            [BurstCompatible(GenericTypeArguments = new[] { typeof(int) })]
+            [GenerateTestsForBurstCompatibility]
             internal static void Free<T>(T* pointer, Allocator allocator) where T : unmanaged
             {
                 if (pointer == null)
@@ -41,7 +41,7 @@ namespace Chisel.Core.Memory
                 Array.Resize(pointer, 1, 0, allocator);
             }
 
-            [BurstCompatible]
+            [GenerateTestsForBurstCompatibility]
             internal struct Array
             {
                 [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
@@ -94,20 +94,20 @@ namespace Chisel.Core.Memory
                     return newPointer;
                 }
 
-                [BurstCompatible(GenericTypeArguments = new[] { typeof(int) })]
+                [GenerateTestsForBurstCompatibility]
                 internal static T* Resize<T>(T* oldPointer, long oldCount, long newCount, Allocator allocator) where T : unmanaged
                 {
                     return (T*)Resize((byte*)oldPointer, oldCount, newCount, allocator, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>());
                 }
 
-                [BurstCompatible(GenericTypeArguments = new[] { typeof(int) })]
+                [GenerateTestsForBurstCompatibility]
                 internal static T* Allocate<T>(long count, Allocator allocator)
                     where T : unmanaged
                 {
                     return Resize<T>(null, 0, count, allocator);
                 }
 
-                [BurstCompatible(GenericTypeArguments = new[] { typeof(int) })]
+                [GenerateTestsForBurstCompatibility]
                 internal static void Free<T>(T* pointer, long count, Allocator allocator)
                     where T : unmanaged
                 {
@@ -118,10 +118,10 @@ namespace Chisel.Core.Memory
             }
         }
 
-        [BurstCompatible]
+        [GenerateTestsForBurstCompatibility]
         internal struct Array
         {
-            [BurstCompatible(GenericTypeArguments = new[] { typeof(int) })]
+            [GenerateTestsForBurstCompatibility]
             internal static void Set<T>(T* pointer, long count, T t = default) where T : unmanaged
             {
                 long bytesToSet = count * UnsafeUtility.SizeOf<T>();
@@ -130,7 +130,7 @@ namespace Chisel.Core.Memory
                     pointer[i] = t;
             }
 
-            [BurstCompatible(GenericTypeArguments = new[] { typeof(int) })]
+            [GenerateTestsForBurstCompatibility]
             internal static void Clear<T>(T* pointer, long count) where T : unmanaged
             {
                 long bytesToClear = count * UnsafeUtility.SizeOf<T>();
@@ -138,7 +138,7 @@ namespace Chisel.Core.Memory
                 UnsafeUtility.MemClear(pointer, bytesToClear);
             }
 
-            [BurstCompatible(GenericTypeArguments = new[] { typeof(int) })]
+            [GenerateTestsForBurstCompatibility]
             internal static void Copy<T>(T* dest, T* src, long count) where T : unmanaged
             {
                 long bytesToCopy = count * UnsafeUtility.SizeOf<T>();

@@ -91,13 +91,13 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void EnsureCapacityAndClear<A,B>(ref NativeHashMap<A,B> container, int desiredCapacity, Allocator allocator = Allocator.Temp)
+        public static void EnsureCapacityAndClear<A,B>(ref NativeParallelHashMap<A,B> container, int desiredCapacity, Allocator allocator = Allocator.Temp)
             where A : unmanaged, IEquatable<A>
             where B : unmanaged
         {
             if (!container.IsCreated)
             {
-                container = new NativeHashMap<A, B>(desiredCapacity, allocator);
+                container = new NativeParallelHashMap<A, B>(desiredCapacity, allocator);
             } else
             {
                 container.Clear();

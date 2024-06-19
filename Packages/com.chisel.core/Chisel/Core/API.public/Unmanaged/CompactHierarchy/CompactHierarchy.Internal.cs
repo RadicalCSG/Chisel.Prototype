@@ -65,10 +65,10 @@ namespace Chisel.Core
 
 
     // TODO: Should be its own container with its own array pointers (fewer indirections)
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public partial struct CompactHierarchy : IDisposable
     {
-        [NoAlias] UnsafeMultiHashMap<int, CompactNodeID> brushMeshToBrush;
+        [NoAlias] UnsafeParallelHashMap<int, CompactNodeID> brushMeshToBrush;
 
         [NoAlias] UnsafeList<CompactChildNode> compactNodes;
         [NoAlias] UnsafeList<BrushOutline>     brushOutlines;
@@ -349,7 +349,7 @@ namespace Chisel.Core
             UpdateHash(ChiselMeshLookup.Value.brushMeshBlobCache, compactNodeID, newBrushMeshHash);
         }
 
-        internal bool UpdateHash(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, CompactNodeID compactNodeID, int newBrushMeshHash)
+        internal bool UpdateHash(NativeParallelHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, CompactNodeID compactNodeID, int newBrushMeshHash)
         {
             var nodeIndex = HierarchyIndexOfInternal(compactNodeID);
             if (nodeIndex == -1)
@@ -502,7 +502,7 @@ namespace Chisel.Core
             if (brushMeshID == Int32.MaxValue)
                 return;
 
-            brushMeshToBrush.Remove(brushMeshID, compactNodeID.value);
+            brushMeshToBrush.Remove(brushMeshID);//, compactNodeID.value);
             /*
             var value = compactNodeID.value;
 
@@ -1728,7 +1728,7 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        internal bool SetState(CompactNodeID compactNodeID, [NoAlias, ReadOnly] NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash, CSGOperationType operation, float4x4 transformation)
+        internal bool SetState(CompactNodeID compactNodeID, [NoAlias, ReadOnly] NativeParallelHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash, CSGOperationType operation, float4x4 transformation)
         {
             if (!IsValidCompactNodeID(compactNodeID))
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));

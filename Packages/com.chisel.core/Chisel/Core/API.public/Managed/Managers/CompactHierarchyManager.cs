@@ -14,7 +14,7 @@ using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core
 {
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     public readonly struct NodeID : IComparable<NodeID>, IEquatable<NodeID>
     {
         public static readonly NodeID Invalid = default;
@@ -37,7 +37,7 @@ namespace Chisel.Core
     // TODO: unify/clean up error messages
     // TODO: use struct, make this non static somehow?
     // TODO: rename
-    [BurstCompatible]
+    [GenerateTestsForBurstCompatibility]
     internal struct CompactHierarchyManagerInstance : IDisposable
     {
         public NativeList<CompactHierarchy> hierarchies;
@@ -316,7 +316,7 @@ namespace Chisel.Core
                         continue;
                     tempNodes.Clear();
                     hierarchies[i].GetAllNodes(tempNodes);
-                    allNodes.AddRange(tempNodes);
+                    allNodes.AddRange(tempNodes.AsArray());
                 }
             }
         }
@@ -1425,7 +1425,7 @@ namespace Chisel.Core
             {
                 newParentHierarchy.ReserveChildren(arrayLength);
 
-                using (var usedTreeNodes = new NativeHashSet<CSGTreeNode>(arrayLength, Allocator.Temp))
+                using (var usedTreeNodes = new NativeParallelHashSet<CSGTreeNode>(arrayLength, Allocator.Temp))
                 {
                     for (int i = 0; i < arrayLength; i++)
                     {

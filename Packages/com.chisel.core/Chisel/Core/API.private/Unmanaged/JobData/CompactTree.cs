@@ -29,7 +29,7 @@ namespace Chisel.Core
         public ChiselBlobArray<int>                       brushAncestors;
 
         public int                                  minBrushIDValue;
-        public ChiselBlobArray<int>                       brushIDValueToAncestorLegend;
+        public ChiselBlobArray<int>                 brushIDValueToAncestorLegend;
         public int                                  minNodeIDValue;
         public int                                  maxNodeIDValue;
     }

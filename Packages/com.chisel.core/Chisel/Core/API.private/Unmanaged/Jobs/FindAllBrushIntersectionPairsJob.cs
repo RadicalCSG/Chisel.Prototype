@@ -26,7 +26,7 @@ namespace Chisel.Core
         [NoAlias] public NativeArray<UnsafeList<BrushIntersectWith>>            brushBrushIntersections;
 
         // Write
-        [NoAlias, WriteOnly] public NativeHashSet<IndexOrder>.ParallelWriter    brushesThatNeedIndirectUpdateHashMap;
+        [NoAlias, WriteOnly] public NativeParallelHashSet<IndexOrder>.ParallelWriter    brushesThatNeedIndirectUpdateHashMap;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>   transformedPlanes0;
@@ -121,7 +121,7 @@ namespace Chisel.Core
     struct FindUniqueIndirectBrushIntersectionsJob : IJob
     {
         // Read
-        [NoAlias, ReadOnly] public NativeHashSet<IndexOrder> brushesThatNeedIndirectUpdateHashMap;
+        [NoAlias, ReadOnly] public NativeParallelHashSet<IndexOrder> brushesThatNeedIndirectUpdateHashMap;
 
         // Read / Write
         [NoAlias] public NativeList<IndexOrder> brushesThatNeedIndirectUpdate;

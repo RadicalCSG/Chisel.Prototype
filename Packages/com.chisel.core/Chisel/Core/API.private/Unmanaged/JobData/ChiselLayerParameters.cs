@@ -16,7 +16,7 @@ namespace Chisel.Core
     // TODO: store this PER TREE
     struct ChiselLayerParameters
     {
-        public UnsafeHashMap<int, ChiselLayerParameterIndex> uniqueParameters;
+        public UnsafeParallelHashMap<int, ChiselLayerParameterIndex> uniqueParameters;
         public int uniqueParameterCount;
 
 
@@ -69,7 +69,7 @@ namespace Chisel.Core
 
         internal void Initialize()
         {
-            uniqueParameters = new UnsafeHashMap<int, ChiselLayerParameterIndex>(1000, Allocator.Persistent);
+            uniqueParameters = new UnsafeParallelHashMap<int, ChiselLayerParameterIndex>(1000, Allocator.Persistent);
             uniqueParameterCount = 0;
         }
 

@@ -15,21 +15,19 @@ namespace Chisel.Components
             if (model.CreateRenderComponents &&
                 model.CreateColliderComponents)
                 return MeshQuery.DefaultQueries;
+
             if (model.CreateRenderComponents)
                 return MeshQuery.RenderOnly;
             else
                 return MeshQuery.CollisionOnly;
         }
 
-        public static MeshQuery[] GetVisibleQueries(MeshQuery[] queryArray)
+        public static MeshQuery[] GetVisibleQueries(MeshQuery[] queryArray, LayerUsageFlags visibleLayerFlags)
         {
-            // TODO: make this depend on debug visualization
-            var visibleLayerFlags = LayerUsageFlags.Renderable;
-
             var queryList = queryArray.ToList();
             for (int n = queryList.Count - 1; n >= 0; n--)
             {
-                if ((visibleLayerFlags & queryList[n].LayerQuery) != LayerUsageFlags.None)
+                if ((visibleLayerFlags & queryList[n].LayerQuery) == visibleLayerFlags)
                     continue;
                 queryList.RemoveAt(n);
             }
