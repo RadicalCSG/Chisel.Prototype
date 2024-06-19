@@ -253,11 +253,11 @@ namespace Chisel.Core
         {
             NativeCollectionHelpers.EnsureMinimumSize(ref surfaceInfos0, localSpacePlanes0Length);
             for (int i = 0; i < localSpacePlanes0Length; i++)
-                surfaceInfos0[i] = new SurfaceInfo { basePlaneIndex = (ushort)i, interiorCategory = (CategoryGroupIndex)CategoryIndex.Inside };
+                surfaceInfos0[i] = new SurfaceInfo { basePlaneIndex = (ushort)i, interiorCategory = (byte)CategoryIndex.Inside };
 
             NativeCollectionHelpers.EnsureMinimumSize(ref surfaceInfos1, localSpacePlanes1Length);
             for (int i = 0; i < localSpacePlanes1Length; i++)
-                surfaceInfos1[i] = new SurfaceInfo { basePlaneIndex = (ushort)i, interiorCategory = (CategoryGroupIndex)CategoryIndex.Inside };
+                surfaceInfos1[i] = new SurfaceInfo { basePlaneIndex = (ushort)i, interiorCategory = (byte)CategoryIndex.Inside };
 
             if (type == IntersectionType.Intersection)
             {
@@ -281,18 +281,18 @@ namespace Chisel.Core
                                 continue;
 
                             var surfaceInfo0 = surfaceInfos0[p1];
-                            surfaceInfo0.interiorCategory = (CategoryGroupIndex)CategoryIndex.ReverseAligned;
+                            surfaceInfo0.interiorCategory = (byte)CategoryIndex.ReverseAligned;
                             surfaceInfos0[p1] = surfaceInfo0;
                             var surfaceInfo1 = surfaceInfos1[p2];
-                            surfaceInfo1.interiorCategory = (CategoryGroupIndex)CategoryIndex.ReverseAligned;
+                            surfaceInfo1.interiorCategory = (byte)CategoryIndex.ReverseAligned;
                             surfaceInfos1[p2] = surfaceInfo1;
                         } else
                         {
                             var surfaceInfo0 = surfaceInfos0[p1];
-                            surfaceInfo0.interiorCategory = (CategoryGroupIndex)CategoryIndex.Aligned;
+                            surfaceInfo0.interiorCategory = (byte)CategoryIndex.Aligned;
                             surfaceInfos0[p1] = surfaceInfo0;
                             var surfaceInfo1 = surfaceInfos1[p2];
-                            surfaceInfo1.interiorCategory = (CategoryGroupIndex)CategoryIndex.Aligned;
+                            surfaceInfo1.interiorCategory = (byte)CategoryIndex.Aligned;
                             surfaceInfos1[p2] = surfaceInfo1;
                         }
                     }

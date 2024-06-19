@@ -6,7 +6,6 @@
         "Unity.Collections",
         "Unity.Mathematics",
         "Unity.Mathematics.Extensions",
-        "Unity.Jobs",
         "com.scene.handle.extensions.runtime",
         "com.chisel.core"
     ],

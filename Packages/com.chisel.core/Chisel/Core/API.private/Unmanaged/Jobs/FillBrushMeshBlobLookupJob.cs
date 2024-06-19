@@ -11,7 +11,7 @@ namespace Chisel.Core
     struct FillBrushMeshBlobLookupJob : IJob
     {
         // Read
-        [NoAlias, ReadOnly] public NativeHashMap<int, RefCountedBrushMeshBlob>  brushMeshBlobs;        
+        [NoAlias, ReadOnly] public NativeParallelHashMap<int, RefCountedBrushMeshBlob>  brushMeshBlobs;        
         [NoAlias, ReadOnly] public NativeList<IndexOrder>                       allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<int>                             allBrushMeshIDs;
 

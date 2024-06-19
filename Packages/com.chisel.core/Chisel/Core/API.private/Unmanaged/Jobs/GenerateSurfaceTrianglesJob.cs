@@ -45,7 +45,7 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeList<bool>                  context_triangleInterior;
         [NativeDisableContainerSafetyRestriction] NativeList<Edge>                  context_inputEdgesCopy; 
         [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<Edge>>      context_edgeLookupEdges;
-        [NativeDisableContainerSafetyRestriction] NativeHashMap<int, int>           context_edgeLookups;
+        [NativeDisableContainerSafetyRestriction] NativeParallelHashMap<int, int>           context_edgeLookups;
         [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<Edge>>      context_foundLoops;
         [NativeDisableContainerSafetyRestriction] NativeList<UnsafeList<int>>       context_children;
         [NativeDisableContainerSafetyRestriction] NativeList<Poly2Tri.DTSweep.DirectedEdge>         context_allEdges;
@@ -71,7 +71,7 @@ namespace Chisel.Core
 
         static readonly CompareSortByBasePlaneIndex compareSortByBasePlaneIndex = new CompareSortByBasePlaneIndex();
 
-        public void Execute(int index)
+        public unsafe void Execute(int index)
         {
             var count = input.BeginForEachIndex(index);
             if (count == 0)
@@ -161,7 +161,6 @@ namespace Chisel.Core
             NativeCollectionHelpers.EnsureSizeAndClear(ref context_foundLoops, pointCount);
             NativeCollectionHelpers.EnsureConstantSizeAndClear(ref context_children, 64);
             NativeCollectionHelpers.EnsureConstantSizeAndClear(ref context_inputEdgesCopy, 64);
-            NativeCollectionHelpers.EnsureConstantSizeAndClear(ref context_inputEdgesCopy, 64);
             NativeCollectionHelpers.EnsureCapacityAndClear(ref context_edgeLookups, pointCount);
             NativeCollectionHelpers.EnsureCapacityAndClear(ref loops, maxLoops);
             NativeCollectionHelpers.EnsureCapacityAndClear(ref surfaceIndexList, maxIndices);
@@ -233,9 +232,14 @@ namespace Chisel.Core
                     
                     var context = new Poly2Tri.DTSweep
                     {
-                        vertices            = brushVertices,
-                        points              = context_points,
+                        vertices            = *brushVertices.m_Vertices,
                         edgeLength          = pointCount,
+                        rotation            = rotation,
+                        normal              = normal,
+                        inputEdges          = loopEdges,
+                        surfaceIndicesArray = outputSurfaceIndicesArray,
+                        
+                        points              = context_points,
                         edges               = context_edges,
                         allEdges            = context_allEdges,
                         triangles           = context_triangles,
@@ -246,11 +250,7 @@ namespace Chisel.Core
                         edgeLookups         = context_edgeLookups,
                         foundLoops          = context_foundLoops,
                         children            = context_children,
-                        inputEdgesCopy      = context_inputEdgesCopy,
-                        rotation            = rotation,
-                        normal              = normal,
-                        inputEdges          = loopEdges,
-                        surfaceIndicesArray = outputSurfaceIndicesArray
+                        inputEdgesCopy      = context_inputEdgesCopy
                     };
                     context.Execute();
 

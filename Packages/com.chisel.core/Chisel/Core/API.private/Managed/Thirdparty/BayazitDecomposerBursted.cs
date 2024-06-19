@@ -49,7 +49,7 @@ namespace Chisel.Core.External
 
             try
             {
-                allVertices.AddRange(srcVertices);
+                allVertices.AddRange(srcVertices.AsArray());
                 ranges.Add(new Range { start = 0, end = srcVertices.Length });
 
                 var originalVertexCount = srcVertices.Length * 2;
@@ -228,7 +228,7 @@ namespace Chisel.Core.External
 
             try
             {
-                allVertices.AddRange(srcVertices);
+                allVertices.AddRange(srcVertices.AsArray());
                 ranges.Add(new Range { start = 0, end = srcVertices.Length });
 
                 var originalVertexCount = srcVertices.Length * 2;

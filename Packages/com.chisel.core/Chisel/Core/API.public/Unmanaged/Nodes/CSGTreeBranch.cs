@@ -21,7 +21,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTreeNode"/>
     /// <seealso cref="Chisel.Core.CSGTree"/>
     /// <seealso cref="Chisel.Core.CSGTreeBrush"/>
-    [StructLayout(LayoutKind.Sequential), BurstCompatible, Serializable]
+    [StructLayout(LayoutKind.Sequential), GenerateTestsForBurstCompatibility, Serializable]
     [System.Diagnostics.DebuggerDisplay("Branch ({nodeID})")]
     public struct CSGTreeBranch : IEquatable<CSGTreeBranch>
     {

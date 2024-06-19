@@ -55,7 +55,7 @@ namespace Chisel.Core
         [NoAlias] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
 
         // Write
-        [NoAlias, WriteOnly] public NativeHashSet<IndexOrder>           brushesThatNeedIndirectUpdateHashMap;
+        [NoAlias, WriteOnly] public NativeParallelHashSet<IndexOrder>           brushesThatNeedIndirectUpdateHashMap;
         [NoAlias, WriteOnly] public NativeReference<bool>               needRemappingRef;
 
         public void Execute()

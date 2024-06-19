@@ -17,7 +17,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTreeNode"/>
     /// <seealso cref="Chisel.Core.CSGTreeBranch"/>
     /// <seealso cref="Chisel.Core.CSGTreeBrush"/>
-    [StructLayout(LayoutKind.Sequential), BurstCompatible, Serializable]
+    [StructLayout(LayoutKind.Sequential), GenerateTestsForBurstCompatibility, Serializable]
     [System.Diagnostics.DebuggerDisplay("Tree ({nodeID})")]
     public struct CSGTree : IEquatable<CSGTree>, IComparable<CSGTree>
     {

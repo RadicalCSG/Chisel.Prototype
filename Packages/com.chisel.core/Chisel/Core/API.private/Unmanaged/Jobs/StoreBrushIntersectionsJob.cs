@@ -63,11 +63,11 @@ namespace Chisel.Core
             }
         }
 
-        static ChiselBlobAssetReference<BrushesTouchedByBrush> GenerateBrushesTouchedByBrush([NoAlias, ReadOnly] ref CompactTree            compactTree, 
-                                                                                             [NoAlias, ReadOnly] NativeArray<IndexOrder>          allTreeBrushIndexOrders, 
-                                                                                             IndexOrder brushIndexOrder, CompactNodeID            rootNodeID,
-                                                                                             [NoAlias, ReadOnly] NativeArray<BrushIntersectWith>  brushIntersectionsWith, int intersectionOffset, int intersectionCount, 
-                                                                                             [NoAlias] ref NativeList<BrushIntersection>          scratch_brushIntersection)
+        static ChiselBlobAssetReference<BrushesTouchedByBrush> GenerateBrushesTouchedByBrush([NoAlias, ReadOnly] ref CompactTree                 compactTree, 
+                                                                                             [NoAlias, ReadOnly] NativeArray<IndexOrder>         allTreeBrushIndexOrders, 
+                                                                                             IndexOrder brushIndexOrder, CompactNodeID           rootNodeID,
+                                                                                             [NoAlias, ReadOnly] NativeArray<BrushIntersectWith> brushIntersectionsWith, int intersectionOffset, int intersectionCount, 
+                                                                                             [NoAlias] ref NativeList<BrushIntersection>         scratch_brushIntersection)
         {
             var brushNodeID     = brushIndexOrder.compactNodeID;            
             var minBrushIDValue = compactTree.minBrushIDValue;
@@ -150,8 +150,8 @@ namespace Chisel.Core
                 { 
                     ref var compactTree = ref compactTreeRef.Value.Value;
                     var result = GenerateBrushesTouchedByBrush(ref compactTree, 
-                                                               allTreeBrushIndexOrders, brushIndexOrder, treeCompactNodeID,
-                                                               brushIntersectionsWith, 
+                                                               allTreeBrushIndexOrders.AsArray(), brushIndexOrder, treeCompactNodeID,
+                                                               brushIntersectionsWith.AsArray(), 
                                                                intersectionOffset: brushIntersectionsWithRange[brushNodeOrder].x, 
                                                                intersectionCount:  brushIntersectionsWithRange[brushNodeOrder].y, 
                                                                ref scratch_brushIntersection);

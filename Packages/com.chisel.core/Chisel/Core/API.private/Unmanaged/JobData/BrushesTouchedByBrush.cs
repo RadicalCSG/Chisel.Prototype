@@ -160,24 +160,24 @@ namespace Chisel.Core
     // Note: Stored in BlobAsset at runtime/editor-time
     struct SurfaceInfo
     {
-        public ushort               basePlaneIndex;
-        public CategoryGroupIndex   interiorCategory;
+        public ushort       basePlaneIndex;
+        public byte         interiorCategory;
     }
 
     struct IndexSurfaceInfo
     {
-        public IndexOrder           brushIndexOrder;
-        public ushort               basePlaneIndex;
-        public CategoryGroupIndex   interiorCategory;
+        public IndexOrder   brushIndexOrder;
+        public ushort       basePlaneIndex;
+        public byte         interiorCategory;
     }
 
     struct BrushIntersectionLoop
     {
-        public IndexOrder           indexOrder0;
-        public IndexOrder           indexOrder1;
-        public SurfaceInfo          surfaceInfo;
-        public int                  loopVertexIndex;
-        public int                  loopVertexCount;
+        public IndexOrder   indexOrder0;
+        public IndexOrder   indexOrder1;
+        public SurfaceInfo  surfaceInfo;
+        public int          loopVertexIndex;
+        public int          loopVertexCount;
     }
 
     struct BrushesTouchedByBrush

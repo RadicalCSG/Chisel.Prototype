@@ -20,12 +20,12 @@ namespace Chisel.Core
         // Read
         [NativeDisableUnsafePtrRestriction]
         [NoAlias, ReadOnly] public CompactHierarchy*                            compactHierarchyPtr;
-        [NoAlias, ReadOnly] public NativeHashMap<int, RefCountedBrushMeshBlob>  brushMeshBlobs;
+        [NoAlias, ReadOnly] public NativeParallelHashMap<int, RefCountedBrushMeshBlob>  brushMeshBlobs;
         [NoAlias, ReadOnly] public int                                          brushCount;
         [NoAlias, ReadOnly] public NativeList<CompactNodeID>                    brushes;
 
         // Read/Write
-        [NoAlias] public NativeHashSet<int>                                     allKnownBrushMeshIndices;
+        [NoAlias] public NativeParallelHashSet<int>                                     allKnownBrushMeshIndices;
         [NoAlias] public NativeArray<ChiselLayerParameters>                     parameters;
         [NoAlias] public NativeArray<int>                                       parameterCounts;
 
@@ -40,7 +40,7 @@ namespace Chisel.Core
             Debug.Assert(SurfaceLayers.kLayerUsageFlags.Length == SurfaceLayers.ParameterCount);
 
             var capacity = math.max(1, math.max(allKnownBrushMeshIndices.Count(), brushCount));
-            var removeBrushMeshIndices = new NativeHashSet<int>(capacity, Allocator.Temp);
+            var removeBrushMeshIndices = new NativeParallelHashSet<int>(capacity, Allocator.Temp);
             {
                 for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
                 {

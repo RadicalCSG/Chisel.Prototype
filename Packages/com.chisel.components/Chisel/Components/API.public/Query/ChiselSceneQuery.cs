@@ -130,7 +130,8 @@ namespace Chisel.Components
         static HashSet<int> s_FilterInstanceIDs = new HashSet<int>();
         static List<CSGTreeNode> s_IgnoreNodes = new List<CSGTreeNode>();
         static List<CSGTreeNode> s_FilterNodes  = new List<CSGTreeNode>();
-        public static bool FindFirstWorldIntersection(List<ChiselIntersection> foundIntersections, Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers = ~0, bool ignoreBackfaced = false, bool ignoreCulled = false, GameObject[] ignore = null, GameObject[] filter = null)
+
+        public static bool FindFirstWorldIntersection(List<ChiselIntersection> foundIntersections, Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers = ~0, LayerUsageFlags visibleLayerFlags = LayerUsageFlags.Renderable, bool ignoreBackfaced = false, bool ignoreCulled = false, GameObject[] ignore = null, GameObject[] filter = null)
         {
             bool found = false;
 
@@ -185,7 +186,7 @@ namespace Chisel.Components
                         continue;
 
                     var query           = ChiselMeshQueryManager.GetMeshQuery(model);
-                    var visibleQueries  = ChiselMeshQueryManager.GetVisibleQueries(query);
+                    var visibleQueries  = ChiselMeshQueryManager.GetVisibleQueries(query, visibleLayerFlags);
 
                     // We only accept RayCasts into this model if it's visible
                     if (visibleQueries == null ||
@@ -207,7 +208,7 @@ namespace Chisel.Components
                         treeRayEnd		= worldRayEnd;
                     }
 
-                    var treeIntersections = CSGQueryManager.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), tree, treeRayStart, treeRayEnd, s_IgnoreNodes, s_FilterNodes, ignoreBackfaced, ignoreCulled);
+                    var treeIntersections = CSGQueryManager.RayCastMulti(visibleQueries, tree, treeRayStart, treeRayEnd, s_IgnoreNodes, s_FilterNodes, ignoreBackfaced, ignoreCulled);
                     if (treeIntersections == null)
                         continue;
 
@@ -235,7 +236,7 @@ namespace Chisel.Components
             return FindFirstWorldIntersection(model, worldRayStart, worldRayEnd, visibleLayers, null, null, out foundIntersection);
         }
         */
-        public static bool FindFirstWorldIntersection(ChiselModel model, Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers, GameObject[] ignore, GameObject[] filter, out ChiselIntersection foundIntersection)
+        public static bool FindFirstWorldIntersection(ChiselModel model, Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers, LayerUsageFlags visibleLayerFlags, GameObject[] ignore, GameObject[] filter, out ChiselIntersection foundIntersection)
         {
             foundIntersection = ChiselIntersection.None;
 
@@ -283,7 +284,7 @@ namespace Chisel.Components
                 return false;
 
             var query           = ChiselMeshQueryManager.GetMeshQuery(model);
-            var visibleQueries  = ChiselMeshQueryManager.GetVisibleQueries(query);
+            var visibleQueries  = ChiselMeshQueryManager.GetVisibleQueries(query, visibleLayerFlags);
 
             // We only accept RayCasts into this model if it's visible
             if (visibleQueries == null ||
@@ -305,7 +306,7 @@ namespace Chisel.Components
                 treeRayEnd = worldRayEnd;
             }
 
-            var treeIntersections = CSGQueryManager.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), tree, treeRayStart, treeRayEnd, s_IgnoreNodes, s_FilterNodes, ignoreBackfaced: true, ignoreCulled: true);
+            var treeIntersections = CSGQueryManager.RayCastMulti(visibleQueries, tree, treeRayStart, treeRayEnd, s_IgnoreNodes, s_FilterNodes, ignoreBackfaced: true, ignoreCulled: true);
             if (treeIntersections == null)
                 return false;
 
@@ -329,7 +330,7 @@ namespace Chisel.Components
             return found;
         }
         
-        public static bool GetNodesInFrustum(Frustum frustum, int visibleLayers, ref HashSet<CSGTreeNode> rectFoundNodes)
+        public static bool GetNodesInFrustum(Frustum frustum, int visibleLayers, LayerUsageFlags visibleLayerFlags, ref HashSet<CSGTreeNode> rectFoundNodes)
         {
             rectFoundNodes.Clear();
             var planes = new Plane[6];
@@ -349,7 +350,7 @@ namespace Chisel.Components
                         continue;
 
                     var query           = ChiselMeshQueryManager.GetMeshQuery(model);
-                    var visibleQueries  = ChiselMeshQueryManager.GetVisibleQueries(query);
+                    var visibleQueries  = ChiselMeshQueryManager.GetVisibleQueries(query, visibleLayerFlags);
 
                     // We only accept RayCasts into this model if it's visible
                     if (visibleQueries == null ||
@@ -374,7 +375,7 @@ namespace Chisel.Components
                         planes[p].distance = srcVector.w;
                     }
 
-                    var treeNodesInFrustum = CSGQueryManager.GetNodesInFrustum(tree, query, planes);
+                    var treeNodesInFrustum = CSGQueryManager.GetNodesInFrustum(tree, visibleQueries, planes);
                     if (treeNodesInFrustum == null)
                         continue;
 

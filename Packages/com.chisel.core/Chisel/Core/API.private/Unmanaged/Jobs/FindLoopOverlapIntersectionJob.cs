@@ -277,7 +277,7 @@ namespace Chisel.Core
                             
                                 int intersectionBrushOrder1 = brushIntersections[intersectionSurfaceOffset + l1].indexOrder1.nodeOrder;// intersectionIndex1.w;
 
-                                FindLoopPlaneIntersections(brushTreeSpacePlaneCache, 
+                                FindLoopPlaneIntersections(brushTreeSpacePlaneCache.AsArray(), 
                                                            intersectionBrushOrder1, 
                                                            //intersectionBrushOrder0, 
                                                            hashedTreeSpaceVertices, ref edges);
