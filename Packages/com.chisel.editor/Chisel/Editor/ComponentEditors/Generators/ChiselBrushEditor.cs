@@ -114,26 +114,28 @@ namespace Chisel.Editors
             for (int i = activeGenerators.Count - 1; i >= 0; i--)
                 if (activeGenerators[i] == null) activeGenerators.RemoveAt(i);
             if (activeGenerators.Count > 0)
+            {
                 Undo.RecordObjects(activeGenerators.ToArray(), activeGenerators.Count == 1 ? "Modified brush" : "Modified brushes"); ;
 
-            // Remove redundant vertices and fix the selection so that the correct edges/vertices etc. are selected
-            foreach (var generator in activeGenerators)
-            {
-                var outline = activeOutlines[generator];
+                // Remove redundant vertices and fix the selection so that the correct edges/vertices etc. are selected
+                foreach (var generator in activeGenerators)
+                {
+                    var outline = activeOutlines[generator];
 
-                // We remove redundant vertices here since in editableOutline we make the assumption that the vertices 
-                // between the original and the 'fixed' brushMesh are identical. 
-                // This makes it a lot easier to find 'soft edges'.
-                outline.vertexRemap = generator.definition.brushOutline.RemoveUnusedVertices();
-                ChiselEditableOutline.RemapSelection(generator.definition.brushOutline, outline.selection, outline.vertexRemap, outline.edgeRemap, outline.polygonRemap);
+                    // We remove redundant vertices here since in editableOutline we make the assumption that the vertices 
+                    // between the original and the 'fixed' brushMesh are identical. 
+                    // This makes it a lot easier to find 'soft edges'.
+                    outline.vertexRemap = generator.definition.brushOutline.RemoveUnusedVertices();
+                    ChiselEditableOutline.RemapSelection(generator.definition.brushOutline, outline.selection, outline.vertexRemap, outline.edgeRemap, outline.polygonRemap);
 
-                // Ensure Undo registers any changes
-                generator.definition.brushOutline = outline.brushMesh;
+                    // Ensure Undo registers any changes
+                    generator.definition.brushOutline = new BrushMesh(generator.definition.brushOutline);
+                }
+
+                // Create new outlines for our generators
+                foreach (var generator in activeGenerators)
+                    activeOutlines[generator] = new ChiselEditableOutline(generator);
             }
-
-            // Create new outlines for our generators
-            foreach (var generator in activeGenerators)
-                activeOutlines[generator] = new ChiselEditableOutline(generator); 
 
             generatorModified = false;
         }
