@@ -6,10 +6,11 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
+using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 namespace Chisel.Core
 {
-    [BurstCompile(CompileSynchronously = true)]
+    //[BurstCompile(CompileSynchronously = true)]
     struct CreateBlobPolygonsBlobsJob : IJobParallelForDefer
     {
         // Read
@@ -30,7 +31,7 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeArray<Edge>         tempEdges;
 
 
-        static bool IsDegenerate(HashedVertices hashedTreeSpaceVertices, NativeArray<Edge> edges, int edgeCount)
+        static bool IsDegenerate([NoAlias, ReadOnly] HashedVertices hashedTreeSpaceVertices, [NoAlias, ReadOnly] NativeArray<Edge> edges, int edgeCount)
         {
             if (edgeCount < 3)
                 return true;
@@ -81,7 +82,7 @@ namespace Chisel.Core
             }
         }
 
-        bool CopyPolygonToIndices(ChiselBlobAssetReference<BrushMeshBlob> mesh, ref ChiselBlobArray<float3> treeSpaceVertices, int polygonIndex, HashedVertices hashedTreeSpaceVertices, NativeArray<Edge> edges, ref int edgeCount)
+        bool CopyPolygonToIndices([NoAlias, ReadOnly] ChiselBlobAssetReference<BrushMeshBlob> mesh, [NoAlias, ReadOnly] ref ChiselBlobArray<float3> treeSpaceVertices, int polygonIndex, [NoAlias] HashedVertices hashedTreeSpaceVertices, [NoAlias] NativeArray<Edge> edges, [NoAlias] ref int edgeCount)
         {
             ref var halfEdges   = ref mesh.Value.halfEdges;
             ref var polygon     = ref mesh.Value.polygons[polygonIndex];

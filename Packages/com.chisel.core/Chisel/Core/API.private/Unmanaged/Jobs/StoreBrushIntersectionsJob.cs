@@ -6,6 +6,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
+using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 namespace Chisel.Core
 {
@@ -27,7 +28,7 @@ namespace Chisel.Core
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeList<BrushIntersection> scratch_brushIntersection;
 
-        static void SetUsedNodesBits([NoAlias] ref CompactTree compactTree, [NoAlias] in NativeList<BrushIntersection> brushIntersections, CompactNodeID brushNodeID, CompactNodeID rootNodeID, [NoAlias] ref BrushIntersectionLookup bitset)
+        static void SetUsedNodesBits([NoAlias, ReadOnly] ref CompactTree compactTree, [NoAlias, ReadOnly] in NativeList<BrushIntersection> brushIntersections, CompactNodeID brushNodeID, CompactNodeID rootNodeID, [NoAlias] ref BrushIntersectionLookup bitset)
         {
             var brushNodeIDValue = brushNodeID.value;
             var rootNodeIDValue  = rootNodeID.value;

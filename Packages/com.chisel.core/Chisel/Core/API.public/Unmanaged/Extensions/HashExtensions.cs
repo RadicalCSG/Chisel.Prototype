@@ -1,17 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
+using Unity.Burst;
 using Unity.Mathematics;
+using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
+using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 namespace Chisel.Core
 {
     public static class HashExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe uint GetHashCode<T>(ref T value) where T : unmanaged
+        public static unsafe uint GetHashCode<T>([NoAlias, ReadOnly] ref T value) where T : unmanaged
         {
             fixed (T* valuePtr = &value)
             {
@@ -20,8 +19,12 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe uint GetHashCode<T>(ChiselBlobArray<T> value) where T : unmanaged
+        public static unsafe uint GetHashCode<T>([NoAlias, ReadOnly] ref ChiselBlobArray<T> value) where T : unmanaged
         {
+            if (value.GetUnsafePtr() == null)
+            {
+                throw new NullReferenceException($"{nameof(value)} is null");
+            }
             return math.hash(value.GetUnsafePtr(), sizeof(T) * value.Length);
         }
     }

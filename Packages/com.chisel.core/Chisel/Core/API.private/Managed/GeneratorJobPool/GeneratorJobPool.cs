@@ -1,16 +1,16 @@
 using System;
 using System.Linq;
 using Chisel.Core;
-using Debug = UnityEngine.Debug;
-using UnitySceneExtensions;
 using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Mathematics;
-using System.Runtime.CompilerServices;
 using Unity.Jobs;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Profiling;
+using Debug = UnityEngine.Debug;
+using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
+using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 namespace Chisel.Core
 {
@@ -27,6 +27,7 @@ namespace Chisel.Core
     }
 
     // TODO: move to core
+    [BurstCompile(CompileSynchronously = true)]
     public class GeneratorJobPoolManager : System.IDisposable
     {
         System.Collections.Generic.HashSet<GeneratorJobPool> generatorPools = new System.Collections.Generic.HashSet<GeneratorJobPool>();
@@ -352,6 +353,7 @@ namespace Chisel.Core
     }
 
     // TODO: move to core, call ScheduleUpdate when hash of definition changes (no more manual calls)
+    [BurstCompile(CompileSynchronously = true)]
     public class GeneratorBrushJobPool<Generator> : GeneratorJobPool
         where Generator : unmanaged, IBrushGenerator
     {
@@ -603,6 +605,7 @@ namespace Chisel.Core
         }
     }
 
+    [BurstCompile(CompileSynchronously = true)]
     public class GeneratorBranchJobPool<Generator> : GeneratorJobPool
         where Generator : unmanaged, IBranchGenerator
     {

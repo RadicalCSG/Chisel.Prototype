@@ -292,7 +292,7 @@ namespace Chisel.Core
 
     // TODO: make this safely writable in parallel / maybe check out NativeMultiHashMap? 
     //       write multiple vertices -> combine? but what about indices? seperate vertex generation from getting indices?
-    [NativeContainer]
+    [NativeContainer, BurstCompile(CompileSynchronously = true)]
     public unsafe struct HashedVertices : INativeDisposable
     {
         public const ushort     kMaxVertexCount = 65000;
@@ -413,7 +413,7 @@ namespace Chisel.Core
             m_Vertices->AddRangeNoResize(*otherHashedVertices.m_Vertices);
         }
 
-        public HashedVertices(ref ChiselBlobArray<float3> uniqueVertices, Allocator allocator = Allocator.Persistent)
+        public HashedVertices([ReadOnly] ref ChiselBlobArray<float3> uniqueVertices, Allocator allocator = Allocator.Persistent)
             : this(uniqueVertices.Length, allocator)
         {
             // Add Unique vertex
@@ -613,7 +613,7 @@ namespace Chisel.Core
         }
 
 
-        public unsafe void AddUniqueVertices(ref ChiselBlobArray<float3> uniqueVertices)
+        public unsafe void AddUniqueVertices([ReadOnly] ref ChiselBlobArray<float3> uniqueVertices)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
@@ -651,7 +651,7 @@ namespace Chisel.Core
             }
         }
         
-        public unsafe void ReplaceIfExists(ref ChiselBlobArray<float3> uniqueVertices)
+        public unsafe void ReplaceIfExists([ReadOnly] ref ChiselBlobArray<float3> uniqueVertices)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
@@ -664,7 +664,7 @@ namespace Chisel.Core
             }
         }
 
-        public unsafe void ReplaceIfExists(in UnsafeList<float3> uniqueVertices)
+        public unsafe void ReplaceIfExists([ReadOnly] in UnsafeList<float3> uniqueVertices)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
