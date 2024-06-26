@@ -10,6 +10,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
+using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 namespace Chisel.Core
 {
@@ -346,10 +347,10 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void UpdateHash(CompactNodeID compactNodeID, int newBrushMeshHash)
         {
-            UpdateHash(ChiselMeshLookup.Value.brushMeshBlobCache, compactNodeID, newBrushMeshHash);
+            UpdateHash(ref ChiselMeshLookup.Value.brushMeshBlobCache, compactNodeID, newBrushMeshHash);
         }
 
-        internal bool UpdateHash(NativeParallelHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, CompactNodeID compactNodeID, int newBrushMeshHash)
+        internal bool UpdateHash([NoAlias] ref NativeParallelHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, CompactNodeID compactNodeID, int newBrushMeshHash)
         {
             var nodeIndex = HierarchyIndexOfInternal(compactNodeID);
             if (nodeIndex == -1)
@@ -360,7 +361,7 @@ namespace Chisel.Core
             if (prevBrushMeshHash == newBrushMeshHash)
                 return false;
 
-            BrushMeshManager.RegisterBrushMeshHash(brushMeshBlobCache, newBrushMeshHash, prevBrushMeshHash);
+            BrushMeshManager.RegisterBrushMeshHash(ref brushMeshBlobCache, newBrushMeshHash, prevBrushMeshHash);
             if (newBrushMeshHash != 0 && 
                 newBrushMeshHash != Int32.MaxValue)
                 brushMeshToBrush.Add(newBrushMeshHash, compactNodeID);
@@ -1751,7 +1752,7 @@ namespace Chisel.Core
                 nodeRef.transformation = transformation;
             }
 
-            if (UpdateHash(brushMeshBlobCache, compactNodeID, brushMeshHash) ||
+            if (UpdateHash(ref brushMeshBlobCache, compactNodeID, brushMeshHash) ||
                 nodeRef.brushMeshHash != brushMeshHash)
             {
                 modifiedFlags |= NodeStatusFlags.ShapeModified | NodeStatusFlags.NeedAllTouchingUpdated;

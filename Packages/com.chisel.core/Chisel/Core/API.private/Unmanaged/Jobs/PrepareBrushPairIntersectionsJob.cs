@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using Unity.Collections.LowLevel.Unsafe;
 using Debug = UnityEngine.Debug;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
+using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 namespace Chisel.Core
 {

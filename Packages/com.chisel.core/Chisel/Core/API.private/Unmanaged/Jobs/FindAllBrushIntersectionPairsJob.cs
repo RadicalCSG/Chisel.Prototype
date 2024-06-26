@@ -7,6 +7,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
+using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 namespace Chisel.Core
 {
@@ -483,7 +484,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void TransformOtherIntoBrushSpace(ref float4x4 treeToBrushSpaceMatrix, ref float4x4 brushToTreeSpaceMatrix, ref ChiselBlobArray<float4> srcPlanes, NativeArray<float4> dstPlanes)
+        public static void TransformOtherIntoBrushSpace([NoAlias, ReadOnly] ref float4x4 treeToBrushSpaceMatrix, [NoAlias, ReadOnly] ref float4x4 brushToTreeSpaceMatrix, [NoAlias, ReadOnly] ref ChiselBlobArray<float4> srcPlanes, [NoAlias, WriteOnly] NativeArray<float4> dstPlanes)
         {
             var brush1ToBrush0LocalLocalSpace = math.transpose(math.mul(treeToBrushSpaceMatrix, brushToTreeSpaceMatrix));
             for (int plane_index = 0; plane_index < srcPlanes.Length; plane_index++)
@@ -494,14 +495,14 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntersectionType ConvexPolytopeTouching([NoAlias] ref BrushMeshBlob       brushMesh0,
-                                                              [NoAlias] ref float4x4            treeToNode0SpaceMatrix,
-                                                              [NoAlias] ref float4x4            nodeToTree0SpaceMatrix,
-                                                              [NoAlias] ref BrushMeshBlob       brushMesh1,
-                                                              [NoAlias] ref float4x4            treeToNode1SpaceMatrix,
-                                                              [NoAlias] ref float4x4            nodeToTree1SpaceMatrix,
-                                                              [NoAlias] ref NativeArray<float4> transformedPlanes0,
-                                                              [NoAlias] ref NativeArray<float4> transformedPlanes1)
+        public static IntersectionType ConvexPolytopeTouching([NoAlias, ReadOnly] ref BrushMeshBlob       brushMesh0,
+                                                              [NoAlias, ReadOnly] ref float4x4            treeToNode0SpaceMatrix,
+                                                              [NoAlias, ReadOnly] ref float4x4            nodeToTree0SpaceMatrix,
+                                                              [NoAlias, ReadOnly] ref BrushMeshBlob       brushMesh1,
+                                                              [NoAlias, ReadOnly] ref float4x4            treeToNode1SpaceMatrix,
+                                                              [NoAlias, ReadOnly] ref float4x4            nodeToTree1SpaceMatrix,
+                                                              [NoAlias, ReadOnly] ref NativeArray<float4> transformedPlanes0,
+                                                              [NoAlias, ReadOnly] ref NativeArray<float4> transformedPlanes1)
         {
             ref var brushPlanes0   = ref brushMesh0.localPlanes;
 
@@ -581,11 +582,11 @@ namespace Chisel.Core
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntersectionType FindIntersection(int brush0NodeOrder, int brush1NodeOrder,
-                                                        [NoAlias] ref NativeArray<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshLookup,
-                                                        [NoAlias] ref NativeList<ChiselAABB>            brushTreeSpaceBounds,
-                                                        [NoAlias] ref NativeList<NodeTransformations>   transformations,
-                                                        [NoAlias] ref NativeArray<float4>               transformedPlanes0,
-                                                        [NoAlias] ref NativeArray<float4>               transformedPlanes1)
+                                                        [NoAlias, ReadOnly] ref NativeArray<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshLookup,
+                                                        [NoAlias, ReadOnly] ref NativeList<ChiselAABB>            brushTreeSpaceBounds,
+                                                        [NoAlias, ReadOnly] ref NativeList<NodeTransformations>   transformations,
+                                                        [NoAlias, ReadOnly] ref NativeArray<float4>               transformedPlanes0,
+                                                        [NoAlias, ReadOnly] ref NativeArray<float4>               transformedPlanes1)
         {
             var brushMesh0 = brushMeshLookup[brush0NodeOrder];
             var brushMesh1 = brushMeshLookup[brush1NodeOrder];

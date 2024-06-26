@@ -1,14 +1,16 @@
 using System;
-using System.Collections.Generic;
 using Unity.Jobs;
 using Unity.Collections;
 using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
 using Unity.Mathematics;
+using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
+using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 namespace Chisel.Core
 {
+    [BurstCompile(CompileSynchronously = true)]
     public static class NativeCollection
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

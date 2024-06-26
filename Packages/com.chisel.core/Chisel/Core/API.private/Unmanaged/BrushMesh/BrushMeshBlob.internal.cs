@@ -1,10 +1,10 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Unity.Burst;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
+using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
+using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 namespace Chisel.Core
 {
@@ -33,7 +33,7 @@ namespace Chisel.Core
             public override int GetHashCode() { unchecked { return (int)GetHashCode(ref this); } }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static uint GetHashCode(ref Polygon polygon) { return HashExtensions.GetHashCode(ref polygon); }
+            public static uint GetHashCode([ReadOnly] ref Polygon polygon) { return HashExtensions.GetHashCode(ref polygon); }
         }
 
         /// <summary>Defines a half edge of a <see cref="BrushMeshBlob"/>.</summary>
@@ -61,14 +61,14 @@ namespace Chisel.Core
         public int                          localPlaneCount;    // number of surface planes
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CalculateHashCode(ref BrushMeshBlob blob)
+        public static int CalculateHashCode([NoAlias, ReadOnly] ref BrushMeshBlob blob)
         {
             unchecked
             {
                 return (int)math.hash(
-                            new uint3(blob.polygons.Length      == 0 ? 0 : HashExtensions.GetHashCode(blob.polygons),
-                                      blob.localVertices.Length == 0 ? 0 : HashExtensions.GetHashCode(blob.localVertices),
-                                      blob.halfEdges.Length     == 0 ? 0 : HashExtensions.GetHashCode(blob.halfEdges)));
+                            new uint3(blob.polygons.Length      == 0 ? 0 : HashExtensions.GetHashCode(ref blob.polygons),
+                                      blob.localVertices.Length == 0 ? 0 : HashExtensions.GetHashCode(ref blob.localVertices),
+                                      blob.halfEdges.Length     == 0 ? 0 : HashExtensions.GetHashCode(ref blob.halfEdges)));
             }
         }
 

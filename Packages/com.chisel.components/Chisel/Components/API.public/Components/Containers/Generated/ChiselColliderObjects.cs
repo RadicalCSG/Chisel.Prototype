@@ -1,11 +1,11 @@
 using UnityEngine;
 using Chisel.Core;
 using System;
-using UnityEngine.Profiling;
 using Unity.Jobs;
 using Unity.Collections;
-using System.Collections.Generic;
 using Unity.Burst;
+using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
+using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 namespace Chisel.Components
 {
@@ -14,7 +14,7 @@ namespace Chisel.Components
         public int              meshIndex;
     }
 
-    [Serializable]
+    [Serializable, BurstCompile(CompileSynchronously = true)]
     public class ChiselColliderObjects
     {
         public int              surfaceParameter;

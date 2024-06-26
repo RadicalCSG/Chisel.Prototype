@@ -4,10 +4,11 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Collections.LowLevel.Unsafe;
-using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
-using Debug = UnityEngine.Debug;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
+using Debug = UnityEngine.Debug;
+using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
+using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 namespace Chisel.Core
 {
@@ -56,7 +57,7 @@ namespace Chisel.Core
             public ushort planeIndex;
         }
         
-        static bool IsOutsidePlanes([NoAlias] NativeArray<float4> planes, int planesLength, float4 localVertex)
+        static bool IsOutsidePlanes([NoAlias, ReadOnly] NativeArray<float4> planes, int planesLength, float4 localVertex)
         {
             int n = 0;
             for (; n + 4 < planesLength; n+=4)
@@ -83,7 +84,7 @@ namespace Chisel.Core
 
 
         #region Sort
-        static float3 FindPolygonCentroid([NoAlias] HashedVertices vertices, [NoAlias] NativeArray<ushort> indices, int offset, int indicesCount)
+        static float3 FindPolygonCentroid([NoAlias, ReadOnly] HashedVertices vertices, [NoAlias, ReadOnly] NativeArray<ushort> indices, int offset, int indicesCount)
         {
             var centroid = float3.zero;
             for (int i = 0; i < indicesCount; i++, offset++)
@@ -92,7 +93,7 @@ namespace Chisel.Core
         }
 
         // TODO: sort by using plane information instead of unreliable floating point math ..
-        static void SortIndices([NoAlias] HashedVertices vertices, [NoAlias] NativeArray<int2> sortedStack, [NoAlias] NativeArray<ushort> indices, int offset, int indicesCount, float3 normal)
+        static void SortIndices([NoAlias, ReadOnly] HashedVertices vertices, [NoAlias, ReadOnly] NativeArray<int2> sortedStack, [NoAlias, ReadOnly] NativeArray<ushort> indices, int offset, int indicesCount, float3 normal)
         {
             // There's no point in trying to sort a point or a line 
             if (indicesCount < 3)
@@ -195,19 +196,19 @@ namespace Chisel.Core
         #endregion
         
         //[MethodImpl(MethodImplOptions.NoInlining)]
-        void FindInsideVertices([NoAlias] NativeArray<float3>       usedVertices0,
-                                int                                 usedVertices0Length,
-                                [NoAlias] NativeArray<ushort>       vertexIntersectionPlanes,
-                                int                                 vertexIntersectionPlanesLength,
-                                [NoAlias] NativeArray<int2>         vertexIntersectionSegments,
-                                int                                 vertexIntersectionSegmentsLength,
-                                [NoAlias] NativeArray<float4>       intersectingPlanes1,
-                                int                                 intersectingPlanes1Length,
-                                int                                 intersectingPlanesAndEdges1Length,
-                                float4x4                            nodeToTreeSpaceMatrix1,
-                                float4x4                            vertexToLocal0,
-                                [NoAlias] ref HashedVertices        hashedTreeSpaceVertices,
-                                [NoAlias] ref HashedVertices        snapHashedVertices,
+        void FindInsideVertices([NoAlias, ReadOnly] NativeArray<float3> usedVertices0,
+                                int                                     usedVertices0Length,
+                                [NoAlias, ReadOnly] NativeArray<ushort> vertexIntersectionPlanes,
+                                int                                     vertexIntersectionPlanesLength,
+                                [NoAlias, ReadOnly] NativeArray<int2>   vertexIntersectionSegments,
+                                int                                     vertexIntersectionSegmentsLength,
+                                [NoAlias, ReadOnly] NativeArray<float4> intersectingPlanes1,
+                                int                                     intersectingPlanes1Length,
+                                int                                     intersectingPlanesAndEdges1Length,
+                                float4x4                                nodeToTreeSpaceMatrix1,
+                                float4x4                                vertexToLocal0,
+                                [NoAlias] ref HashedVertices            hashedTreeSpaceVertices,
+                                [NoAlias] ref HashedVertices            snapHashedVertices,
                                 [NoAlias] NativeArray<PlaneVertexIndexPair> foundIndices0,
                                 ref int                                     foundIndices0Length)
         {
@@ -473,12 +474,12 @@ skipMe:
         void GenerateLoop(IndexOrder brushIndexOrder0,
                           IndexOrder brushIndexOrder1,
                           bool       invertedTransform,
-                          [NoAlias] NativeArray<SurfaceInfo>          surfaceInfos,
-                          [NoAlias] int                               surfaceInfosLength,
-                          [NoAlias] ref BrushTreeSpacePlanes          brushTreeSpacePlanes0,
-                          [NoAlias] NativeArray<PlaneVertexIndexPair> foundIndices0,
-                          [NoAlias] ref int                           foundIndices0Length,
-                          [NoAlias] ref HashedVertices                hashedTreeSpaceVertices,
+                          [NoAlias, ReadOnly] NativeArray<SurfaceInfo>          surfaceInfos,
+                          [NoAlias] int                                         surfaceInfosLength,
+                          [NoAlias, ReadOnly] ref BrushTreeSpacePlanes          brushTreeSpacePlanes0,
+                          [NoAlias, ReadOnly] NativeArray<PlaneVertexIndexPair> foundIndices0,
+                          [NoAlias] ref int                                     foundIndices0Length,
+                          [NoAlias] ref HashedVertices                          hashedTreeSpaceVertices,
                           [NoAlias] NativeList<BrushIntersectionLoop>.ParallelWriter outputSurfaces)
         {
             // Why is the unity NativeSort slower than bubble sort?
