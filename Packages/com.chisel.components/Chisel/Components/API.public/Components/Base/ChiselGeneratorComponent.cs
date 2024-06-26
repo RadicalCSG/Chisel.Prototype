@@ -407,6 +407,9 @@ namespace Chisel.Components
         {
             prevMaterialHash = 0;
             prevDefinitionHash = 0;
+#if UNITY_EDITOR
+            ChiselGeneratedComponentManager.EnsureVisibilityInitialized(this); 
+#endif
         }
 
         public override void UpdateGeneratorNodes()
