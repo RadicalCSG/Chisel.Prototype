@@ -457,10 +457,19 @@ namespace Chisel.Components
         {
             var currMaterialHash    = SurfaceDefinition?.GetHashCode() ?? 0;
             var currDefinitionHash  = GetDefinitionHash();
-            if (prevMaterialHash != currMaterialHash || prevDefinitionHash != currDefinitionHash)
+            if (prevMaterialHash != currMaterialHash || prevDefinitionHash != currDefinitionHash ||
+                Node.Operation != operation)
             {
                 prevMaterialHash    = currMaterialHash;
                 prevDefinitionHash  = currDefinitionHash;
+
+                if (Node.Operation != operation)
+                {
+                    Node.Operation = operation;
+                    // Let the hierarchy manager know that the contents of this node has been modified
+                    //	so we can rebuild/update sub-trees and regenerate meshes
+                    ChiselNodeHierarchyManager.NotifyContentsModified(this);
+                }
 
                 var treeRoot = this.hierarchyItem.Model.Node;
                 UpdateGeneratorNodesInternal(in treeRoot, ref Node);
