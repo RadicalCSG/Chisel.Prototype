@@ -352,6 +352,94 @@ namespace Chisel.Core
                                               JobHandle dependsOn);
     }
 
+    [BurstCompile(CompileSynchronously = true)]
+    struct CreateBrushesJob<Generator> : IJobParallelForDefer
+        where Generator : unmanaged, IBrushGenerator
+    {
+        [NoAlias, ReadOnly] public NativeList<Generator> settings;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes;
+
+        public void Execute(int index)
+        {
+            if (!surfaceDefinitions.IsCreated ||
+                !surfaceDefinitions[index].IsCreated)
+            {
+                brushMeshes[index] = default;
+                return;
+            }
+
+            brushMeshes[index] = settings[index].GenerateMesh(surfaceDefinitions[index], Allocator.Persistent);
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
+    struct UpdateHierarchyJob : IJob
+    {
+        [NoAlias, ReadOnly] public NativeList<NodeID> generatorNodes;
+        [NoAlias, ReadOnly] public int index;
+        [NoAlias, WriteOnly] public NativeArray<int> totalCounts;
+
+        public void Execute()
+        {
+            totalCounts[index] = generatorNodes.Length;
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)] 
+    unsafe struct InitializeArraysJob : IJob
+    {
+        public void InitializeLookups()
+        {
+            hierarchyIDLookupPtr = (IDManager*)UnsafeUtility.AddressOf(ref CompactHierarchyManager.HierarchyIDLookup);
+            nodeIDLookupPtr = (IDManager*)UnsafeUtility.AddressOf(ref CompactHierarchyManager.NodeIDLookup);
+            nodesLookup = CompactHierarchyManager.Nodes;
+        }
+
+        // Read
+        [NativeDisableUnsafePtrRestriction, NoAlias, ReadOnly] public IDManager*    hierarchyIDLookupPtr;
+        [NativeDisableUnsafePtrRestriction, NoAlias, ReadOnly] public IDManager*    nodeIDLookupPtr;
+        [NoAlias, ReadOnly] public NativeList<CompactNodeID>                        nodesLookup;
+
+        [NoAlias, ReadOnly] public NativeList<NodeID>                                   nodes;
+        [NoAlias, ReadOnly] public NativeList<CompactHierarchy>                         hierarchyList;
+        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>  brushMeshes;
+
+        // Write
+        [NoAlias, WriteOnly] public NativeList<GeneratedNodeDefinition>.ParallelWriter                  generatedNodeDefinitions;
+        [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>.ParallelWriter  brushMeshBlobs;
+
+        public void Execute()
+        {
+            ref var hierarchyIDLookup = ref UnsafeUtility.AsRef<IDManager>(hierarchyIDLookupPtr);
+            ref var nodeIDLookup = ref UnsafeUtility.AsRef<IDManager>(nodeIDLookupPtr);
+            var hierarchyListPtr = (CompactHierarchy*)hierarchyList.GetUnsafeReadOnlyPtr();
+            for (int i = 0; i < nodes.Length; i++) 
+            {
+                var nodeID              = nodes[i];
+                var compactNodeID       = CompactHierarchyManager.GetCompactNodeIDNoError(ref nodeIDLookup, nodesLookup, nodeID);
+                var hierarchyIndex      = CompactHierarchyManager.GetHierarchyIndexUnsafe(ref hierarchyIDLookup, compactNodeID);
+                var transformation      = hierarchyListPtr[hierarchyIndex].GetLocalTransformation(compactNodeID);
+                var operation           = hierarchyListPtr[hierarchyIndex].GetOperation(compactNodeID);
+                var parentCompactNodeID = hierarchyListPtr[hierarchyIndex].ParentOf(compactNodeID);
+                var siblingIndex        = hierarchyListPtr[hierarchyIndex].SiblingIndexOf(compactNodeID);
+                var brushMeshBlob       = brushMeshes[i];
+
+                generatedNodeDefinitions.AddNoResize(new GeneratedNodeDefinition
+                {
+                    parentCompactNodeID = parentCompactNodeID,
+                    compactNodeID       = compactNodeID,
+                    hierarchyIndex      = hierarchyIndex,
+                    siblingIndex        = siblingIndex,
+                    operation           = operation,
+                    transformation      = transformation
+                });
+                brushMeshBlobs.AddNoResize(brushMeshBlob);
+            }
+        }
+    }
+
     // TODO: move to core, call ScheduleUpdate when hash of definition changes (no more manual calls)
     [BurstCompile(CompileSynchronously = true)]
     public class GeneratorBrushJobPool<Generator> : GeneratorJobPool
@@ -435,27 +523,6 @@ namespace Chisel.Core
             }
         }
 
-        [BurstCompile(CompileSynchronously = true)]
-        struct CreateBrushesJob : IJobParallelForDefer
-        {
-            [NoAlias, ReadOnly] public NativeList<Generator>                                                settings;
-            [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<NativeChiselSurfaceDefinition>>  surfaceDefinitions;
-            [NativeDisableParallelForRestriction]
-            [NoAlias] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>                            brushMeshes;
-
-            public void Execute(int index)
-            {
-                if (!surfaceDefinitions.IsCreated ||
-                    !surfaceDefinitions[index].IsCreated)
-                {
-                    brushMeshes[index] = default;
-                    return;
-                }
-
-                brushMeshes[index] = settings[index].GenerateMesh(surfaceDefinitions[index], Allocator.Persistent);
-            }
-        }
-
         public JobHandle ScheduleGenerateJob(bool runInParallel, JobHandle dependsOn = default)
         {
             previousJobHandle.Complete(); // <- make sure we've completed the previous schedule
@@ -484,7 +551,7 @@ namespace Chisel.Core
 
             brushMeshes.Clear();
             brushMeshes.Resize(generators.Length, NativeArrayOptions.ClearMemory);
-            var job = new CreateBrushesJob
+            var job = new CreateBrushesJob<Generator>
             {
                 settings            = generators,
                 surfaceDefinitions  = surfaceDefinitions,
@@ -497,19 +564,6 @@ namespace Chisel.Core
             surfaceDefinitions = default;
             return JobHandleExtensions.CombineDependencies(createJobHandle, surfaceDeepDisposeJobHandle, generatorsDisposeJobHandle);
         }
-        
-        [BurstCompile(CompileSynchronously = true)]
-        struct UpdateHierarchyJob : IJob
-        {
-            [NoAlias, ReadOnly] public NativeList<NodeID>   generatorNodes;
-            [NoAlias, ReadOnly] public int                  index;
-            [NoAlias, WriteOnly] public NativeArray<int>    totalCounts;
-
-            public void Execute()
-            {
-                totalCounts[index] = generatorNodes.Length;
-            }
-        }
          
         public JobHandle ScheduleUpdateHierarchyJob(bool runInParallel, JobHandle dependsOn, int index, NativeArray<int> totalCounts)
         {
@@ -521,59 +575,6 @@ namespace Chisel.Core
             };
             updateHierarchyJobHandle = updateHierarchyJob.Schedule(runInParallel, dependsOn);
             return updateHierarchyJobHandle;
-        }
-
-        [BurstCompile(CompileSynchronously = true)] 
-        unsafe struct InitializeArraysJob : IJob
-        {
-            public void InitializeLookups()
-            {
-                hierarchyIDLookupPtr = (IDManager*)UnsafeUtility.AddressOf(ref CompactHierarchyManager.HierarchyIDLookup);
-                nodeIDLookupPtr = (IDManager*)UnsafeUtility.AddressOf(ref CompactHierarchyManager.NodeIDLookup);
-                nodesLookup = CompactHierarchyManager.Nodes;
-            }
-
-            // Read
-            [NativeDisableUnsafePtrRestriction, NoAlias, ReadOnly] public IDManager*    hierarchyIDLookupPtr;
-            [NativeDisableUnsafePtrRestriction, NoAlias, ReadOnly] public IDManager*    nodeIDLookupPtr;
-            [NoAlias, ReadOnly] public NativeList<CompactNodeID>                        nodesLookup;
-
-            [NoAlias, ReadOnly] public NativeList<NodeID>                                   nodes;
-            [NoAlias, ReadOnly] public NativeList<CompactHierarchy>                         hierarchyList;
-            [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>  brushMeshes;
-
-            // Write
-            [NoAlias, WriteOnly] public NativeList<GeneratedNodeDefinition>.ParallelWriter                  generatedNodeDefinitions;
-            [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BrushMeshBlob>>.ParallelWriter  brushMeshBlobs;
-
-            public void Execute()
-            {
-                ref var hierarchyIDLookup = ref UnsafeUtility.AsRef<IDManager>(hierarchyIDLookupPtr);
-                ref var nodeIDLookup = ref UnsafeUtility.AsRef<IDManager>(nodeIDLookupPtr);
-                var hierarchyListPtr = (CompactHierarchy*)hierarchyList.GetUnsafeReadOnlyPtr();
-                for (int i = 0; i < nodes.Length; i++) 
-                {
-                    var nodeID              = nodes[i];
-                    var compactNodeID       = CompactHierarchyManager.GetCompactNodeIDNoError(ref nodeIDLookup, nodesLookup, nodeID);
-                    var hierarchyIndex      = CompactHierarchyManager.GetHierarchyIndexUnsafe(ref hierarchyIDLookup, compactNodeID);
-                    var transformation      = hierarchyListPtr[hierarchyIndex].GetLocalTransformation(compactNodeID);
-                    var operation           = hierarchyListPtr[hierarchyIndex].GetOperation(compactNodeID);
-                    var parentCompactNodeID = hierarchyListPtr[hierarchyIndex].ParentOf(compactNodeID);
-                    var siblingIndex        = hierarchyListPtr[hierarchyIndex].SiblingIndexOf(compactNodeID);
-                    var brushMeshBlob       = brushMeshes[i];
-
-                    generatedNodeDefinitions.AddNoResize(new GeneratedNodeDefinition
-                    {
-                        parentCompactNodeID = parentCompactNodeID,
-                        compactNodeID       = compactNodeID,
-                        hierarchyIndex      = hierarchyIndex,
-                        siblingIndex        = siblingIndex,
-                        operation           = operation,
-                        transformation      = transformation
-                    });
-                    brushMeshBlobs.AddNoResize(brushMeshBlob);
-                }
-            }
         }
 
         public JobHandle ScheduleInitializeArraysJob(bool runInParallel, 
