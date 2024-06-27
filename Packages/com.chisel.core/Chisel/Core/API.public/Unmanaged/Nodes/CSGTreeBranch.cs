@@ -1,13 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-using UnityEngine;
+using System.Runtime.CompilerServices;
 using Unity.Mathematics;
 using Unity.Burst;
 using Unity.Collections;
-using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine;
 
 namespace Chisel.Core
 {

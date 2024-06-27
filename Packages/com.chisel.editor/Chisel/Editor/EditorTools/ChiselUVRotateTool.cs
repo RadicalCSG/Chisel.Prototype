@@ -1,15 +1,9 @@
 using Chisel.Core;
-using Chisel.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
 using UnityEngine;
-using UnitySceneExtensions;
-using Chisel.Utilities;
+using UnityEditor;
 using UnityEditor.EditorTools;
 using UnityEditor.ShortcutManagement;
-using Snapping = UnitySceneExtensions.Snapping;
+using UnitySceneExtensions;
 #if !UNITY_2020_2_OR_NEWER
 using ToolManager = UnityEditor.EditorTools;
 #endif
@@ -19,7 +13,7 @@ namespace Chisel.Editors
     // TODO: make it possible to 'F' focus on selected surfaces
     // TODO: hovering on surfaces in inspector should highlight in scene
 
-    [EditorTool("Chisel " + kToolName + " Tool", typeof(ChiselNode))]
+    //[EditorTool("Chisel " + kToolName + " Tool", typeof(ChiselNode))]
     sealed class ChiselUVRotateTool : ChiselEditToolBase
     {
         const string kToolName = "UV Rotate";
@@ -91,7 +85,7 @@ namespace Chisel.Editors
             Undo.RecordObjects(ChiselUVToolCommon.selectedNodes, "Rotate UV coordinates");
             for (int i = 0; i < ChiselUVToolCommon.selectedSurfaceReferences.Length; i++)
             {
-                var rotationInPlaneSpace = ChiselUVToolCommon.selectedSurfaceReferences[i].WorldSpaceToPlaneSpace(in worldspaceRotation);
+                var rotationInPlaneSpace = ChiselUVToolCommon.selectedSurfaceReferences[i].WorldSpaceToPlaneSpace(worldspaceRotation);
 
                 // TODO: Finish this. If we have multiple surfaces selected, we want other non-aligned surfaces to move/rotate in a nice way
                 //		 last thing we want is that these surfaces are rotated in such a way that the uvs are rotated into infinity.
@@ -100,7 +94,7 @@ namespace Chisel.Editors
                 var rotateToPlane = Quaternion.FromToRotation(rotationInPlaneSpace.GetColumn(2), Vector3.forward);
                 var fixedRotation = Matrix4x4.TRS(Vector3.zero, rotateToPlane, Vector3.one) * rotationInPlaneSpace;
 
-                ChiselUVToolCommon.selectedSurfaceReferences[i].PlaneSpaceTransformUV(in fixedRotation, in ChiselUVToolCommon.selectedUVMatrices[i]);
+                ChiselUVToolCommon.selectedSurfaceReferences[i].PlaneSpaceTransformUV(fixedRotation, ChiselUVToolCommon.selectedUVMatrices[i]);
             }
         }
 

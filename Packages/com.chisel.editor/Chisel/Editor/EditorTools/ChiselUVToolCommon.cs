@@ -1,17 +1,14 @@
-using Chisel.Core;
-using Chisel.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Chisel.Core;
+using Chisel.Components;
 using UnityEditor;
 using UnityEngine;
 using UnitySceneExtensions;
-using Chisel.Utilities;
-using UnityEditor.ShortcutManagement;
-using UnityEditor.EditorTools;
-using Snapping          = UnitySceneExtensions.Snapping;
-using Grid              = UnitySceneExtensions.Grid;
-using SnapSettings    = UnitySceneExtensions.SnapSettings;
+using Snapping = UnitySceneExtensions.Snapping;
+using Grid = UnitySceneExtensions.Grid;
+using SnapSettings = UnitySceneExtensions.SnapSettings;
 
 namespace Chisel.Editors
 {

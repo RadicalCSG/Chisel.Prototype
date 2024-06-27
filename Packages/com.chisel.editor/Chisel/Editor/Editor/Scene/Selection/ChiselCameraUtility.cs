@@ -1,11 +1,6 @@
-﻿using UnityEditor;
-using Chisel.Components;
-using Vector2		= UnityEngine.Vector2;
-using Matrix4x4		= UnityEngine.Matrix4x4;
-using Rect			= UnityEngine.Rect;
-using Plane			= UnityEngine.Plane;
-using Camera		= UnityEngine.Camera;
-using Mathf			= UnityEngine.Mathf;
+﻿using Chisel.Components;
+using UnityEditor;
+using UnityEngine;
 
 namespace Chisel.Editors
 {

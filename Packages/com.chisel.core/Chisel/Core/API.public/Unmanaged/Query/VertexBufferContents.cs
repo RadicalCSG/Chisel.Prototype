@@ -1,15 +1,10 @@
 //#define RUN_IN_SERIAL
-using System;
-using System.Collections.Generic;
 using Unity.Jobs;
 using Unity.Collections;
-using Profiler = UnityEngine.Profiling.Profiler;
-using Debug = UnityEngine.Debug;
 using Unity.Mathematics;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Unity.Burst;
-using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
 {

@@ -1,17 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
-using Chisel.Core;
 using Chisel.Components;
-using UnitySceneExtensions;
-using Snapping = UnitySceneExtensions.Snapping;
-using UnityEditor.EditorTools;
-using System.Reflection;
-using UnityEditor.Overlays;
 using UnityEditor.Toolbars;
-using UnityEngine.UIElements;
 
 namespace Chisel.Editors
 {

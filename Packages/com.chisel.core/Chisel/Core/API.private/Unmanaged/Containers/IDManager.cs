@@ -1,11 +1,10 @@
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Debug = UnityEngine.Debug;
+using UnityEngine;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
@@ -16,7 +15,7 @@ namespace Chisel.Core
     [GenerateTestsForBurstCompatibility]
     struct IDManager : IDisposable
     {
-        [DebuggerDisplay("Index = {index}, Generation = {generation}")]
+        [System.Diagnostics.DebuggerDisplay("Index = {index}, Generation = {generation}")]
         [StructLayout(LayoutKind.Sequential)]
         struct IndexLookup
         {
@@ -247,7 +246,7 @@ namespace Chisel.Core
         }
 
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         static void CheckIndexInRange(int id, int index, int length)
         {
             if (index < 0 || index >= length)
@@ -262,14 +261,14 @@ namespace Chisel.Core
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         static void CheckGeneration(int generation, int expectedGeneration)
         {
             if (expectedGeneration != generation)
                 throw new Exception($"The given generation ({generation}) was not identical to the expected generation ({expectedGeneration}), are you using an old reference?");
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         static void CheckID(int id, int maxID)
         {
             var idInternal = id - 1; // We don't want 0 to be a valid id

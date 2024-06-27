@@ -1,11 +1,9 @@
-using Chisel.Components;
-using Chisel.Core;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEditor;
+using Chisel.Components;
+using Chisel.Core;
 using UnityEngine;
+using UnityEditor;
 using UnityEditor.EditorTools;
 using UnitySceneExtensions;
 #if !UNITY_2020_2_OR_NEWER

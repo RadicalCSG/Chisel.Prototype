@@ -1,11 +1,7 @@
-﻿using UnityEngine;
-using UnityEditor;
-using UnityEditor.SceneManagement;
-using System;
-using System.Linq;
-using System.Collections.Generic;
-using Chisel;
+﻿using System;
 using Chisel.Core;
+using UnityEngine;
+using UnityEditor;
 
 namespace Chisel.Editors
 {

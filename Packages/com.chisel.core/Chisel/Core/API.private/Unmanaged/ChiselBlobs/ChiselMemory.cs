@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
@@ -44,7 +43,7 @@ namespace Chisel.Core.Memory
             [GenerateTestsForBurstCompatibility]
             internal struct Array
             {
-                [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+                [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
                 internal static void CheckFailedToAllocate(int error)
                 {
                     if (error != 0)
@@ -147,7 +146,7 @@ namespace Chisel.Core.Memory
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTION_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTION_CHECKS")]
         internal static void CheckByteCountIsReasonable(long size)
         {
             if (size < 0)

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Linq;
-using Vector2 = UnityEngine.Vector2;
-using Vector3 = UnityEngine.Vector3;
-using Quaternion = UnityEngine.Quaternion;
+using UnityEngine;
 
 namespace Chisel.Core
 {

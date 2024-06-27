@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.Profiling;
 
 namespace Chisel.Core
@@ -449,8 +449,6 @@ namespace Chisel.Core
         }
 
 
-        static List<PlaneTraversals> s_Intersections = new List<PlaneTraversals>(); // avoids allocations at runtime
-
         // TODO: return inside and outside polygon index
         static bool SplitPolygon(int polygonIndex, List<VertexSide> vertexDistances, List<Polygon> polygons, List<float4> planes, List<HalfEdge> halfEdges, List<int> halfEdgePolygonIndices, List<float3> vertices)
         {
@@ -471,187 +469,195 @@ namespace Chisel.Core
                 intersection.Traversal1.VertexIndex = vertexIndex0;
             }
 
-            s_Intersections.Clear();
-            for (var edgeIndex1 = firstEdge; edgeIndex1 < lastEdge; edgeIndex1++)
-            {
-                intersection.Traversal0 = intersection.Traversal1;
-
-                var vertexIndex1	= halfEdges[edgeIndex1].vertexIndex;
-
-                intersection.Traversal1.Side		= vertexDistances[vertexIndex1];
-                intersection.Traversal1.EdgeIndex	= edgeIndex1;
-                intersection.Traversal1.VertexIndex = vertexIndex1;
-
-                if (intersection.Traversal0.Side.Halfspace != intersection.Traversal1.Side.Halfspace)
-                    s_Intersections.Add(intersection);
-            }
-
-
-            // If we don't have any intersections then the polygon is either completely inside or outside
-            if (s_Intersections.Count == 0)
-                return true;
-
-            Debug.Assert(s_Intersections.Count != 1, "Number of edges crossing the plane boundary is 1, which should not be possible!");
-
-            // Remove any intersections that only touch the plane but never cut
-            for (int i0 = s_Intersections.Count - 1, i1 = 0; i1 < s_Intersections.Count; i0 = i1, i1++)
-            {
-                if (s_Intersections[i0].Traversal1.Side.Halfspace != s_Intersections[i1].Traversal0.Side.Halfspace ||
-                    s_Intersections[i0].Traversal1.Side.Halfspace != 0)
-                    continue;
-
-                // Note: we know traversal0.side.halfspace and traversal1.side.halfspace are always different from each other.
-
-                if (s_Intersections[i0].Traversal0.Side.Halfspace != s_Intersections[i1].Traversal1.Side.Halfspace)
-                    continue;
-
-                // possibilities: (can have multiple vertices on the plane between intersections)
-                //
-                //       outside				      outside
-                //								       0      1
-                //       1  0					        \    /
-                //  .....*..*....... intersect	 ........*..*.... intersect
-                //      /    \					         1  0
-                //     0      1					
-                //        inside				      inside
-
-                bool outside = s_Intersections[i0].Traversal0.Side.Halfspace == 1 ||
-                               s_Intersections[i1].Traversal0.Side.Halfspace == 1;
-
-                if (i0 > i1)
+            var intersections = ListPool<PlaneTraversals>.Get();
+            try
+            { 
+                intersections.Clear();
+                for (var edgeIndex1 = firstEdge; edgeIndex1 < lastEdge; edgeIndex1++)
                 {
-                    s_Intersections.RemoveAt(i0);
-                    s_Intersections.RemoveAt(i1);
-                } else
-                {
-                    s_Intersections.RemoveAt(i1);
-                    s_Intersections.RemoveAt(i0);
+                    intersection.Traversal0 = intersection.Traversal1;
+
+                    var vertexIndex1	= halfEdges[edgeIndex1].vertexIndex;
+
+                    intersection.Traversal1.Side		= vertexDistances[vertexIndex1];
+                    intersection.Traversal1.EdgeIndex	= edgeIndex1;
+                    intersection.Traversal1.VertexIndex = vertexIndex1;
+
+                    if (intersection.Traversal0.Side.Halfspace != intersection.Traversal1.Side.Halfspace)
+                        intersections.Add(intersection);
                 }
 
-                // Check if we have any intersections left
-                if (s_Intersections.Count == 0)
+
+                // If we don't have any intersections then the polygon is either completely inside or outside
+                if (intersections.Count == 0)
                     return true;
-            }
 
-            Debug.Assert(s_Intersections.Count >= 2 && s_Intersections.Count <= 4, "Number of edges crossing the plane boundary should be ≥2 and ≤4!");
-            
-            // Find all traversals that go straight from one side to the other side. 
-            //	Create a new intersection point there, split traversals into two traversals.
-            for (var i0 = 0; i0 < s_Intersections.Count; i0++)
-            {
-                // Note: we know traversal0.side.halfspace and traversal1.side.halfspace are always different from each other.
+                Debug.Assert(intersections.Count != 1, "Number of edges crossing the plane boundary is 1, which should not be possible!");
 
-                var planeTraversal0 = s_Intersections[i0];
-
-                // Skip all traversals that already have a vertex on the plane
-                if (planeTraversal0.Traversal0.Side.Halfspace == 0 ||
-                    planeTraversal0.Traversal1.Side.Halfspace == 0)
-                    continue;
-
-                // possibilities:
-                //    
-                //       outside                      outside
-                //       0                                 1       
-                //        \                               /      
-                //  .......\......... intersect  ......../....... intersect
-                //          \                           /    
-                //           1                         0
-                //        inside                      inside
-
-                // Calculate intersection of edge with plane split the edge into two, inserting the new vertex
-
-
-                var edgeIndex0		= planeTraversal0.Traversal0.EdgeIndex;
-                var edgeIndex1		= planeTraversal0.Traversal1.EdgeIndex;
-
-                float distance0, distance1;
-                int vertexIndex0, vertexIndex1;
-                
-                // Ensure we always cut edges in the same direction, to ensure floating point inaccuracies are consistent.
-                if (planeTraversal0.Traversal0.Side.Halfspace < 0)
+                // Remove any intersections that only touch the plane but never cut
+                for (int i0 = intersections.Count - 1, i1 = 0; i1 < intersections.Count; i0 = i1, i1++)
                 {
-                    vertexIndex0 = planeTraversal0.Traversal0.VertexIndex;
-                    vertexIndex1 = planeTraversal0.Traversal1.VertexIndex;
-                    distance0 = planeTraversal0.Traversal0.Side.Distance;
-                    distance1 = planeTraversal0.Traversal1.Side.Distance;
-                } else
-                {
-                    vertexIndex1 = planeTraversal0.Traversal0.VertexIndex;
-                    vertexIndex0 = planeTraversal0.Traversal1.VertexIndex;
-                    distance1 = planeTraversal0.Traversal0.Side.Distance;
-                    distance0 = planeTraversal0.Traversal1.Side.Distance;
+                    if (intersections[i0].Traversal1.Side.Halfspace != intersections[i1].Traversal0.Side.Halfspace ||
+                        intersections[i0].Traversal1.Side.Halfspace != 0)
+                        continue;
+
+                    // Note: we know traversal0.side.halfspace and traversal1.side.halfspace are always different from each other.
+
+                    if (intersections[i0].Traversal0.Side.Halfspace != intersections[i1].Traversal1.Side.Halfspace)
+                        continue;
+
+                    // possibilities: (can have multiple vertices on the plane between intersections)
+                    //
+                    //       outside				      outside
+                    //								       0      1
+                    //       1  0					        \    /
+                    //  .....*..*....... intersect	 ........*..*.... intersect
+                    //      /    \					         1  0
+                    //     0      1					
+                    //        inside				      inside
+
+                    bool outside = intersections[i0].Traversal0.Side.Halfspace == 1 ||
+                                   intersections[i1].Traversal0.Side.Halfspace == 1;
+
+                    if (i0 > i1)
+                    {
+                        intersections.RemoveAt(i0);
+                        intersections.RemoveAt(i1);
+                    } else
+                    {
+                        intersections.RemoveAt(i1);
+                        intersections.RemoveAt(i0);
+                    }
+
+                    // Check if we have any intersections left
+                    if (intersections.Count == 0)
+                        return true;
                 }
 
-
-                // Calculate the intersection
-                var vertex0		= vertices[vertexIndex0];
-                var vertex1		= vertices[vertexIndex1];
-                var vector	    = vertex0 - vertex1;
-                var length	    = distance0 - distance1;
-                var delta	    = distance0 / length;
-                var newVertex	= vertex0 - (vector * delta);
-
-                // Create a new vertex
-                var newVertexIndex  = vertices.Count;
-                // TODO: would be nice if we could do allocations just once in CutPolygon
-                vertices.Add(newVertex);
-
-                // Update the vertex indices for the new vertex
-                var newVertexDistance = new VertexSide { Distance = 0, Halfspace = 0 };
-                vertexDistances.Add(newVertexDistance);
-
-                // Split the halfEdge (on both sides) and insert the vertex index in between
-                SplitHalfEdge(edgeIndex1, newVertexIndex, s_Intersections, out int newEdgeIndex, 
-                              polygons, halfEdges, halfEdgePolygonIndices);
-
-                polygon     = polygons[polygonIndex];
-
-                Debug.Assert(halfEdges[newEdgeIndex].vertexIndex == newVertexIndex);
-
-                // Create a new intersection for the part that crossed the plane and ends up at the intersection point
-                var newIntersection = new PlaneTraversals
+                Debug.Assert(intersections.Count >= 2 && intersections.Count <= 4, "Number of edges crossing the plane boundary should be ≥2 and ≤4!");
+            
+                // Find all traversals that go straight from one side to the other side. 
+                //	Create a new intersection point there, split traversals into two traversals.
+                for (var i0 = 0; i0 < intersections.Count; i0++)
                 {
-                    Traversal0 = planeTraversal0.Traversal0,
-                    Traversal1 = { EdgeIndex = newEdgeIndex, VertexIndex = newVertexIndex, Side = newVertexDistance }
-                };
-                s_Intersections.Insert(i0, newIntersection);
+                    // Note: we know traversal0.side.halfspace and traversal1.side.halfspace are always different from each other.
 
-                // skip the intersection we just added so we don't process it again, 
-                // also the position of s_Intersections[i0] moved forward because of the insert.
-                i0++;
+                    var planeTraversal0 = intersections[i0];
 
-                // ... finally make the existing plane traversal start at the new intersection point
-                planeTraversal0.Traversal0 = newIntersection.Traversal1;
-                s_Intersections[i0] = planeTraversal0;
+                    // Skip all traversals that already have a vertex on the plane
+                    if (planeTraversal0.Traversal0.Side.Halfspace == 0 ||
+                        planeTraversal0.Traversal1.Side.Halfspace == 0)
+                        continue;
+
+                    // possibilities:
+                    //    
+                    //       outside                      outside
+                    //       0                                 1       
+                    //        \                               /      
+                    //  .......\......... intersect  ......../....... intersect
+                    //          \                           /    
+                    //           1                         0
+                    //        inside                      inside
+
+                    // Calculate intersection of edge with plane split the edge into two, inserting the new vertex
+
+
+                    var edgeIndex0		= planeTraversal0.Traversal0.EdgeIndex;
+                    var edgeIndex1		= planeTraversal0.Traversal1.EdgeIndex;
+
+                    float distance0, distance1;
+                    int vertexIndex0, vertexIndex1;
+                
+                    // Ensure we always cut edges in the same direction, to ensure floating point inaccuracies are consistent.
+                    if (planeTraversal0.Traversal0.Side.Halfspace < 0)
+                    {
+                        vertexIndex0 = planeTraversal0.Traversal0.VertexIndex;
+                        vertexIndex1 = planeTraversal0.Traversal1.VertexIndex;
+                        distance0 = planeTraversal0.Traversal0.Side.Distance;
+                        distance1 = planeTraversal0.Traversal1.Side.Distance;
+                    } else
+                    {
+                        vertexIndex1 = planeTraversal0.Traversal0.VertexIndex;
+                        vertexIndex0 = planeTraversal0.Traversal1.VertexIndex;
+                        distance1 = planeTraversal0.Traversal0.Side.Distance;
+                        distance0 = planeTraversal0.Traversal1.Side.Distance;
+                    }
+
+
+                    // Calculate the intersection
+                    var vertex0		= vertices[vertexIndex0];
+                    var vertex1		= vertices[vertexIndex1];
+                    var vector	    = vertex0 - vertex1;
+                    var length	    = distance0 - distance1;
+                    var delta	    = distance0 / length;
+                    var newVertex	= vertex0 - (vector * delta);
+
+                    // Create a new vertex
+                    var newVertexIndex  = vertices.Count;
+                    // TODO: would be nice if we could do allocations just once in CutPolygon
+                    vertices.Add(newVertex);
+
+                    // Update the vertex indices for the new vertex
+                    var newVertexDistance = new VertexSide { Distance = 0, Halfspace = 0 };
+                    vertexDistances.Add(newVertexDistance);
+
+                    // Split the halfEdge (on both sides) and insert the vertex index in between
+                    SplitHalfEdge(edgeIndex1, newVertexIndex, intersections, out int newEdgeIndex, 
+                                  polygons, halfEdges, halfEdgePolygonIndices);
+
+                    polygon     = polygons[polygonIndex];
+
+                    Debug.Assert(halfEdges[newEdgeIndex].vertexIndex == newVertexIndex);
+
+                    // Create a new intersection for the part that crossed the plane and ends up at the intersection point
+                    var newIntersection = new PlaneTraversals
+                    {
+                        Traversal0 = planeTraversal0.Traversal0,
+                        Traversal1 = { EdgeIndex = newEdgeIndex, VertexIndex = newVertexIndex, Side = newVertexDistance }
+                    };
+                    intersections.Insert(i0, newIntersection);
+
+                    // skip the intersection we just added so we don't process it again, 
+                    // also the position of intersections[i0] moved forward because of the insert.
+                    i0++;
+
+                    // ... finally make the existing plane traversal start at the new intersection point
+                    planeTraversal0.Traversal0 = newIntersection.Traversal1;
+                    intersections[i0] = planeTraversal0;
+                }
+
+                // NOTE: from this point on Traversal𝑛.EdgeIndex may no longer be valid!
+
+
+                Debug.Assert((intersections.Count & 1) != 1, "Found an uneven number of edge-plane traversals??");
+                Debug.Assert(intersections.Count == 4, "Expected 4 intersected edge pieces at this point");
+
+
+                if (intersections.Count != 4)
+                    return true;
+
+                int first = 0;
+                if (intersections[0].Traversal0.Side.Halfspace == 0)
+                    first++;
+
+
+                int indexOut, indexIn;
+                if (intersections[first].Traversal0.Side.Halfspace < 0)
+                {
+                    indexOut	= intersections[first + 1].Traversal0.EdgeIndex;
+                    indexIn	    = intersections[first + 2].Traversal1.EdgeIndex;
+                } else
+                {
+                    indexOut	= intersections[first + 2].Traversal1.EdgeIndex;
+                    indexIn	    = intersections[first + 1].Traversal0.EdgeIndex;
+                }
+
+                SplitPolygon(polygonIndex, indexOut, indexIn, polygons, planes, halfEdges, halfEdgePolygonIndices, vertices);
             }
-
-            // NOTE: from this point on Traversal𝑛.EdgeIndex may no longer be valid!
-
-
-            Debug.Assert((s_Intersections.Count & 1) != 1, "Found an uneven number of edge-plane traversals??");
-            Debug.Assert(s_Intersections.Count == 4, "Expected 4 intersected edge pieces at this point");
-
-
-            if (s_Intersections.Count != 4)
-                return true;
-
-            int first = 0;
-            if (s_Intersections[0].Traversal0.Side.Halfspace == 0)
-                first++;
-
-
-            int indexOut, indexIn;
-            if (s_Intersections[first].Traversal0.Side.Halfspace < 0)
+            finally
             {
-                indexOut	= s_Intersections[first + 1].Traversal0.EdgeIndex;
-                indexIn	    = s_Intersections[first + 2].Traversal1.EdgeIndex;
-            } else
-            {
-                indexOut	= s_Intersections[first + 2].Traversal1.EdgeIndex;
-                indexIn	    = s_Intersections[first + 1].Traversal0.EdgeIndex;
+                ListPool<PlaneTraversals>.Release(intersections);
             }
-
-            SplitPolygon(polygonIndex, indexOut, indexIn, polygons, planes, halfEdges, halfEdgePolygonIndices, vertices);
             return true;
         }
         

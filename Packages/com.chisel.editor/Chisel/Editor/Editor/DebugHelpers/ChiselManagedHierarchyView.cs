@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Text;
+using Chisel.Components;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using Chisel.Components;
 
 namespace Chisel.Editors
 {
@@ -14,15 +11,15 @@ namespace Chisel.Editors
     {
         ChiselManagedHierarchyView()
         {
-            windows.Add(this);
+            s_Windows.Add(this);
         }
 
         void OnDestroy()
         {
-            windows.Remove(this);
+            s_Windows.Remove(this);
         }
 
-        static List<ChiselManagedHierarchyView> windows = new List<ChiselManagedHierarchyView>();
+        static readonly List<ChiselManagedHierarchyView> s_Windows = new();
 
         public static void RepaintAll()
         {
@@ -30,7 +27,7 @@ namespace Chisel.Editors
             if (Event.current != null &&
                 Event.current.type == EventType.Repaint)
                 return;
-            foreach (var window in windows)
+            foreach (var window in s_Windows)
             {
                 if (window)
                     window.Repaint();
@@ -158,7 +155,7 @@ namespace Chisel.Editors
             public float xpos;
             public List<ChiselHierarchyItem> children;
         }
-        static List<StackItem>  itemStack = new List<StackItem>();
+        static readonly List<StackItem> s_ItemStack = new();
 
         static int GetVisibleItems(Dictionary<int, ChiselSceneHierarchy> sceneHierarchies)
         {
@@ -169,7 +166,7 @@ namespace Chisel.Editors
             foreach (var item in sceneHierarchies)
             {
                 totalCount += 1; // scene foldout itself
-                itemStack.Clear();
+                s_ItemStack.Clear();
                 totalCount += GetVisibleItems(item.Value.RootItems);
             }
             return totalCount;
@@ -181,13 +178,13 @@ namespace Chisel.Editors
                 return 0;
 
             int totalCount = hierarchyItems.Count;
-            itemStack.Add(new StackItem(hierarchyItems));
+            s_ItemStack.Add(new StackItem(hierarchyItems));
 
             ContinueOnNextStackItem:
-            if (itemStack.Count == 0)
+            if (s_ItemStack.Count == 0)
                 return totalCount;
 
-            var currentStackItem = itemStack[itemStack.Count - 1];
+            var currentStackItem = s_ItemStack[s_ItemStack.Count - 1];
             var children = currentStackItem.children;
 
             while (currentStackItem.index < currentStackItem.count)
@@ -200,12 +197,12 @@ namespace Chisel.Editors
                 if (children[i].IsOpen && children[i].Children != null && children[i].Children.Count > 0)
                 {
                     totalCount += children[i].Children.Count;
-                    itemStack.Add(new StackItem(children[i].Children));
+                    s_ItemStack.Add(new StackItem(children[i].Children));
                     //totalCount += GetVisibleItems(hierarchyItems[i].Children);
                     goto ContinueOnNextStackItem;
                 }
             }
-            itemStack.RemoveAt(itemStack.Count - 1);
+            s_ItemStack.RemoveAt(s_ItemStack.Count - 1);
             goto ContinueOnNextStackItem;
         }
 
@@ -228,7 +225,7 @@ namespace Chisel.Editors
                 }
                 itemRect.y += kItemHeight;
                 itemRect.x += kItemIndent;
-                itemStack.Clear();
+                s_ItemStack.Clear();
                 AddFoldOuts(ref itemRect, ref visibleArea, selectedTransforms, item.Value.RootItems);
                 itemRect.x -= kItemIndent;
             }
@@ -239,14 +236,14 @@ namespace Chisel.Editors
         {
             if (hierarchyItems == null)
                 return;
-            itemStack.Add(new StackItem(hierarchyItems, itemRect.x));
+            s_ItemStack.Add(new StackItem(hierarchyItems, itemRect.x));
 
             ContinueOnNextStackItem:
-            if (itemStack.Count == 0)
+            if (s_ItemStack.Count == 0)
                 return;
 
             var prevBackgroundColor = GUI.backgroundColor;
-            var currentStackItem = itemStack[itemStack.Count - 1];
+            var currentStackItem = s_ItemStack[s_ItemStack.Count - 1];
             var children = currentStackItem.children;
             itemRect.x = currentStackItem.xpos;
             while (currentStackItem.index < currentStackItem.count)
@@ -298,11 +295,11 @@ namespace Chisel.Editors
 
                 if (children[i].IsOpen && children[i].Children != null && children[i].Children.Count > 0)
                 {
-                    itemStack.Add(new StackItem(children[i].Children, itemRect.x + kItemIndent));
+                    s_ItemStack.Add(new StackItem(children[i].Children, itemRect.x + kItemIndent));
                     goto ContinueOnNextStackItem;
                 }
             }
-            itemStack.RemoveAt(itemStack.Count - 1);
+            s_ItemStack.RemoveAt(s_ItemStack.Count - 1);
             goto ContinueOnNextStackItem;
         }
 

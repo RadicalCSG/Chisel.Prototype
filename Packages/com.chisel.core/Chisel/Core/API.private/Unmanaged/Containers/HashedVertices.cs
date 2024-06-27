@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Burst.CompilerServices;
@@ -7,7 +6,6 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core
 {
@@ -344,7 +342,7 @@ namespace Chisel.Core
         {
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CheckCapacityInRange(long value, long length)
         {
@@ -355,7 +353,7 @@ namespace Chisel.Core
                 throw new ArgumentOutOfRangeException($"Value {value} is out of range in NativeListArray of '{length}' Length.");
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static private void CheckAllocator(Allocator a)
         {
@@ -365,7 +363,7 @@ namespace Chisel.Core
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CheckArgPositive(int value)
         {
@@ -492,7 +490,7 @@ namespace Chisel.Core
         #endregion
 
         #region Checks
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         internal static void CheckIndexInRange(int value, int length)
         {
             if (value < 0)
@@ -502,14 +500,14 @@ namespace Chisel.Core
                 throw new IndexOutOfRangeException($"Value {value} is out of range of '{length}' Length.");
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]        
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]        
         private static void CheckAllocated<T>(UnsafeList<T>* listData) where T : unmanaged
         {
             if (listData == null || !listData->IsCreated)
                 throw new Exception($"Expected {nameof(listData)} to be allocated.");
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         internal static void CheckAllocated(HashedVertices otherHashedVertices)
         {
             if (otherHashedVertices.IsCreated)

@@ -1,11 +1,8 @@
-﻿using UnityEngine;
-using System.Collections;
-using System;
-using Chisel.Core;
-using UnityEngine.SceneManagement;
+﻿using System;
 using System.Collections.Generic;
-using Unity.Collections;
 using System.ComponentModel;
+using Chisel.Core;
+using UnityEngine;
 
 namespace Chisel.Components
 {
@@ -87,6 +84,7 @@ namespace Chisel.Components
                 node.SetDirty();
             }
         }
+
         public SurfaceDescription SurfaceDescription
         {
             get
@@ -195,48 +193,60 @@ namespace Chisel.Components
             }
         }
 
-        public Matrix4x4 WorldToPlaneSpace
+        // brush becomes temporarily invalid DURING uv operation
+        Matrix4x4 lastValidWorldToPlaneSpaceRotation = Matrix4x4.identity;
+        public Matrix4x4 WorldToPlaneSpaceRotation
         {
             get
             {
                 if (!brush.Valid)
-                    return Matrix4x4.identity;
+                {
+                    return lastValidWorldToPlaneSpaceRotation;
+                }
 
                 var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(brush.BrushMesh.BrushMeshID);
                 if (!brushMeshBlob.IsCreated)
-                    return Matrix4x4.identity;
+                {
+                    return lastValidWorldToPlaneSpaceRotation;
+                }
 
                 ref var brushMesh = ref brushMeshBlob.Value;
                 if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
-                    return Matrix4x4.identity;
+                {
+                    return lastValidWorldToPlaneSpaceRotation;
+                }
 
-                var localPlaneVector = brushMesh.localPlanes[surfaceIndex];
-                var localToPlaneSpace   = (Matrix4x4)MathExtensions.GenerateLocalToPlaneSpaceMatrix(localPlaneVector);
+                var localPlaneVector    = brushMesh.localPlanes[surfaceIndex];
+                var localToPlaneSpace   = MathExtensions.GenerateLocalToPlaneSpaceMatrix(localPlaneVector);
                 var worldToLocal        = WorldToLocalSpace;
-                return localToPlaneSpace * worldToLocal;
+                lastValidWorldToPlaneSpaceRotation = (Matrix4x4)localToPlaneSpace * worldToLocal;
+                return lastValidWorldToPlaneSpaceRotation;
             }	
         }
 
-        public Matrix4x4 WorldSpaceToPlaneSpace(in Matrix4x4 worldSpaceTransformation)
+        public Matrix4x4 WorldSpaceToPlaneSpace(Matrix4x4 worldSpaceTransformation)
         {
-            var worldToPlaneSpace = WorldToPlaneSpace;
-            var planeToWorldSpace = Matrix4x4.Inverse(worldToPlaneSpace);
-
-            return worldToPlaneSpace * worldSpaceTransformation * planeToWorldSpace;
+            var worldToPlaneSpace = WorldToPlaneSpaceRotation;
+            var planeToWorldSpace = Matrix4x4.Inverse(worldToPlaneSpace);            
+            var planeSpaceTransformation = worldToPlaneSpace * worldSpaceTransformation * planeToWorldSpace;
+            return planeSpaceTransformation;
         }
 
-        public void WorldSpaceTransformUV(in Matrix4x4 worldSpaceTransformation, in UVMatrix originalMatrix)
+        public void WorldSpaceTransformUV(Matrix4x4 worldSpaceTransformation, UVMatrix originalMatrix)
         {
-            var planeSpaceTransformation = WorldSpaceToPlaneSpace(in worldSpaceTransformation);
-            PlaneSpaceTransformUV(in planeSpaceTransformation, in originalMatrix);
+            var planeSpaceTransformation = WorldSpaceToPlaneSpace(worldSpaceTransformation);
+            PlaneSpaceTransformUV(planeSpaceTransformation, originalMatrix);
         }
 
-        public void PlaneSpaceTransformUV(in Matrix4x4 planeSpaceTransformation, in UVMatrix originalMatrix)
+        public void PlaneSpaceTransformUV(Matrix4x4 planeSpaceTransformation, UVMatrix originalMatrix)
         {
             // TODO: We're modifying uv coordinates for the generated brush-meshes, 
             //       when we should be changing surfaces descriptions in the generators that generate the brush-meshes ..
             //       Now all UVs are overridden everytime we rebuild the geometry
-            UV0 = (UVMatrix)((Matrix4x4)originalMatrix * planeSpaceTransformation);
+
+            Matrix4x4 rotation = originalMatrix;
+            Matrix4x4 input = rotation * planeSpaceTransformation;
+            UV0 = input;
             //brushContainerAsset.SetDirty();
         }
 

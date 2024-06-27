@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace Chisel.Editors
+﻿namespace Chisel.Editors
 {
     public interface IChiselDragAndDropOperation
     {

@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using Unity.Mathematics;
 
 namespace Chisel.Core
@@ -23,29 +22,6 @@ namespace Chisel.Core
         private static readonly Vector3 NegativeY = new Vector3(0, -1, 0);
         private static readonly Vector3 PositiveZ = new Vector3(0, 0, 1);
 
-        public static Vector3 ClosestTangentAxis(Vector3 vector)
-        {
-            var absX = Mathf.Abs(vector.x);
-            var absY = Mathf.Abs(vector.y);
-            var absZ = Mathf.Abs(vector.z);
-
-            if (absY > absX && absY > absZ)
-                return PositiveZ;
-
-            return NegativeY;
-        }
-
-        public static float3 ClosestTangentAxis(float3 vector)
-        {
-            var absX = math.abs(vector.x);
-            var absY = math.abs(vector.y);
-            var absZ = math.abs(vector.z);
-
-            if (absY > absX && absY > absZ)
-                return new float3(0, 0, 1);
-
-            return new float3(0, -1, 0);
-        }
 
         public static bool Equals(this Vector3 self, Vector3 other, double epsilon)
         {
@@ -87,26 +63,23 @@ namespace Chisel.Core
                    Matrix4x4.TRS(-center, Quaternion.identity, Vector3.one);
         }
 
-        public static void CalculateTangents(Vector3 normal, out Vector3 tangent, out Vector3 binormal)
+        public static float3 ClosestTangentAxis(float3 vector)
         {
-            tangent = Vector3.Cross(normal, ClosestTangentAxis(normal)).normalized;
-            binormal = Vector3.Cross(normal, tangent).normalized;
+            var abs = math.abs(vector);
+            if (abs.z > abs.x && abs.z > abs.y)
+                return new float3(1, 0, 0);
+            return new float3(0, 0, 1);
         }
 
         public static void CalculateTangents(float3 normal, out float3 tangent, out float3 binormal)
         {
-            tangent     = math.normalizesafe(math.cross(normal, ClosestTangentAxis(normal)));
-            binormal    = math.normalizesafe(math.cross(normal, tangent));
-        }
-
-        public static Vector3 CalculateTangent(Vector3 normal)
-        {
-            return Vector3.Cross(normal, ClosestTangentAxis(normal)).normalized;
+            tangent = math.normalize(math.cross(normal, ClosestTangentAxis(normal)));
+            binormal = math.normalize(math.cross(normal, tangent));
         }
 
         public static float4x4 GenerateLocalToPlaneSpaceMatrix(float4 planeVector)
         {
-            float3 normal = -planeVector.xyz;
+            float3 normal = planeVector.xyz;
             CalculateTangents(normal, out float3 tangent, out float3 biNormal);
             //var pointOnPlane = normal * planeVector.w;
 
@@ -120,10 +93,21 @@ namespace Chisel.Core
             };
         }
 
-        public static Vector3 CalculateBinormal(Vector3 normal)
+        public static Vector3 ClosestTangentAxis(Vector3 vector)
         {
-            return Vector3.Cross(normal, CalculateTangent(normal));
+            return (Vector3)ClosestTangentAxis((float3)vector);
         }
+
+        public static void CalculateTangents(Vector3 normal, out Vector3 tangent, out Vector3 binormal)
+        {
+            CalculateTangents(normal, out float3 tangentf, out float3 binormalf);
+            tangent = tangentf;
+            binormal = binormalf;
+        }
+
+        public static Vector3 CalculateTangent(Vector3 normal) { CalculateTangents(normal, out float3 tangent, out float3 _); return tangent; }
+        public static Vector3 CalculateBinormal(Vector3 normal) { CalculateTangents(normal, out float3 _, out float3 binormal); return binormal; }
+
 
         public static bool IsInside(this Plane plane, in Bounds bounds)
 		{

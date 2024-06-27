@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Burst;
@@ -16,7 +15,7 @@ namespace Chisel.Core
     public struct SectionManager : IDisposable
     {
         // TODO: use uints instead?
-        [DebuggerDisplay("Start = {start}, End = {end}, Length = {length}")]
+        [System.Diagnostics.DebuggerDisplay("Start = {start}, End = {end}, Length = {length}")]
         [StructLayout(LayoutKind.Sequential)]
         struct Section
         {

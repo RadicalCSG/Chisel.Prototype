@@ -1,14 +1,14 @@
 using System;
 using System.Linq;
-using Chisel.Core;
 using System.Collections.Generic;
+using Chisel.Core;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Jobs;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine;
 using UnityEngine.Profiling;
-using Debug = UnityEngine.Debug;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 

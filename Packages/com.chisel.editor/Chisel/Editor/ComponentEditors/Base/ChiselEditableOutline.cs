@@ -696,8 +696,7 @@ namespace Chisel.Editors
         // Finds all edges that have been created when optimizing the outline mesh.
         // This is possible when not all vertices on a polygon actually lie on the same plane and we're forced to split that polygon
         #region FindSoftEdges
-        static List<int> s_TempPolygon1ToPolygon2 = new List<int>();
-        //static readonly List<ChiselBrushContainerAsset> brushContainers = new List<ChiselBrushContainerAsset>();
+        static readonly List<int> s_TempPolygon1ToPolygon2 = new();
         void FindSoftEdges()
         {
             softEdges = new SoftEdge[0];

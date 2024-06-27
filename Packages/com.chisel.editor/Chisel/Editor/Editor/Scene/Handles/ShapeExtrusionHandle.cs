@@ -1,11 +1,6 @@
-﻿using Chisel.Core;
+﻿using System.Collections.Generic;
 using Chisel.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
 using UnityEngine;
-using Chisel.Utilities;
 using UnitySceneExtensions;
 
 namespace Chisel.Editors
@@ -25,7 +20,7 @@ namespace Chisel.Editors
     {
         static Matrix4x4		s_Transformation = Matrix4x4.identity;
         static ChiselModel		s_ModelBeneathCursor;
-        static List<Vector3>	s_Points = new List<Vector3>();
+        static List<Vector3>	s_Points = new();
         static Curve2D          s_Curve2D = null;
         static bool             s_ExtrusionMode = false;
         

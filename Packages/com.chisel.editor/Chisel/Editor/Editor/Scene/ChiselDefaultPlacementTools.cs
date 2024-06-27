@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Chisel.Core;
+using Chisel.Components;
 using UnityEditor;
 using UnityEngine;
-using Chisel.Core;
-using Chisel.Components;
 using UnitySceneExtensions;
-using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {

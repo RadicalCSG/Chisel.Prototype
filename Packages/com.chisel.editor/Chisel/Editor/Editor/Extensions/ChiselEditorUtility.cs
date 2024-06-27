@@ -1,8 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Chisel.Components;
 using UnityEditor;
 using UnityEditor.Rendering;
 using UnityEngine;

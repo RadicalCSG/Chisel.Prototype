@@ -1,14 +1,8 @@
-using System;
-//using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Mathematics;
 using Unity.Collections;
-//using UnityEngine;
-//using Vector2 = UnityEngine.Vector2;
-using Debug = UnityEngine.Debug;
-using System.Runtime.CompilerServices;
-using Unity.Burst;
-using UnitySceneExtensions;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine;
 
 namespace Chisel.Core.External
 {

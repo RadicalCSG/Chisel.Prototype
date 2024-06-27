@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
 using UnityEngine;
 
 namespace UnitySceneExtensions
@@ -26,12 +23,11 @@ namespace UnitySceneExtensions
             }
         }
 
-        static Dictionary<StyleLookup, GUIStyle> labelColorStyle = new Dictionary<StyleLookup, GUIStyle>();
-
+        static readonly Dictionary<StyleLookup, GUIStyle> s_LabelColorStyle = new();
         static GUIStyle GetLabelStyle(Color color, int padding, int fontSize = 11, FontStyle fontStyle = FontStyle.Normal)
         {
             var lookup = new StyleLookup() { padding = padding, color = color, fontSize = fontSize, fontStyle = fontStyle };
-            if (labelColorStyle.TryGetValue(lookup, out GUIStyle style))
+            if (s_LabelColorStyle.TryGetValue(lookup, out GUIStyle style))
                 return style;
 
             style = new UnityEngine.GUIStyle
@@ -51,7 +47,7 @@ namespace UnitySceneExtensions
             };
             style.normal.textColor  = SceneHandles.color;
 
-            labelColorStyle[lookup] = style;
+            s_LabelColorStyle[lookup] = style;
             return style;
         }
 

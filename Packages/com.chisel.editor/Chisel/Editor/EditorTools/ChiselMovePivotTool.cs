@@ -1,24 +1,22 @@
-﻿using Chisel.Core;
+﻿using System.Collections.Generic;
+using Chisel.Core;
 using Chisel.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEditor;
+using Unity.Mathematics;
 using UnityEngine;
+using UnityEditor;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.EditorTools;
-using Unity.Mathematics;
 using UnitySceneExtensions;
 using Snapping = UnitySceneExtensions.Snapping;
 using Grid = UnitySceneExtensions.Grid;
+using UnityEngine.Pool;
 #if !UNITY_2020_2_OR_NEWER
 using ToolManager = UnityEditor.EditorTools;
 #endif
 
 namespace Chisel.Editors
 {
-    [EditorTool("Chisel " + kToolName + " Tool", typeof(ChiselNode))]
+    //[EditorTool("Chisel " + kToolName + " Tool", typeof(ChiselNode))]
     class ChiselMovePivotTool : ChiselEditToolBase
     {
         const string kToolName = "Move Pivot";
@@ -332,8 +330,6 @@ namespace Chisel.Editors
         //      each surface will have 0, 1 or 2 intersections
         //          1 intersection  => use this edge to find closest vertex to pivot
         //          2 intersections => create virutal edge to and find closest vertex to pivot (surface vertex)
-        static List<CSGTreeNode>    s_SelectedNodes     = new List<CSGTreeNode>();
-        static List<CSGTreeBrush>   s_SelectedBrushes   = new List<CSGTreeBrush>();
         static void FindClosestSnapPointsToPlane(GameObject[] selection, Vector3 startWorldPoint, Vector3 currentWorldPoint, Grid worldSlideGrid, float maxSnapDistance, List<SurfaceSnap> allSurfaceSnapEvents, List<EdgeSnap> allEdgeSnapEvents, List<VertexSnap> allVertexSnapEvents)
         {
             if (selection == null || selection.Length == 0)
@@ -364,216 +360,227 @@ namespace Chisel.Editors
 
             worldSlidePlane = new Plane(worldSlidePlane.normal, currentWorldPoint);
 
-            s_SelectedBrushes.Clear();
-            foreach (var go in selection)
+            var selectedBrushes = ListPool<CSGTreeBrush>.Get();
+            var selectedNodes = ListPool<CSGTreeNode>.Get();
+            try
             {
-                if (!go)
-                    continue;
-
-                var node = go.GetComponent<ChiselNode>();
-                if (!node)
-                    continue;
-                
-                s_SelectedNodes.Clear();
-                ChiselNodeHierarchyManager.GetChildrenOfHierarchyItem(s_SelectedNodes, node.hierarchyItem);
-                foreach (var child in s_SelectedNodes)
+                foreach (var go in selection)
                 {
-                    if (!child.Valid || child.Type != CSGNodeType.Brush)
+                    if (!go)
                         continue;
-                    s_SelectedBrushes.Add((CSGTreeBrush)child);
-                }
-            }
 
-            if (s_SelectedBrushes.Count == 0)
-                return;
+                    var node = go.GetComponent<ChiselNode>();
+                    if (!node)
+                        continue;
 
-            var snapDistanceSqr = maxSnapDistance * maxSnapDistance;
-
-            EdgeSnap[]  foundEdges      = new EdgeSnap[2];
-            int         foundEdgeCount;
-
-            foreach (var csgBrush in s_SelectedBrushes)
-            {
-                var csgTree     = csgBrush.Tree;
-                var brushMeshBlob   = BrushMeshManager.GetBrushMeshBlob(csgBrush.BrushMesh);
-                if (!brushMeshBlob.IsCreated)
-                    continue;
-
-                ref var brushMesh   = ref brushMeshBlob.Value;
-                ref var polygons    = ref brushMesh.polygons;
-                ref var halfEdges   = ref brushMesh.halfEdges;
-                ref var vertices    = ref brushMesh.localVertices;
-                ref var planes      = ref brushMesh.localPlanes;
-                ref var halfEdgePolygonIndices = ref brushMesh.halfEdgePolygonIndices;
-
-                // TODO: store this information with brush 
-                var model           = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(csgTree.UserID) as ChiselModel;
-                var worldToNode     = (Matrix4x4)csgBrush.TreeToNodeSpaceMatrix * model.hierarchyItem.WorldToLocalMatrix;
-                var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * (Matrix4x4)csgBrush.NodeToTreeSpaceMatrix;
-                
-                var brushPoint      = worldToNode.MultiplyPoint(currentWorldPoint);
-                var brushPlane      = worldToNode.TransformPlane(worldSlidePlane);
-
-                if (allVertexSnapEvents != null)
-                {
-                    if (gridSnapping)
+                    selectedNodes.Clear();
+                    ChiselNodeHierarchyManager.GetChildrenOfHierarchyItem(selectedNodes, node.hierarchyItem);
+                    foreach (var child in selectedNodes)
                     {
-                        for (int i = 0; i < vertices.Length; i++)
-                        {
-                            var vertex = vertices[i];
-                            var dist0 = brushPlane.GetDistanceToPoint(vertex);
-                            if (math.abs(dist0) > snapDistanceSqr)
-                                continue;
-                            allVertexSnapEvents.Add(new VertexSnap
-                            {
-                                brush           = csgBrush,
-                                vertexIndex     = i,
-                                intersection    = nodeToWorld.MultiplyPoint(vertex)
-                            });
-                        }
-                    } else
-                    { 
-                        for (int i = 0; i < vertices.Length; i++)
-                        {
-                            var vertex = vertices[i];
-                            if (math.lengthsq(vertex - (float3)brushPoint) > snapDistanceSqr)
-                                continue;
-                            var dist0 = brushPlane.GetDistanceToPoint(vertex);
-                            if (math.abs(dist0) > snapDistanceSqr)
-                                continue;
-                            allVertexSnapEvents.Add(new VertexSnap
-                            {
-                                brush           = csgBrush,
-                                vertexIndex     = i,
-                                intersection    = nodeToWorld.MultiplyPoint(vertex)
-                            });
-                        }
-                    }
-                }
-
-
-                if (allSurfaceSnapEvents == null &&
-                    allEdgeSnapEvents == null)
-                    continue;
-
-
-                for (int surfaceIndex = 0; surfaceIndex < polygons.Length; surfaceIndex++)
-                {
-                    var polygon     = polygons[surfaceIndex];
-                    var firstEdge   = polygon.firstEdge;
-                    var lastEdge    = firstEdge + polygon.edgeCount;
-
-                    // TODO: If point is ON plane, ignore. We don't want to "snap" to every point on that surface b/c then we won't be snapping at all
-
-                    foundEdgeCount = 0;
-                    for (int e0 = lastEdge - 1, e1 = firstEdge; e1 < lastEdge; e0 = e1, e1++)
-                    {
-                        var i0 = halfEdges[e0].vertexIndex;
-                        var i1 = halfEdges[e1].vertexIndex;
-
-                        var vertex0     = vertices[i0];
-                        var vertex1     = vertices[i1];
-
-                        var distance0   = brushPlane.GetDistanceToPoint(vertex0);
-                        var distance1   = brushPlane.GetDistanceToPoint(vertex1);
-
-                        // Edge is plane aligned
-                        if (math.abs(distance0) < kPlaneDistanceEpsilon &&
-                            math.abs(distance1) < kPlaneDistanceEpsilon)
-                        {
-                            if (i0 < i1 && // skip duplicate edges
-                                allEdgeSnapEvents != null)
-                            {
-                                if (gridSnapping)
-                                {
-                                } else
-                                { 
-                                    if (ClosestPointToLine(brushPoint, vertex0, vertex1, out Vector3 newVertex))
-                                    {
-                                        allEdgeSnapEvents.Add(new EdgeSnap
-                                        {
-                                            brush           = csgBrush,
-                                            surfaceIndex0   = surfaceIndex,
-                                            surfaceIndex1   = halfEdgePolygonIndices[halfEdges[e1].twinIndex],
-                                            vertexIndex0    = i0,
-                                            vertexIndex1    = i1,
-                                            intersection    = nodeToWorld.MultiplyPoint(newVertex),
-                                            from            = nodeToWorld.MultiplyPoint(vertex0),
-                                            to              = nodeToWorld.MultiplyPoint(vertex1)
-                                        });
-                                    }
-                                }
-                            }
+                        if (!child.Valid || child.Type != CSGNodeType.Brush)
                             continue;
-                        }
-
-                        { 
-                            if ((distance0 < -snapDistanceSqr && distance1 < -snapDistanceSqr) ||
-                                (distance0 >  snapDistanceSqr && distance1 >  snapDistanceSqr)) 
-                                continue;
-
-                            // TODO: Find intersection between plane and edge
-                            var vector	    = vertex0 - vertex1;
-                            var length	    = distance0 - distance1;
-                            var delta	    = distance0 / length;
-                            
-                            if (float.IsNaN(delta) || float.IsInfinity(delta))
-                                continue;
-
-                            var newVertex	= (Vector3)(vertex0 - (vector * delta));
-                            var distanceN   = brushPlane.GetDistanceToPoint(newVertex);
-
-                            if ((distanceN <= distance0 && distanceN <= distance1) ||
-                                (distanceN >= distance0 && distanceN >= distance1))
-                                continue;
-
-                            if ((newVertex - brushPoint).sqrMagnitude > snapDistanceSqr)
-                                continue;
-
-                            foundEdges[foundEdgeCount] = new EdgeSnap
-                            {
-                                brush           = csgBrush,
-                                surfaceIndex0   = surfaceIndex,
-                                surfaceIndex1   = halfEdgePolygonIndices[halfEdges[e1].twinIndex],
-                                vertexIndex0    = i0,
-                                vertexIndex1    = i1,
-                                intersection    = nodeToWorld.MultiplyPoint(newVertex),
-                                from            = nodeToWorld.MultiplyPoint(vertex0),
-                                to              = nodeToWorld.MultiplyPoint(vertex1)
-                            };
-                            if (i0 < i1 && // skip duplicate edges
-                                allEdgeSnapEvents != null)
-                                allEdgeSnapEvents.Add(foundEdges[foundEdgeCount]);
-
-                            foundEdgeCount++;
-                            if (foundEdgeCount == 2)
-                                break;
-                        }
+                        selectedBrushes.Add((CSGTreeBrush)child);
                     }
+                }
 
-                    if (allSurfaceSnapEvents != null && foundEdgeCount > 0 && !gridSnapping)
+                if (selectedBrushes.Count == 0)
+                    return;
+
+                var snapDistanceSqr = maxSnapDistance * maxSnapDistance;
+
+                EdgeSnap[] foundEdges = new EdgeSnap[2];
+                int foundEdgeCount;
+
+                foreach (var csgBrush in selectedBrushes)
+                {
+                    var csgTree = csgBrush.Tree;
+                    var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(csgBrush.BrushMesh);
+                    if (!brushMeshBlob.IsCreated)
+                        continue;
+
+                    ref var brushMesh = ref brushMeshBlob.Value;
+                    ref var polygons = ref brushMesh.polygons;
+                    ref var halfEdges = ref brushMesh.halfEdges;
+                    ref var vertices = ref brushMesh.localVertices;
+                    ref var planes = ref brushMesh.localPlanes;
+                    ref var halfEdgePolygonIndices = ref brushMesh.halfEdgePolygonIndices;
+
+                    // TODO: store this information with brush 
+                    var model = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(csgTree.UserID) as ChiselModel;
+                    var worldToNode = (Matrix4x4)csgBrush.TreeToNodeSpaceMatrix * model.hierarchyItem.WorldToLocalMatrix;
+                    var nodeToWorld = model.hierarchyItem.LocalToWorldMatrix * (Matrix4x4)csgBrush.NodeToTreeSpaceMatrix;
+
+                    var brushPoint = worldToNode.MultiplyPoint(currentWorldPoint);
+                    var brushPlane = worldToNode.TransformPlane(worldSlidePlane);
+
+                    if (allVertexSnapEvents != null)
                     {
-                        if (foundEdgeCount == 2)
+                        if (gridSnapping)
                         {
-                            var plane           = planes[surfaceIndex];
-                            var unityPlane      = new Plane(plane.xyz, plane.w);
-                    
-                            var vertex0 = foundEdges[0].intersection;
-                            var vertex1 = foundEdges[1].intersection;
-
-                            if (ClosestPointToLine(currentWorldPoint, vertex0, vertex1, out Vector3 closestWorldPoint))
+                            for (int i = 0; i < vertices.Length; i++)
                             {
-                                allSurfaceSnapEvents.Add(new SurfaceSnap
+                                var vertex = vertices[i];
+                                var dist0 = brushPlane.GetDistanceToPoint(vertex);
+                                if (math.abs(dist0) > snapDistanceSqr)
+                                    continue;
+                                allVertexSnapEvents.Add(new VertexSnap
                                 {
-                                    brush           = csgBrush,
-                                    surfaceIndex    = surfaceIndex,
-                                    intersection    = closestWorldPoint,
-                                    normal          = nodeToWorld.MultiplyVector(unityPlane.normal),
+                                    brush = csgBrush,
+                                    vertexIndex = i,
+                                    intersection = nodeToWorld.MultiplyPoint(vertex)
+                                });
+                            }
+                        }
+                        else
+                        {
+                            for (int i = 0; i < vertices.Length; i++)
+                            {
+                                var vertex = vertices[i];
+                                if (math.lengthsq(vertex - (float3)brushPoint) > snapDistanceSqr)
+                                    continue;
+                                var dist0 = brushPlane.GetDistanceToPoint(vertex);
+                                if (math.abs(dist0) > snapDistanceSqr)
+                                    continue;
+                                allVertexSnapEvents.Add(new VertexSnap
+                                {
+                                    brush = csgBrush,
+                                    vertexIndex = i,
+                                    intersection = nodeToWorld.MultiplyPoint(vertex)
                                 });
                             }
                         }
                     }
+
+
+                    if (allSurfaceSnapEvents == null &&
+                        allEdgeSnapEvents == null)
+                        continue;
+
+
+                    for (int surfaceIndex = 0; surfaceIndex < polygons.Length; surfaceIndex++)
+                    {
+                        var polygon = polygons[surfaceIndex];
+                        var firstEdge = polygon.firstEdge;
+                        var lastEdge = firstEdge + polygon.edgeCount;
+
+                        // TODO: If point is ON plane, ignore. We don't want to "snap" to every point on that surface b/c then we won't be snapping at all
+
+                        foundEdgeCount = 0;
+                        for (int e0 = lastEdge - 1, e1 = firstEdge; e1 < lastEdge; e0 = e1, e1++)
+                        {
+                            var i0 = halfEdges[e0].vertexIndex;
+                            var i1 = halfEdges[e1].vertexIndex;
+
+                            var vertex0 = vertices[i0];
+                            var vertex1 = vertices[i1];
+
+                            var distance0 = brushPlane.GetDistanceToPoint(vertex0);
+                            var distance1 = brushPlane.GetDistanceToPoint(vertex1);
+
+                            // Edge is plane aligned
+                            if (math.abs(distance0) < kPlaneDistanceEpsilon &&
+                                math.abs(distance1) < kPlaneDistanceEpsilon)
+                            {
+                                if (i0 < i1 && // skip duplicate edges
+                                    allEdgeSnapEvents != null)
+                                {
+                                    if (gridSnapping)
+                                    {
+                                    }
+                                    else
+                                    {
+                                        if (ClosestPointToLine(brushPoint, vertex0, vertex1, out Vector3 newVertex))
+                                        {
+                                            allEdgeSnapEvents.Add(new EdgeSnap
+                                            {
+                                                brush = csgBrush,
+                                                surfaceIndex0 = surfaceIndex,
+                                                surfaceIndex1 = halfEdgePolygonIndices[halfEdges[e1].twinIndex],
+                                                vertexIndex0 = i0,
+                                                vertexIndex1 = i1,
+                                                intersection = nodeToWorld.MultiplyPoint(newVertex),
+                                                from = nodeToWorld.MultiplyPoint(vertex0),
+                                                to = nodeToWorld.MultiplyPoint(vertex1)
+                                            });
+                                        }
+                                    }
+                                }
+                                continue;
+                            }
+
+                            {
+                                if ((distance0 < -snapDistanceSqr && distance1 < -snapDistanceSqr) ||
+                                    (distance0 > snapDistanceSqr && distance1 > snapDistanceSqr))
+                                    continue;
+
+                                // TODO: Find intersection between plane and edge
+                                var vector = vertex0 - vertex1;
+                                var length = distance0 - distance1;
+                                var delta = distance0 / length;
+
+                                if (float.IsNaN(delta) || float.IsInfinity(delta))
+                                    continue;
+
+                                var newVertex = (Vector3)(vertex0 - (vector * delta));
+                                var distanceN = brushPlane.GetDistanceToPoint(newVertex);
+
+                                if ((distanceN <= distance0 && distanceN <= distance1) ||
+                                    (distanceN >= distance0 && distanceN >= distance1))
+                                    continue;
+
+                                if ((newVertex - brushPoint).sqrMagnitude > snapDistanceSqr)
+                                    continue;
+
+                                foundEdges[foundEdgeCount] = new EdgeSnap
+                                {
+                                    brush = csgBrush,
+                                    surfaceIndex0 = surfaceIndex,
+                                    surfaceIndex1 = halfEdgePolygonIndices[halfEdges[e1].twinIndex],
+                                    vertexIndex0 = i0,
+                                    vertexIndex1 = i1,
+                                    intersection = nodeToWorld.MultiplyPoint(newVertex),
+                                    from = nodeToWorld.MultiplyPoint(vertex0),
+                                    to = nodeToWorld.MultiplyPoint(vertex1)
+                                };
+                                if (i0 < i1 && // skip duplicate edges
+                                    allEdgeSnapEvents != null)
+                                    allEdgeSnapEvents.Add(foundEdges[foundEdgeCount]);
+
+                                foundEdgeCount++;
+                                if (foundEdgeCount == 2)
+                                    break;
+                            }
+                        }
+
+                        if (allSurfaceSnapEvents != null && foundEdgeCount > 0 && !gridSnapping)
+                        {
+                            if (foundEdgeCount == 2)
+                            {
+                                var plane = planes[surfaceIndex];
+                                var unityPlane = new Plane(plane.xyz, plane.w);
+
+                                var vertex0 = foundEdges[0].intersection;
+                                var vertex1 = foundEdges[1].intersection;
+
+                                if (ClosestPointToLine(currentWorldPoint, vertex0, vertex1, out Vector3 closestWorldPoint))
+                                {
+                                    allSurfaceSnapEvents.Add(new SurfaceSnap
+                                    {
+                                        brush = csgBrush,
+                                        surfaceIndex = surfaceIndex,
+                                        intersection = closestWorldPoint,
+                                        normal = nodeToWorld.MultiplyVector(unityPlane.normal),
+                                    });
+                                }
+                            }
+                        }
+                    }
                 }
+            }
+            finally
+            {
+                ListPool<CSGTreeBrush>.Release(selectedBrushes);
+                ListPool<CSGTreeNode>.Release(selectedNodes);
             }
         }
 

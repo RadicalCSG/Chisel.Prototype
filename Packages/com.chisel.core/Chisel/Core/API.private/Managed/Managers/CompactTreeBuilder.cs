@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using UnityEngine;
-using Unity.Mathematics;
+﻿using Unity.Mathematics;
 using Unity.Collections;
-using Unity.Burst;
 
 namespace Chisel.Core
 {

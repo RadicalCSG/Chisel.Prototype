@@ -1,15 +1,9 @@
-using Chisel.Core;
-using Chisel.Components;
-using UnitySceneExtensions;
-using System;
 using System.Collections.Generic;
+using Chisel.Components;
 using UnityEditor;
+using UnityEditor.Callbacks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEditor.EditorTools;
-using NUnit.Framework.Constraints;
-using UnityEditor.Callbacks;
-using UnityEditor.SceneManagement;
 
 namespace Chisel.Editors
 {
@@ -45,13 +39,13 @@ namespace Chisel.Editors
 			drawModesInitialized = true;
 		}
 
-		static HashSet<Camera>		knownCameras	= new HashSet<Camera>();
+		static readonly HashSet<Camera> s_KnownCameras = new();
 
 		public static void OnRenderModel(Camera camera)
         {
 			// TODO: optimize
 			var helperStateFlags = ChiselGeneratedComponentManager.BeginDrawModeForCamera(camera);
-			if (!knownCameras.Contains(camera))
+			if (!s_KnownCameras.Contains(camera))
 				return;
 			ChiselGeneratedComponentManager.OnRenderModels(camera, helperStateFlags);
 		}
@@ -60,7 +54,7 @@ namespace Chisel.Editors
 		{
 			// TODO: optimize
 			var helperStateFlags = ChiselGeneratedComponentManager.EndDrawModeForCamera(); // <- ensures selection works (rendering partial meshes hides regular meshes)
-			if (!knownCameras.Contains(camera))
+			if (!s_KnownCameras.Contains(camera))
 				return;
 			ChiselGeneratedComponentManager.OnRenderModels(camera, helperStateFlags);
 		}
@@ -98,7 +92,7 @@ namespace Chisel.Editors
 			if (camera == null)
 				return;
 			
-			if (knownCameras.Add(camera))
+			if (s_KnownCameras.Add(camera))
 			{
 				Camera.onPreCull -= OnRenderModel;
 				Camera.onPreCull += OnRenderModel;

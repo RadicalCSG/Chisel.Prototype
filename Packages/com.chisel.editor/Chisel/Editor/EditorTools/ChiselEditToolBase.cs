@@ -1,12 +1,8 @@
-using Chisel.Components;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
 using UnityEditor.EditorTools;
 using UnityEngine;
 using UnitySceneExtensions;
-using UnityObject = UnityEngine.Object;
  
 namespace Chisel.Editors
 {
@@ -44,9 +40,9 @@ namespace Chisel.Editors
             }
         }
 
-        public override GUIContent toolbarIcon { get { return cachedToolbarContent; } }
+        public override GUIContent toolbarIcon => cachedToolbarContent;
 
-        GUIContent cachedToolbarContent = new GUIContent();
+        protected GUIContent cachedToolbarContent = new();
         public virtual GUIContent Content
         {
             get 
@@ -65,7 +61,6 @@ namespace Chisel.Editors
 
         public void OnEnable()
         {
-            ChiselPlacementTool.Register(this);
             lastSelectedTool = null; 
             EditorApplication.delayCall -= OnDelayedEnable;
             EditorApplication.delayCall += OnDelayedEnable;
@@ -81,6 +76,7 @@ namespace Chisel.Editors
         public void Awake()
         {
             lastSelectedTool = null;
+            UpdateIcon();
         }
 
         // Unity bug workaround

@@ -1,10 +1,10 @@
-using System;
-using UnityEditor;
-using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using Chisel.Core;
 using Chisel.Components;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.Pool;
 
 namespace Chisel.Editors
 {
@@ -53,8 +53,6 @@ namespace Chisel.Editors
         }
 
 
-        static HashSet<ChiselNode> s_TempNodes = new HashSet<ChiselNode>();
-
         void ApplyMaterialToSurface(SurfaceReference[] surfaceReferences)
         {
             if (surfaceReferences == null ||
@@ -68,15 +66,22 @@ namespace Chisel.Editors
                 prevSurfaceReferences   = new SurfaceReference[surfaceReferences.Length];
             }
 
-            s_TempNodes.Clear();
-            for (int i = 0; i < surfaceReferences.Length; i++)
+            var tempNodes = HashSetPool<ChiselNode>.Get();
+            try
             {
-                s_TempNodes.Add(surfaceReferences[i].node);
-                prevMaterials[i]            = surfaceReferences[i].BrushMaterial.RenderMaterial;
-                prevSurfaceReferences[i]    = surfaceReferences[i];
-                surfaceReferences[i].RenderMaterial = dragMaterial;
+                for (int i = 0; i < surfaceReferences.Length; i++)
+                {
+                    tempNodes.Add(surfaceReferences[i].node);
+                    prevMaterials[i] = surfaceReferences[i].BrushMaterial.RenderMaterial;
+                    prevSurfaceReferences[i] = surfaceReferences[i];
+                    surfaceReferences[i].RenderMaterial = dragMaterial;
+                }
+                prevNodes = tempNodes.ToArray();
             }
-            prevNodes = s_TempNodes.ToArray();
+            finally
+            {
+                HashSetPool<ChiselNode>.Release(tempNodes);
+            }
         }
 
         static bool Equals(SurfaceReference[] surfacesA, SurfaceReference[] surfacesB)

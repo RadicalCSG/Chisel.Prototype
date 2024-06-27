@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Threading;
 using Chisel.Core.Memory;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
-using UnityEngine;
 
 // Note: Based on Unity.Entities.BlobAssetReference
 namespace Chisel.Core
@@ -127,7 +124,7 @@ namespace Chisel.Core
                 throw new InvalidOperationException("The BlobAssetReference is not valid. Likely it has already been unloaded or released.");
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         void ValidateBurst()
         {
             void* validationPtr = Header->ValidationPtr;
@@ -135,7 +132,7 @@ namespace Chisel.Core
                 throw new InvalidOperationException("The BlobAssetReference is not valid. Likely it has already been unloaded or released.");
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public void ValidateNotNull()
         {
             if(m_Ptr == null)
@@ -145,7 +142,7 @@ namespace Chisel.Core
             ValidateBurst();
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public void ValidateAllowNull()
         {
             if (m_Ptr == null)
@@ -155,7 +152,7 @@ namespace Chisel.Core
             ValidateBurst();
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void ValidateNotDeserialized()
         {
             if (Header->Allocator == Allocator.None)
@@ -380,7 +377,7 @@ namespace Chisel.Core
         /// </summary>
         public bool IsValid => m_OffsetPtr != 0;
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void AssertIsValid()
         {
             if (!IsValid)
@@ -465,7 +462,7 @@ namespace Chisel.Core
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void AssertIndexInRange(int index)
         {
             if ((uint)index >= (uint)m_Length)

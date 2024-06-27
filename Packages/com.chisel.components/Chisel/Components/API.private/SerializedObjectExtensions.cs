@@ -1,9 +1,4 @@
-﻿using Chisel.Core;
-using System;
-using System.Collections.Generic;
-using UnityEngine;
-
-namespace Chisel.Components
+﻿namespace Chisel.Components
 {
 #if UNITY_EDITOR
     public static class SerializedObjectExtensions

@@ -47,7 +47,6 @@
 
 using Chisel.Core;
 using System;
-using System.Diagnostics;
 using System.Linq;
 using Unity.Burst;
 using Unity.Collections;
@@ -127,7 +126,7 @@ namespace Poly2Tri
                 return false;
             }
 
-            [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+            [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
             public static void MarkNeighborException()
             {
                 throw new Exception("Error marking neighbors -- t doesn't contain edge p1-p2!");
@@ -702,7 +701,7 @@ namespace Poly2Tri
             return newIndex;
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static void FailedToFindNodeForGivenAfrontPointException()
         {
             throw new Exception("Failed to find Node for given afront point");
@@ -1413,14 +1412,14 @@ namespace Poly2Tri
             return true;
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static void CheckValidIndex(int index)
         {
             if (index == int.MaxValue)
                 throw new Exception("invalid index (== int.MaxValue)");
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static void PointOnConstrainedEdgeNotSupportedException(int epIndex, int eqIndex, int p1Index)
         {
             throw new Exception($"PerformEdgeEvent - Point on constrained edge not supported yet {epIndex} {eqIndex} {p1Index}");
@@ -1508,13 +1507,13 @@ namespace Poly2Tri
             return triangles[triangleIndex1].PointCWFrom(triangles[triangleIndex2].PointCWFrom(p));
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static void FLIPFailedDueToMissingTriangleException()
         {
             throw new Exception("[BUG:FIXME] FLIP failed due to missing triangle");
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static void CheckSelfPointer(int triangleIndex, int otIndex)
         {
             if (triangleIndex == otIndex)
@@ -1590,7 +1589,7 @@ namespace Poly2Tri
             return true;
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static void OrientationNotHandledException()
         {
             throw new NotImplementedException("Orientation not handled");
@@ -2069,7 +2068,7 @@ namespace Poly2Tri
         }
 
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static void FailedToMarkNeighborException()
         {
             throw new Exception("Failed to mark neighbor, doesn't share an edge!");

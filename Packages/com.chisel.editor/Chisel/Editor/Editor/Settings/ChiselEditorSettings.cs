@@ -1,9 +1,8 @@
-﻿using UnitySceneExtensions;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using UnityEditor;
+using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
@@ -18,14 +17,14 @@ namespace Chisel.Editors
 
         internal static bool IsInToolBox(string toolName, bool defaultValue)
         {
-            if (!inToolBoxSettings.TryGetValue(toolName, out bool found))
+            if (!s_InToolBoxSettings.TryGetValue(toolName, out bool found))
                 return defaultValue;
             return found;
         }
 
         internal static void SetInToolBox(string toolName, bool value)
         {
-            inToolBoxSettings[toolName] = value;
+            s_InToolBoxSettings[toolName] = value;
         }
 
         public static bool				MoveSnapping	{ get { return BoundsSnapping || PivotSnapping; } }
@@ -42,7 +41,7 @@ namespace Chisel.Editors
         public static bool				ScaleSnapping   { get { return Snapping.ScaleSnappingEnabled; } set { Snapping.ScaleSnappingEnabled = value; } }
         public static float				ScaleSnap		= 1.0f;
 
-        static Dictionary<string, bool> inToolBoxSettings = new System.Collections.Generic.Dictionary<string, bool>();
+        static readonly Dictionary<string, bool> s_InToolBoxSettings = new();
 
         public static void Load()
         {
@@ -67,13 +66,13 @@ namespace Chisel.Editors
             Snapping.TransformSettings = (ActiveTransformSnapping)EditorPrefs.GetInt("TransformSettings", (int)ActiveTransformSnapping.All);
 
             var toolBoxValues = EditorPrefs.GetString("InToolBox").Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            inToolBoxSettings.Clear();
+            s_InToolBoxSettings.Clear();
             if (toolBoxValues.Length > 0)
             {
                 foreach (var item in toolBoxValues)
                 {
                     var itemState = item.Split('=');
-                    inToolBoxSettings[itemState[0]] = (itemState[1][0] == '1');
+                    s_InToolBoxSettings[itemState[0]] = (itemState[1][0] == '1');
                 }
             }
 
@@ -104,7 +103,7 @@ namespace Chisel.Editors
             EditorPrefs.SetBool("ShowGrid",   		ShowGrid);
 
             var values = new StringBuilder();
-            foreach (var pair in inToolBoxSettings)
+            foreach (var pair in s_InToolBoxSettings)
             {
                 if (values.Length > 0)
                     values.Append(',');

@@ -1,10 +1,5 @@
-﻿using Chisel.Core;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
-using Chisel.Utilities;
 using UnitySceneExtensions;
 using Snapping = UnitySceneExtensions.Snapping;
 

@@ -13,17 +13,17 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselBrushEditor : ChiselGeneratorEditor<ChiselBrushComponent>
     {
-        static Dictionary<ChiselBrushComponent, ChiselEditableOutline> activeOutlines = new Dictionary<ChiselBrushComponent, ChiselEditableOutline>();
+        static readonly Dictionary<ChiselBrushComponent, ChiselEditableOutline> s_ActiveOutlines = new();
 
         protected override void OnUndoRedoPerformed()
         {
             base.OnUndoRedoPerformed();
-            var activeGenerators = activeOutlines.Keys.ToArray();
+            var activeGenerators = s_ActiveOutlines.Keys.ToArray();
             foreach (var generator in activeGenerators)
             {
                 generator.definition.brushOutline.Validate();
                 generator.definition.brushOutline.CalculatePlanes();
-                activeOutlines[generator] = new ChiselEditableOutline(generator);
+                s_ActiveOutlines[generator] = new ChiselEditableOutline(generator);
                 UpdateEditableOutline(generator);
             }
         }
@@ -36,7 +36,7 @@ namespace Chisel.Editors
             else
                 CancelChanges();
 
-            activeOutlines[generator] = new ChiselEditableOutline(generator);
+            s_ActiveOutlines[generator] = new ChiselEditableOutline(generator);
         }
 
         protected override void OnGeneratorDeselected(ChiselBrushComponent generator)
@@ -47,14 +47,14 @@ namespace Chisel.Editors
                 CancelChanges();
 
             ChiselTopologySelectionManager.DeselectAll(generator);
-            activeOutlines.Remove(generator);
+            s_ActiveOutlines.Remove(generator);
             if (generator.definition.EnsurePlanarPolygons())
                 generator.OnValidate();
         }
 
         protected override void OnScene(IChiselHandles handles, ChiselBrushComponent generator)
         {
-            if (!activeOutlines.TryGetValue(generator, out ChiselEditableOutline editableOutline) ||
+            if (!s_ActiveOutlines.TryGetValue(generator, out ChiselEditableOutline editableOutline) ||
                 editableOutline == null)
                 return;
 
@@ -79,7 +79,7 @@ namespace Chisel.Editors
         void UpdateEditableOutline(ChiselBrushComponent generator)
         {
             generatorModified = true;
-            var outline = activeOutlines[generator];
+            var outline = s_ActiveOutlines[generator];
 
             var internalBrushMesh = new BrushMesh(outline.brushMesh);
             
@@ -110,7 +110,7 @@ namespace Chisel.Editors
             if (!generatorModified)
                 return;
 
-            var activeGenerators = activeOutlines.Keys.ToList();
+            var activeGenerators = s_ActiveOutlines.Keys.ToList();
             for (int i = activeGenerators.Count - 1; i >= 0; i--)
                 if (activeGenerators[i] == null) activeGenerators.RemoveAt(i);
             if (activeGenerators.Count > 0)
@@ -120,7 +120,7 @@ namespace Chisel.Editors
                 // Remove redundant vertices and fix the selection so that the correct edges/vertices etc. are selected
                 foreach (var generator in activeGenerators)
                 {
-                    var outline = activeOutlines[generator];
+                    var outline = s_ActiveOutlines[generator];
 
                     // We remove redundant vertices here since in editableOutline we make the assumption that the vertices 
                     // between the original and the 'fixed' brushMesh are identical. 
@@ -134,7 +134,7 @@ namespace Chisel.Editors
 
                 // Create new outlines for our generators
                 foreach (var generator in activeGenerators)
-                    activeOutlines[generator] = new ChiselEditableOutline(generator);
+                    s_ActiveOutlines[generator] = new ChiselEditableOutline(generator);
             }
 
             generatorModified = false;
@@ -146,9 +146,9 @@ namespace Chisel.Editors
                 return;
 
             generatorModified = false;
-            var activeGenerators = activeOutlines.Keys.ToArray();
+            var activeGenerators = s_ActiveOutlines.Keys.ToArray();
             foreach (var generator in activeGenerators)
-                activeOutlines[generator] = new ChiselEditableOutline(generator);
+                s_ActiveOutlines[generator] = new ChiselEditableOutline(generator);
             UndoAllChanges();
         }
     }

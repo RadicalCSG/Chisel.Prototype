@@ -1,15 +1,19 @@
-using Chisel.Core;
 using Chisel.Components;
+using Chisel.Core;
+
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using UnityEditor;
-using UnityEngine;
-using UnitySceneExtensions;
-using System.Runtime.CompilerServices;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+
+using UnityEditor;
+
+using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.Profiling;
+
+using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
@@ -19,18 +23,18 @@ namespace Chisel.Editors
         public PlaneIntersection(Vector3 point, Vector3 normal) { this.point = point; this.plane = new Plane(normal, point); }
         public PlaneIntersection(ChiselIntersection chiselIntersection)
         {
-            this.point  = chiselIntersection.worldPlaneIntersection;
-            this.plane  = chiselIntersection.worldPlane;
-            this.node   = chiselIntersection.treeNode;
-            this.model  = chiselIntersection.model;
+            this.point = chiselIntersection.worldPlaneIntersection;
+            this.plane = chiselIntersection.worldPlane;
+            this.node = chiselIntersection.treeNode;
+            this.model = chiselIntersection.model;
         }
 
-        public Vector3      point;
-        public Plane        plane;
-        public Vector3		normal		{ get { return plane.normal; } }
-        public Quaternion	orientation { get { return Quaternion.LookRotation(plane.normal); } }
-        public ChiselNode   node;
-        public ChiselModel  model;
+        public Vector3 point;
+        public Plane plane;
+        public Vector3 normal { get { return plane.normal; } }
+        public Quaternion orientation { get { return Quaternion.LookRotation(plane.normal); } }
+        public ChiselNode node;
+        public ChiselModel model;
     }
 
     public sealed class GUIClip
@@ -189,20 +193,19 @@ namespace Chisel.Editors
         class SelectedNode
         {
             public SelectedNode(ChiselNode node, Transform transform) { this.node = node; this.transform = transform; }
-            public ChiselNode		node;
-            public Transform	transform;
+            public ChiselNode node;
+            public Transform transform;
         }
 
-        static List<SelectedNode>	selectedNodeList        = new List<SelectedNode>();
-        static HashSet<ChiselNode>	selectedNodeHash        = new HashSet<ChiselNode>();
+        static readonly List<SelectedNode> s_SelectedNodeList = new();
 
         void UpdateSelection()
         {
             var transforms = Selection.transforms;
-            selectedNodeList.Clear();
+            s_SelectedNodeList.Clear();
             if (transforms.Length > 0)
             {
-                selectedNodeHash.Clear();
+                var selectedNodeHash = HashSetPool<ChiselNode>.Get();
                 for (int i = 0; i < transforms.Length; i++)
                 {
                     var transform = transforms[i];
@@ -217,103 +220,111 @@ namespace Chisel.Editors
                 foreach (var node in selectedNodeHash)
                 {
                     var transform = node.transform;
-                    selectedNodeList.Add(new SelectedNode(node, transform));
+                    s_SelectedNodeList.Add(new SelectedNode(node, transform));
                 }
+                HashSetPool<ChiselNode>.Release(selectedNodeHash);
             }
         }
 
-        static HashSet<ChiselNode> modifiedNodes = new HashSet<ChiselNode>();
         public void OnSceneGUI(SceneView sceneView)
         {
-            if (selectedNodeList.Count > 0)
+            if (s_SelectedNodeList.Count > 0)
             {
-                for (int i = 0; i < selectedNodeList.Count; i++)
+                for (int i = 0; i < s_SelectedNodeList.Count; i++)
                 {
-                    if (!selectedNodeList[i].transform)
+                    if (!s_SelectedNodeList[i].transform)
                     {
                         UpdateSelection();
                         break;
                     }
                 }
-                modifiedNodes.Clear();
-                for (int i = 0; i < selectedNodeList.Count; i++)
+
+                var modifiedNodes = HashSetPool<ChiselNode>.Get();
+                try
                 {
-                    var transform	= selectedNodeList[i].transform;
-                    var node		= selectedNodeList[i].node;
-                    var curLocalToWorldMatrix = transform.localToWorldMatrix;
-                    var oldLocalToWorldMatrix = node.hierarchyItem.LocalToWorldMatrix;
-                    if (curLocalToWorldMatrix.m00 != oldLocalToWorldMatrix.m00 ||
-                        curLocalToWorldMatrix.m01 != oldLocalToWorldMatrix.m01 ||
-                        curLocalToWorldMatrix.m02 != oldLocalToWorldMatrix.m02 ||
-                        curLocalToWorldMatrix.m03 != oldLocalToWorldMatrix.m03 ||
-
-                        curLocalToWorldMatrix.m10 != oldLocalToWorldMatrix.m10 ||
-                        curLocalToWorldMatrix.m11 != oldLocalToWorldMatrix.m11 ||
-                        curLocalToWorldMatrix.m12 != oldLocalToWorldMatrix.m12 ||
-                        curLocalToWorldMatrix.m13 != oldLocalToWorldMatrix.m13 ||
-
-                        curLocalToWorldMatrix.m20 != oldLocalToWorldMatrix.m20 ||
-                        curLocalToWorldMatrix.m21 != oldLocalToWorldMatrix.m21 ||
-                        curLocalToWorldMatrix.m22 != oldLocalToWorldMatrix.m22 ||
-                        curLocalToWorldMatrix.m23 != oldLocalToWorldMatrix.m23 //||
-
-                        //curLocalToWorldMatrix.m30 != oldLocalToWorldMatrix.m30 ||
-                        //curLocalToWorldMatrix.m31 != oldLocalToWorldMatrix.m31 ||
-                        //curLocalToWorldMatrix.m32 != oldLocalToWorldMatrix.m32 ||
-                        //curLocalToWorldMatrix.m33 != oldLocalToWorldMatrix.m33
-                        )
+                    for (int i = 0; i < s_SelectedNodeList.Count; i++)
                     {
-                        node.hierarchyItem.LocalToWorldMatrix = curLocalToWorldMatrix;
-                        node.hierarchyItem.WorldToLocalMatrix = transform.worldToLocalMatrix;
-                        modifiedNodes.Add(node);
+                        var transform = s_SelectedNodeList[i].transform;
+                        var node = s_SelectedNodeList[i].node;
+                        var curLocalToWorldMatrix = transform.localToWorldMatrix;
+                        var oldLocalToWorldMatrix = node.hierarchyItem.LocalToWorldMatrix;
+                        if (curLocalToWorldMatrix.m00 != oldLocalToWorldMatrix.m00 ||
+                            curLocalToWorldMatrix.m01 != oldLocalToWorldMatrix.m01 ||
+                            curLocalToWorldMatrix.m02 != oldLocalToWorldMatrix.m02 ||
+                            curLocalToWorldMatrix.m03 != oldLocalToWorldMatrix.m03 ||
+
+                            curLocalToWorldMatrix.m10 != oldLocalToWorldMatrix.m10 ||
+                            curLocalToWorldMatrix.m11 != oldLocalToWorldMatrix.m11 ||
+                            curLocalToWorldMatrix.m12 != oldLocalToWorldMatrix.m12 ||
+                            curLocalToWorldMatrix.m13 != oldLocalToWorldMatrix.m13 ||
+
+                            curLocalToWorldMatrix.m20 != oldLocalToWorldMatrix.m20 ||
+                            curLocalToWorldMatrix.m21 != oldLocalToWorldMatrix.m21 ||
+                            curLocalToWorldMatrix.m22 != oldLocalToWorldMatrix.m22 ||
+                            curLocalToWorldMatrix.m23 != oldLocalToWorldMatrix.m23 //||
+
+                            //curLocalToWorldMatrix.m30 != oldLocalToWorldMatrix.m30 ||
+                            //curLocalToWorldMatrix.m31 != oldLocalToWorldMatrix.m31 ||
+                            //curLocalToWorldMatrix.m32 != oldLocalToWorldMatrix.m32 ||
+                            //curLocalToWorldMatrix.m33 != oldLocalToWorldMatrix.m33
+                            )
+                        {
+                            node.hierarchyItem.LocalToWorldMatrix = curLocalToWorldMatrix;
+                            node.hierarchyItem.WorldToLocalMatrix = transform.worldToLocalMatrix;
+                            modifiedNodes.Add(node);
+                        }
                     }
+                    if (modifiedNodes.Count > 0)
+                        ChiselNodeHierarchyManager.NotifyTransformationChanged(modifiedNodes);
                 }
-                if (modifiedNodes.Count > 0)
-                    ChiselNodeHierarchyManager.NotifyTransformationChanged(modifiedNodes);
+                finally
+                {
+                    HashSetPool<ChiselNode>.Release(modifiedNodes);
+                }
             }
 
             // Handle selection clicks / marquee selection
             ChiselRectSelectionManager.Update(sceneView);
         }
-        
+
 
         #region DeepSelection (private)
-        private static List<GameObject>     deepClickIgnoreGameObjectList   = new List<GameObject>();
-        private static Vector2  _prevSceenPos = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
-        private static Camera   _prevCamera;
+        private static readonly List<GameObject> s_DeepClickIgnoreGameObjectList = new();
+        private static Vector2 s_PrevSceenPos = new(float.PositiveInfinity, float.PositiveInfinity);
+        private static Camera s_PrevCamera;
 
         private static void ResetDeepClick(bool resetPosition = true)
         {
-            deepClickIgnoreGameObjectList.Clear();
+            s_DeepClickIgnoreGameObjectList.Clear();
             if (resetPosition)
             {
-                _prevSceenPos = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
-                _prevCamera = null;
+                s_PrevSceenPos = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
+                s_PrevCamera = null;
             }
         }
         #endregion
-        
+
 
         public static GameObject PickClosestGameObject(Vector2 screenPos, out ChiselIntersection intersection)
         {
             Profiler.BeginSample("PickClosestGameObject");
             try
-            { 
+            {
                 intersection = ChiselIntersection.None;
                 var camera = Camera.current;
                 if (!camera)
                     return null;
 
                 // If we moved our mouse, reset our ignore list
-                if (_prevSceenPos != screenPos ||
-                    _prevCamera != camera)
+                if (s_PrevSceenPos != screenPos ||
+                    s_PrevCamera != camera)
                     ResetDeepClick();
 
-                _prevSceenPos = screenPos;
-                _prevCamera = camera;
+                s_PrevSceenPos = screenPos;
+                s_PrevCamera = camera;
 
                 // Get the first click that is not in our ignore list
-                GameObject[] ignore = deepClickIgnoreGameObjectList.ToArray();
+                GameObject[] ignore = s_DeepClickIgnoreGameObjectList.ToArray();
                 GameObject[] filter = null;
                 var foundObject = PickClosestGameObjectDelegated(screenPos, ref ignore, ref filter, out intersection);
 
@@ -321,9 +332,9 @@ namespace Chisel.Editors
                 if (object.Equals(foundObject, null))
                 {
                     bool found = false;
-                    for (int i = 0; i < deepClickIgnoreGameObjectList.Count; i++)
+                    for (int i = 0; i < s_DeepClickIgnoreGameObjectList.Count; i++)
                     {
-                        foundObject = deepClickIgnoreGameObjectList[i];
+                        foundObject = s_DeepClickIgnoreGameObjectList[i];
 
                         // We don't want models or mesh containers since they're in this list to skip, and should never be selected
                         if (!IsValidNodeToBeSelected(foundObject))
@@ -339,7 +350,8 @@ namespace Chisel.Editors
                         intersection = ChiselIntersection.None;
                         ResetDeepClick();
                         return null;
-                    } else
+                    }
+                    else
                     {
                         // Reset our list so we only skip our current selection on the next click
                         ResetDeepClick(
@@ -349,7 +361,7 @@ namespace Chisel.Editors
                 }
 
                 // Remember our gameobject so we don't select it on the next click
-                deepClickIgnoreGameObjectList.Add(foundObject);
+                s_DeepClickIgnoreGameObjectList.Add(foundObject);
                 return foundObject;
             }
             finally
@@ -369,7 +381,6 @@ namespace Chisel.Editors
             return intersection.brushIntersection.surfaceIndex != -1;
         }
 
-        static List<Material> sSharedMaterials = new List<Material>();
         public static GameObject PickModelOrGameObject(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModel model, out Material material)
         {
             Profiler.BeginSample("PickNodeOrGameObject");
@@ -432,9 +443,10 @@ namespace Chisel.Editors
                 if (materialIndex >= 0 &&
                     gameObject.TryGetComponent<Renderer>(out var renderer))
                 {
-                    renderer.GetSharedMaterials(sSharedMaterials);
-                    material = materialIndex < sSharedMaterials.Count ? sSharedMaterials[materialIndex] : null;
-                    sSharedMaterials.Clear(); // We don't want to keep references to Materials alive
+                    var s_SharedMaterials = ListPool<Material>.Get();
+                    renderer.GetSharedMaterials(s_SharedMaterials);
+                    material = materialIndex < s_SharedMaterials.Count ? s_SharedMaterials[materialIndex] : null;
+                    ListPool<Material>.Release(s_SharedMaterials);
                     if (!material) material = null;
                 }
                 return gameObject;
@@ -454,7 +466,7 @@ namespace Chisel.Editors
             {
                 if (brushIntersection.treeNode != null)
                     return new PlaneIntersection(brushIntersection);
-                
+
                 if (intersectionObject.TryGetComponent<MeshFilter>(out var meshFilter))
                 {
                     var mesh = meshFilter.sharedMesh;
@@ -462,14 +474,15 @@ namespace Chisel.Editors
                     RaycastHit hit;
                     if (ChiselClickSelectionManager.IntersectRayMesh(mouseRay, mesh, intersectionObject.transform.localToWorldMatrix, out hit))
                     {
-                        if (intersectionObject.TryGetComponent<MeshRenderer>(out var meshRenderer) && 
+                        if (intersectionObject.TryGetComponent<MeshRenderer>(out var meshRenderer) &&
                             meshRenderer.enabled)
                         {
                             return new PlaneIntersection(hit.point, hit.normal);
                         }
                     }
                 }
-            } else
+            }
+            else
             {
                 var gridPlane = UnitySceneExtensions.Grid.ActiveGrid.PlaneXZ;
                 var mouseRay = UnityEditor.HandleUtility.GUIPointToWorldRay(mousePosition);
@@ -496,7 +509,7 @@ namespace Chisel.Editors
             switch (node.Type)
             {
                 case CSGNodeType.Branch: return FindSurfaceReference(chiselNode, (CSGTreeBranch)node, findBrush, surfaceID, out surfaceReference);
-                case CSGNodeType.Brush:  return FindSurfaceReference(chiselNode, (CSGTreeBrush)node,  findBrush, surfaceID, out surfaceReference);
+                case CSGNodeType.Brush: return FindSurfaceReference(chiselNode, (CSGTreeBrush)node, findBrush, surfaceID, out surfaceReference);
                 default: return false;
             }
         }
@@ -518,7 +531,7 @@ namespace Chisel.Editors
             surfaceReference = null;
             if (findBrush != brush)
                 return false;
-            
+
             var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(findBrush.BrushMesh.BrushMeshID);
             if (!brushMeshBlob.IsCreated)
                 return true;
@@ -545,7 +558,7 @@ namespace Chisel.Editors
                 return surfaceReference;
             return null;
         }
-        
+
         public static bool FindSurfaceReferences(Vector2 position, bool selectAllSurfaces, List<SurfaceReference> foundSurfaces, out ChiselIntersection intersection, out SurfaceReference surfaceReference)
         {
             intersection = ChiselIntersection.None;
@@ -554,7 +567,7 @@ namespace Chisel.Editors
             {
                 if (!PickFirstGameObject(position, out intersection))
                     return false;
-    
+
                 var chiselNode = intersection.treeNode;
                 if (!chiselNode)
                     return false;
@@ -653,7 +666,7 @@ namespace Chisel.Editors
                 Profiler.EndSample();
             }
         }
-        
+
         static GameObject PickClosestGameObjectDelegated(Vector2 position, ref GameObject[] ignore, ref GameObject[] filter, out ChiselIntersection intersection)
         {
             Profiler.BeginSample("PickClosestGameObjectDelegated");

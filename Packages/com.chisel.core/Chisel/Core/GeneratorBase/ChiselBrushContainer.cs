@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using Chisel.Core;
 
 namespace Chisel.Core
 {

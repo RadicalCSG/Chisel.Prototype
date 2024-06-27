@@ -1,12 +1,6 @@
-using Chisel.Core;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEditor;
 using UnityEngine;
+using UnityEditor;
 using UnityEditor.EditorTools;
-using UnitySceneExtensions;
 #if !UNITY_2020_2_OR_NEWER
 using ToolManager = UnityEditor.EditorTools;
 #endif
@@ -172,6 +166,7 @@ namespace Chisel.Editors
                     {
                         ChiselPlacementTool.ActivateTool();
                         ChiselGeneratorManager.GeneratorMode = generator;
+                        ToolManager.RefreshAvailableTools();
                         ChiselEditorSettings.Save();
                     }
                     SceneView.RepaintAll();
@@ -305,7 +300,7 @@ namespace Chisel.Editors
         }
 
 
-        public static void RenderCreationTools()
+        public static void RenderGeneratorTools()
         {
             InitStyles();
 

@@ -1,22 +1,49 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEditor;
-using UnityEngine;
 using Chisel.Core;
 using Chisel.Components;
-using UnitySceneExtensions;
-using Snapping = UnitySceneExtensions.Snapping;
+using UnityEditor;
 using UnityEditor.EditorTools;
-using System.Reflection;
 using UnityEditor.Overlays;
 using UnityEditor.Toolbars;
-using UnityEngine.UIElements;
+using UnityEngine;
 
 // Just a misc. collections of buttons we don't have a more sensible place for
 namespace Chisel.Editors
 {
+    // TODO: move this to its own file
+    [EditorToolContext("Chisel Tools")]
+    public class ChiselToolsContext : EditorToolContext
+    {
+        public override IEnumerable<Type> GetAdditionalToolTypes()
+        {
+            return new List<Type>()
+            {
+                typeof(ChiselPlacementTool),
+                typeof(ChiselEditGeneratorTool),
+                typeof(ChiselMovePivotTool),
+                typeof(ChiselUVMoveTool),
+                typeof(ChiselUVRotateTool),
+                typeof(ChiselUVScaleTool)
+            };
+        }
+
+        public override void OnActivated()
+        {
+        }
+
+        public override void OnWillBeDeactivated()
+        {
+        }
+
+
+        // TODO: put all tool functionality in here instead, so it's easy to find
+        //public override void OnToolGUI(EditorWindow window)
+        //{
+        //}
+    }
+
+
     [EditorToolbarElement(id, typeof(SceneView))]
     class CenterPivotOnSelectionButton : EditorToolbarButton
     {
@@ -29,6 +56,15 @@ namespace Chisel.Editors
         {
             ChiselToolbarUtility.SetupToolbarElement(this, kIcon, kTooltip);
             this.clicked += OnClicked;
+            ChiselSelectionManager.GeneratorSelectionUpdated += UpdateEnabledState;
+            UpdateEnabledState();
+        }
+
+        protected void UpdateEnabledState()
+        {
+            bool enabled = ChiselSelectionManager.AreNodesSelected;
+            if (this.enabledSelf != enabled)
+                this.SetEnabled(enabled);
         }
 
         private void OnClicked()
@@ -49,6 +85,15 @@ namespace Chisel.Editors
         {
             ChiselToolbarUtility.SetupToolbarElement(this, kIcon, kTooltip);
             this.clicked += OnClicked;
+            ChiselSelectionManager.GeneratorSelectionUpdated += UpdateEnabledState;
+            UpdateEnabledState();
+        }
+
+        protected void UpdateEnabledState()
+        {
+            bool enabled = ChiselSelectionManager.AreNodesSelected;
+            if (this.enabledSelf != enabled)
+                this.SetEnabled(enabled);
         }
 
         private void OnClicked()

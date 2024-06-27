@@ -1,6 +1,6 @@
-using UnityEngine;
-using Chisel.Core;
 using System;
+using Chisel.Core;
+using UnityEngine;
 using Unity.Jobs;
 using Unity.Collections;
 using Unity.Burst;

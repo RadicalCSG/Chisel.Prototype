@@ -22,7 +22,6 @@
 
 //#define DEBUG_QUICKHULL
 
-using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -1084,7 +1083,7 @@ namespace Chisel.Core
 		///   sensible state. Conditionally compiled if DEBUG_QUICKHULL if
 		///   defined.
 		/// </summary>
-		[Conditional("DEBUG_QUICKHULL")]
+		[System.Diagnostics.Conditional("DEBUG_QUICKHULL")]
 		void VerifyOpenSet(IReadOnlyList<Vector3> points)
 		{
 			for (int i = 0; i < openSet.Count; i++)
@@ -1111,7 +1110,7 @@ namespace Chisel.Core
 		///   sensible state. Conditionally compiled if DEBUG_QUICKHULL if
 		///   defined.
 		/// </summary>
-		[Conditional("DEBUG_QUICKHULL")]
+		[System.Diagnostics.Conditional("DEBUG_QUICKHULL")]
 		void VerifyHorizon()
 		{
 			for (int i = 0; i < horizon.Count; i++)
@@ -1128,7 +1127,7 @@ namespace Chisel.Core
 		///   sensible state. Conditionally compiled if DEBUG_QUICKHULL if
 		///   defined.
 		/// </summary>
-		[Conditional("DEBUG_QUICKHULL")]
+		[System.Diagnostics.Conditional("DEBUG_QUICKHULL")]
 		void VerifyFaces(IReadOnlyList<Vector3> points)
 		{
 			foreach (var kvp in faces)
@@ -1164,7 +1163,7 @@ namespace Chisel.Core
 		///   actually a convex hull of all the points. Conditionally compiled
 		///   if DEBUG_QUICKHULL if defined.
 		/// </summary>
-		[Conditional("DEBUG_QUICKHULL")]
+		[System.Diagnostics.Conditional("DEBUG_QUICKHULL")]
 		void VerifyMesh(IReadOnlyList<Vector3> points, ref List<Vector3> verts)
 		{
 			Assert(verts.Count % 3 == 0);
@@ -1202,7 +1201,7 @@ namespace Chisel.Core
 		///   be conditionally compiled out with the same #define as the other
 		///   debug methods.
 		/// </summary>
-		[Conditional("DEBUG_QUICKHULL")]
+		[System.Diagnostics.Conditional("DEBUG_QUICKHULL")]
 		static void Assert(bool condition)
 		{
 			if (!condition)

@@ -1,12 +1,7 @@
+using System;
+using Chisel.Core;
 using UnityEngine;
 using UnityEditor;
-using UnityEditor.SceneManagement;
-using System;
-using System.Linq;
-using System.Collections.Generic;
-using Chisel;
-using Chisel.Core;
-using Unity.Mathematics;
 
 namespace Chisel.Editors
 {
@@ -61,7 +56,7 @@ namespace Chisel.Editors
 
             var uvMatrix    = new UVMatrix(UProp.vector4Value, VProp.vector4Value);
             var state       = (UVMatrixState)EditorGUIUtility.GetStateObject(typeof(UVMatrixState), translationID);
-            if (!state.initialized || state.uvMatrix.U != uvMatrix.U || state.uvMatrix.V != uvMatrix.V)
+            if (!state.initialized || state.uvMatrix != uvMatrix)
             {
                 state.uvMatrix = uvMatrix;
                 uvMatrix.Decompose(out state.translation, out state.rotation, out state.scale);
@@ -81,6 +76,9 @@ namespace Chisel.Editors
                 var translationContent  = (label == null) ? GUIContent.none : kTranslationContent;
                 var scaleContent        = (label == null) ? GUIContent.none : kScaleContent;
                 var rotationContent     = (label == null) ? GUIContent.none : kRotationContent;
+
+
+                // TODO: add right click menus to "reset" values
 
                 position.height = EditorGUI.GetPropertyHeight(SerializedPropertyType.Vector2, GUIContent.none);
                 var fieldRect = EditorGUI.PrefixLabel(position, translationID, !hasLabel ? GUIContent.none : translationContent);

@@ -1,17 +1,6 @@
-﻿using System;
-using System.Linq;
-using Vector2 = UnityEngine.Vector2;
-using Vector3 = UnityEngine.Vector3;
-using Vector4 = UnityEngine.Vector4;
-using Quaternion = UnityEngine.Quaternion;
-using Matrix4x4 = UnityEngine.Matrix4x4;
-using Mathf = UnityEngine.Mathf;
-using Plane = UnityEngine.Plane;
-using Debug = UnityEngine.Debug;
-using UnitySceneExtensions;
-using System.Collections.Generic;
-using Unity.Mathematics;
+﻿using Unity.Mathematics;
 using Unity.Collections;
+using UnityEngine;
 
 namespace Chisel.Core
 {
