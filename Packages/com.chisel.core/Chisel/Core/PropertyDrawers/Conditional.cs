@@ -1,6 +1,6 @@
-namespace Chisel.Core
+﻿namespace Chisel.Core
 {
-	public struct Condition
+	public readonly struct Condition
 	{
 		public Condition(string fieldToCheck, params object[] valuesToCompareWith)
 		{

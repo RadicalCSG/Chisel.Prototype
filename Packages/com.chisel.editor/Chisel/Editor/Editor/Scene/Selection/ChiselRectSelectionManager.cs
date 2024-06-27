@@ -48,9 +48,9 @@ namespace Chisel.Editors
 #endif
         public static Vector2	SelectStartPoint	{ get { return (Vector2)selectStartPointField.GetValue(rectSelection); } }
         public static Vector2	SelectMousePoint	{ get { return (Vector2)selectMousePointField.GetValue(rectSelection); } }
-        public static UnityEngine.Object[]			SelectionStart		{ get { return (UnityEngine.Object[])selectionStartField.GetValue(rectSelection); } set { selectionStartField.SetValue(rectSelection, value); } }
-        public static UnityEngine.Object[]			CurrentSelection	{ get { return (UnityEngine.Object[])currentSelectionField.GetValue(rectSelection); } set { currentSelectionField.SetValue(rectSelection, value); } }
-        public static Dictionary<GameObject, bool>	LastSelection		{ get { return (Dictionary<GameObject, bool>)lastSelectionField.GetValue(rectSelection); } }
+        public static Object[]	SelectionStart		{ get { return (Object[])selectionStartField.GetValue(rectSelection); } set { selectionStartField.SetValue(rectSelection, value); } }
+        public static Object[]  CurrentSelection	{ get { return (Object[])currentSelectionField.GetValue(rectSelection); } set { currentSelectionField.SetValue(rectSelection, value); } }
+        public static Dictionary<GameObject, bool>	LastSelection { get { return (Dictionary<GameObject, bool>)lastSelectionField.GetValue(rectSelection); } }
 
         public static void UpdateSelection(Object[] existingSelection, Object[] newObjects, SelectionType type)
         {
@@ -136,8 +136,8 @@ namespace Chisel.Editors
             updateSelectionMethod       = unityRectSelectionType.GetMethod("UpdateSelection",   BindingFlags.NonPublic | BindingFlags.Instance,
                                                                             null,
                                                                             new Type[] {
-                                                                                typeof(UnityEngine.Object[]),
-                                                                                typeof(UnityEngine.Object[]),
+                                                                                typeof(Object[]),
+                                                                                typeof(Object[]),
                                                                                 unityEnumSelectionType,
                                                                                 typeof(bool)
                                                                             },
@@ -156,8 +156,8 @@ namespace Chisel.Editors
             updateSelectionMethod = unityRectSelectionType.GetMethod("UpdateSelection", BindingFlags.NonPublic | BindingFlags.Static,
                                                                             null,
                                                                             new Type[] {
-                                                                                typeof(UnityEngine.Object[]),
-                                                                                typeof(UnityEngine.Object[]),
+                                                                                typeof(Object[]),
+                                                                                typeof(Object[]),
                                                                                 unityEnumSelectionType,
                                                                                 typeof(bool)
                                                                             },
@@ -228,9 +228,9 @@ namespace Chisel.Editors
             }
         }
 
-        static bool RemoveGeneratedMeshesFromArray(ref UnityEngine.Object[] selection)
+        static bool RemoveGeneratedMeshesFromArray(ref Object[] selection)
         {
-            var found = new List<UnityEngine.Object>();
+            var found = new List<Object>();
             for (int i = selection.Length - 1; i >= 0; i--)
             {
                 var obj = selection[i];
@@ -363,7 +363,7 @@ namespace Chisel.Editors
                         }
                     }
 
-                    UnityEngine.Object[] currentSelection = null;
+                    Object[] currentSelection = null;
                     var originalLastSelection	= ChiselRectSelection.LastSelection;
                     var originalSelectionStart	= ChiselRectSelection.SelectionStart;
 
@@ -506,7 +506,7 @@ namespace Chisel.Editors
                     if (Event.current.commandName != "SelectAll")
                         break;
                     
-                    var transforms = new List<UnityEngine.Object>();
+                    var transforms = new List<Object>();
                     for (int sceneIndex = 0; sceneIndex < SceneManager.sceneCount; sceneIndex++)
                     {
                         var scene = SceneManager.GetSceneAt(sceneIndex);

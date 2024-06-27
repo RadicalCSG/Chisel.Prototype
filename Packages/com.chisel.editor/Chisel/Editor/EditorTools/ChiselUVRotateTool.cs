@@ -13,7 +13,7 @@ namespace Chisel.Editors
     // TODO: make it possible to 'F' focus on selected surfaces
     // TODO: hovering on surfaces in inspector should highlight in scene
 
-    [EditorTool("Chisel " + kToolName + " Tool", typeof(ChiselNode))]
+    //[EditorTool("Chisel " + kToolName + " Tool", typeof(ChiselNode))]
     sealed class ChiselUVRotateTool : ChiselEditToolBase
     {
         const string kToolName = "UV Rotate";

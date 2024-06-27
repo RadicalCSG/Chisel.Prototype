@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Chisel.Core;
 using UnityEngine;
-using UnityEngine.Profiling;
+using UnityEngine.Pool;
 using UnityEngine.SceneManagement;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -17,7 +17,7 @@ namespace Chisel.Components
         public const string kGeneratedDefaultModelName  = "‹[default-model]›";
         public const string kGeneratedContainerName     = "‹[generated]›";
 
-        static readonly HashSet<ChiselModel> models = new HashSet<ChiselModel>();
+        static readonly HashSet<ChiselModel> models = new();
 
 #if UNITY_EDITOR
         const float kGenerateUVDelayTime = 1.0f;
@@ -54,8 +54,8 @@ namespace Chisel.Components
             if (!model)
                 return false;
 
-            var staticFlags = UnityEditor.GameObjectUtility.GetStaticEditorFlags(model.gameObject);
-            if ((staticFlags & UnityEditor.StaticEditorFlags.ContributeGI) != UnityEditor.StaticEditorFlags.ContributeGI)
+            var staticFlags = GameObjectUtility.GetStaticEditorFlags(model.gameObject);
+            if ((staticFlags & StaticEditorFlags.ContributeGI) != StaticEditorFlags.ContributeGI)
                 return false;
 
             if (!model.generated.HasLightmapUVs)
@@ -78,8 +78,8 @@ namespace Chisel.Components
                 if (!model)
                     continue;
 
-                var staticFlags = UnityEditor.GameObjectUtility.GetStaticEditorFlags(model.gameObject);
-                var lightmapStatic = (staticFlags & UnityEditor.StaticEditorFlags.ContributeGI) == UnityEditor.StaticEditorFlags.ContributeGI;
+                var staticFlags = GameObjectUtility.GetStaticEditorFlags(model.gameObject);
+                var lightmapStatic = (staticFlags & StaticEditorFlags.ContributeGI) == StaticEditorFlags.ContributeGI;
                 if ((!model.AutoRebuildUVs && !force) || !lightmapStatic)
                     continue;
 
@@ -159,25 +159,25 @@ namespace Chisel.Components
         }
 
 #if UNITY_EDITOR
-        static Dictionary<CompactNodeID, VisibilityState> visibilityStateLookup = new Dictionary<CompactNodeID, VisibilityState>();
+        private static readonly Dictionary<CompactNodeID, VisibilityState> s_VisibilityStateLookup = new();
         public static bool IsBrushVisible(CompactNodeID brushID) 
         { 
-            return visibilityStateLookup.TryGetValue(brushID, out VisibilityState state) && state == VisibilityState.AllVisible; 
+            return s_VisibilityStateLookup.TryGetValue(brushID, out VisibilityState state) && state == VisibilityState.AllVisible; 
         }
 
         static bool updateVisibilityFlag = true;
         public static void OnVisibilityChanged()
         {
             updateVisibilityFlag = true;
-            UnityEditor.EditorApplication.delayCall -= OnUnityIndeterministicMessageOrderingWorkAround;
-            UnityEditor.EditorApplication.delayCall += OnUnityIndeterministicMessageOrderingWorkAround;
-            UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
+            EditorApplication.delayCall -= OnUnityIndeterministicMessageOrderingWorkAround;
+            EditorApplication.delayCall += OnUnityIndeterministicMessageOrderingWorkAround;
+            EditorApplication.QueuePlayerLoopUpdate();
         }
 
         static void OnUnityIndeterministicMessageOrderingWorkAround()
         {
-            UnityEditor.EditorApplication.delayCall -= OnUnityIndeterministicMessageOrderingWorkAround;
-            UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
+            EditorApplication.delayCall -= OnUnityIndeterministicMessageOrderingWorkAround;
+            EditorApplication.QueuePlayerLoopUpdate();
             SceneView.RepaintAll();
         }
 
@@ -207,7 +207,7 @@ namespace Chisel.Components
 
         public static void RemoveHelperSurfaces()
         {
-            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            var scene = SceneManager.GetActiveScene();
             foreach(var go in scene.GetRootGameObjects())
             {
                 foreach (var model in go.GetComponentsInChildren<ChiselModel>())
@@ -229,7 +229,7 @@ namespace Chisel.Components
             }
         }
 
-        public static VisibilityState UpdateVisibilityState(UnityEditor.SceneVisibilityManager instance, ChiselGeneratorComponent generator)
+        public static VisibilityState UpdateVisibilityState(SceneVisibilityManager instance, ChiselGeneratorComponent generator)
         {
             var resultState     = VisibilityState.Unknown;
             var visible         = !instance.IsHidden(generator.gameObject);
@@ -256,7 +256,7 @@ namespace Chisel.Components
             var compactNodeID = CompactHierarchyManager.GetCompactNodeID(node.TopTreeNode);
             foreach (var childCompactNodeID in CompactHierarchyManager.GetAllChildren(compactNodeID))
             {
-                if (!visibilityStateLookup.ContainsKey(childCompactNodeID))
+                if (!s_VisibilityStateLookup.ContainsKey(childCompactNodeID))
                     return false;
             }
             return true;
@@ -271,11 +271,11 @@ namespace Chisel.Components
 
         public static void UpdateVisibility(ChiselGeneratorComponent node)
         {
-            var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
+            var sceneVisibilityManager = SceneVisibilityManager.instance;
             UpdateVisibility(sceneVisibilityManager, node);
         }
 
-        static void UpdateVisibility(UnityEditor.SceneVisibilityManager sceneVisibilityManager, ChiselGeneratorComponent node)
+        static void UpdateVisibility(SceneVisibilityManager sceneVisibilityManager, ChiselGeneratorComponent node)
         {
             var treeNode = node.TopTreeNode;
             if (!treeNode.Valid)
@@ -290,13 +290,13 @@ namespace Chisel.Components
             var modelNode = model.TopTreeNode;
             var compactNodeID = CompactHierarchyManager.GetCompactNodeID(treeNode);
             var modelCompactNodeID = CompactHierarchyManager.GetCompactNodeID(modelNode);
-            if (!visibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState prevState))
+            if (!s_VisibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState prevState))
                 prevState = VisibilityState.Unknown;
             var state = UpdateVisibilityState(sceneVisibilityManager, node);
 
             foreach (var childCompactNodeID in CompactHierarchyManager.GetAllChildren(compactNodeID))
-                visibilityStateLookup[childCompactNodeID] = state;
-            visibilityStateLookup[modelCompactNodeID] = state | prevState;
+                s_VisibilityStateLookup[childCompactNodeID] = state;
+            s_VisibilityStateLookup[modelCompactNodeID] = state | prevState;
         }
 
         public static void UpdateVisibility(bool force = false)
@@ -309,8 +309,8 @@ namespace Chisel.Components
             //       2. find a way to render partial mesh instead
             //          A. needs to show lightmap of original mesh, even when modified
             //          B. updating lightmaps needs to still work as if original mesh is changed
-            visibilityStateLookup.Clear();
-            var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
+            s_VisibilityStateLookup.Clear();
+            var sceneVisibilityManager = SceneVisibilityManager.instance;
             foreach (var node in ChiselGeneratedModelMeshManager.registeredNodeLookup)
             {
                 if (!node || !node.isActiveAndEnabled)
@@ -331,9 +331,9 @@ namespace Chisel.Components
                 if (!modelNode.Valid)
                     continue;
                 var modelCompactNodeID  = CompactHierarchyManager.GetCompactNodeID(modelNode);
-                if (!visibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState state))
+                if (!s_VisibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState state))
                 {
-                    visibilityStateLookup[modelCompactNodeID] = VisibilityState.AllVisible;
+                    s_VisibilityStateLookup[modelCompactNodeID] = VisibilityState.AllVisible;
                     model.generated.visibilityState = VisibilityState.AllVisible;
                     continue; 
                 }
@@ -387,17 +387,17 @@ namespace Chisel.Components
             return (model.IsDefaultModel);
         }
 
-        static List<GameObject> __rootGameObjects = new List<GameObject>(); // static to avoid allocations
         internal static ChiselModel CreateDefaultModel(ChiselSceneHierarchy sceneHierarchy)
         {
             var currentScene = sceneHierarchy.Scene;
-            currentScene.GetRootGameObjects(__rootGameObjects);
-            for (int i = 0; i < __rootGameObjects.Count; i++)
+            var rootGameObjects = ListPool<GameObject>.Get();
+            currentScene.GetRootGameObjects(rootGameObjects);
+            for (int i = 0; i < rootGameObjects.Count; i++)
             {
-                if (!IsDefaultModel(__rootGameObjects[i]))
+                if (!IsDefaultModel(rootGameObjects[i]))
                     continue;
                 
-                var gameObject = __rootGameObjects[i];
+                var gameObject = rootGameObjects[i];
                 var model = gameObject.GetComponent<ChiselModel>();
                 if (model)
                     return model;
@@ -409,11 +409,12 @@ namespace Chisel.Components
                 UpdateModelFlags(model);
                 return model;
             }
+            ListPool<GameObject>.Release(rootGameObjects);
 
 
-            var oldActiveScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            var oldActiveScene = SceneManager.GetActiveScene();
             if (currentScene != oldActiveScene)
-                UnityEngine.SceneManagement.SceneManager.SetActiveScene(currentScene);
+                SceneManager.SetActiveScene(currentScene);
             
             try
             {
@@ -425,7 +426,7 @@ namespace Chisel.Components
             finally
             {
                 if (currentScene != oldActiveScene)
-                    UnityEngine.SceneManagement.SceneManager.SetActiveScene(oldActiveScene);
+                    SceneManager.SetActiveScene(oldActiveScene);
             }
         }
 
@@ -503,7 +504,7 @@ namespace Chisel.Components
         }
         public static void ClearLightmapData(GameObjectState state, ChiselRenderObjects renderable)
         {
-            var lightmapStatic = (state.staticFlags & UnityEditor.StaticEditorFlags.ContributeGI) == UnityEditor.StaticEditorFlags.ContributeGI;
+            var lightmapStatic = (state.staticFlags & StaticEditorFlags.ContributeGI) == StaticEditorFlags.ContributeGI;
             if (lightmapStatic)
             {
                 renderable.meshRenderer.realtimeLightmapIndex = -1;
@@ -552,7 +553,7 @@ namespace Chisel.Components
                 !renderable.meshRenderer)
                 return;
             
-            UnityEditor.UnwrapParam.SetDefaults(out UnityEditor.UnwrapParam param);
+            UnwrapParam.SetDefaults(out UnwrapParam param);
             var uvSettings = model.UVGenerationSettings;
             param.angleError	= Mathf.Clamp(uvSettings.angleError,       SerializableUnwrapParam.minAngleError, SerializableUnwrapParam.maxAngleError);
             param.areaError		= Mathf.Clamp(uvSettings.areaError,        SerializableUnwrapParam.minAreaError,  SerializableUnwrapParam.maxAreaError );
@@ -581,9 +582,9 @@ namespace Chisel.Components
                 triangles	= oldTriangles
             };
             
-            var lightmapGenerationTime = UnityEditor.EditorApplication.timeSinceStartup;
-            UnityEditor.Unwrapping.GenerateSecondaryUVSet(tempMesh, param);
-            lightmapGenerationTime = UnityEditor.EditorApplication.timeSinceStartup - lightmapGenerationTime; 
+            var lightmapGenerationTime = EditorApplication.timeSinceStartup;
+            Unwrapping.GenerateSecondaryUVSet(tempMesh, param);
+            lightmapGenerationTime = EditorApplication.timeSinceStartup - lightmapGenerationTime; 
             
             // TODO: make a nicer text here
             Debug.Log("Generating lightmap UVs (by Unity) for the mesh '" + sharedMesh.name + "' of the Model named \"" + model.name +"\"\n"+
@@ -602,7 +603,7 @@ namespace Chisel.Components
 
             renderable.meshFilter.sharedMesh = null;
             renderable.meshFilter.sharedMesh = sharedMesh;
-            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(model.gameObject.scene);
+            EditorSceneManager.MarkSceneDirty(model.gameObject.scene);
         }
 #endif
 
@@ -626,7 +627,7 @@ namespace Chisel.Components
                 return false;
 #if UNITY_EDITOR
             var gameObject = model.gameObject;
-            var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
+            var sceneVisibilityManager = SceneVisibilityManager.instance;
             if (sceneVisibilityManager.AreAllDescendantsHidden(gameObject) ||
                 sceneVisibilityManager.IsPickingDisabledOnAllDescendants(gameObject))
                 return false;
@@ -649,7 +650,7 @@ namespace Chisel.Components
             };
 
 #if UNITY_EDITOR
-            var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
+            var sceneVisibilityManager = SceneVisibilityManager.instance;
             s_IgnoreVisibility = true;
             BeginDrawModeForCamera(ignoreBrushVisibility: true);
 #endif
@@ -732,7 +733,7 @@ namespace Chisel.Components
                 pair.Key.hideFlags = pair.Value;
 
 #if UNITY_EDITOR
-            var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
+            var sceneVisibilityManager = SceneVisibilityManager.instance;
             foreach (var pair in state.hierarchyHidden)
             {
                 if (pair.Value)
@@ -775,8 +776,7 @@ namespace Chisel.Components
         }
 
 #if UNITY_EDITOR
-        static readonly Dictionary<Camera, DrawModeFlags>   s_CameraDrawMode    = new Dictionary<Camera, DrawModeFlags>();
-
+        static readonly Dictionary<Camera, DrawModeFlags> s_CameraDrawMode = new();
         static bool s_IgnoreVisibility = false;
 
         public static void ResetCameraDrawMode(Camera camera)

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using UnityEditor.EditorTools;
 using UnityEditor.ShortcutManagement;
@@ -9,7 +9,7 @@ using ToolManager = UnityEditor.EditorTools;
 
 namespace Chisel.Editors
 {
-    [EditorTool("Chisel " + kToolName + " Tool", typeof(ChiselNode))]
+    //[EditorTool("Chisel " + kToolName + " Tool", typeof(ChiselNode))]
     class ChiselEditGeneratorTool : ChiselEditToolBase
     {
         const string kToolName = "Edit Generator";

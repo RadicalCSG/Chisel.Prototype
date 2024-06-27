@@ -9,7 +9,7 @@ using ToolManager = UnityEditor.EditorTools;
 
 namespace Chisel.Editors
 {
-    [EditorTool("Chisel " + kToolName + " Tool")]
+    //[EditorTool("Chisel " + kToolName + " Tool")]
     class ChiselPlacementTool : ChiselEditToolBase
     {
         static ChiselPlacementTool instance = null;

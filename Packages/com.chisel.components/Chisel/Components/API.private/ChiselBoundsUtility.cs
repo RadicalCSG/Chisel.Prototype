@@ -1,14 +1,12 @@
-using Chisel.Core;
-using UnityEngine.SceneManagement;
-using System.Collections.Generic;
+﻿using Chisel.Core;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Pool;
 
 namespace Chisel.Components
 {
     internal static class ChiselBoundsUtility
     {
-        static readonly HashSet<CSGTreeBrush> s_FoundBrushes = new HashSet<CSGTreeBrush>();
         public static Bounds CalculateBounds(ChiselGeneratorComponent generator)
         {
             if (!generator.TopTreeNode.Valid)
@@ -18,7 +16,7 @@ namespace Chisel.Components
             var minMax			= new ChiselAABB { };
             var boundsCount     = 0;
 
-            s_FoundBrushes.Clear();
+            var s_FoundBrushes = HashSetPool<CSGTreeBrush>.Get();
             ChiselGeneratedComponentManager.GetAllTreeBrushes(generator, s_FoundBrushes);
             foreach (var brush in s_FoundBrushes)
             {
@@ -45,6 +43,7 @@ namespace Chisel.Components
                     boundsCount++;
                 }
             }
+            HashSetPool<CSGTreeBrush>.Release(s_FoundBrushes);
             if (boundsCount == 0)
                 return ChiselHierarchyItem.EmptyBounds;
             var bounds = new Bounds();
@@ -61,7 +60,7 @@ namespace Chisel.Components
             var minMax			= new ChiselAABB { };
             var boundsCount     = 0;
 
-            s_FoundBrushes.Clear();
+            var s_FoundBrushes = HashSetPool<CSGTreeBrush>.Get();
             ChiselGeneratedComponentManager.GetAllTreeBrushes(generator, s_FoundBrushes);
             foreach (var brush in s_FoundBrushes)
             {
@@ -87,6 +86,7 @@ namespace Chisel.Components
                     boundsCount++;
                 }
             }
+            HashSetPool<CSGTreeBrush>.Release(s_FoundBrushes);
             if (boundsCount == 0)
                 return ChiselHierarchyItem.EmptyBounds;
             var bounds = new Bounds();

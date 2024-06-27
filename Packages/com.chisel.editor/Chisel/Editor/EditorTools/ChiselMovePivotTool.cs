@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Chisel.Core;
 using Chisel.Components;
 using Unity.Mathematics;
@@ -15,7 +15,7 @@ using ToolManager = UnityEditor.EditorTools;
 
 namespace Chisel.Editors
 {
-    [EditorTool("Chisel " + kToolName + " Tool", typeof(ChiselNode))]
+    //[EditorTool("Chisel " + kToolName + " Tool", typeof(ChiselNode))]
     class ChiselMovePivotTool : ChiselEditToolBase
     {
         const string kToolName = "Move Pivot";
