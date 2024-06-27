@@ -83,14 +83,14 @@ namespace Chisel.Editors
         #region Surface Move Tool
         static void TranslateSurfacesInWorldSpace(Vector3 translation)
         {
-            var movementInWorldSpace = Matrix4x4.TRS(translation, Quaternion.identity, Vector3.one); 
+            var movementInWorldSpace = Matrix4x4.TRS(-translation, Quaternion.identity, Vector3.one); 
             Undo.RecordObjects(ChiselUVToolCommon.selectedNodes, "Moved UV coordinates");
             for (int i = 0; i < ChiselUVToolCommon.selectedSurfaceReferences.Length; i++)
             {
                 // Translates the uv surfaces in a given direction. Since the z direction, relatively to the surface, 
                 // is basically removed in this calculation, it should behave well when we move multiple selected surfaces
                 // in any direction.
-                ChiselUVToolCommon.selectedSurfaceReferences[i].WorldSpaceTransformUV(in movementInWorldSpace, in ChiselUVToolCommon.selectedUVMatrices[i]);
+                ChiselUVToolCommon.selectedSurfaceReferences[i].WorldSpaceTransformUV(movementInWorldSpace, ChiselUVToolCommon.selectedUVMatrices[i]);
             }
         }
 
@@ -121,7 +121,7 @@ namespace Chisel.Editors
                         break;
 
                     ChiselUVToolCommon.StartToolDragging();
-                    TranslateSurfacesInWorldSpace(-ChiselUVToolCommon.worldDragDeltaVector); // TODO: figure out why this is reversed
+                    TranslateSurfacesInWorldSpace(ChiselUVToolCommon.worldDragDeltaVector);
                     break;
                 }
             }

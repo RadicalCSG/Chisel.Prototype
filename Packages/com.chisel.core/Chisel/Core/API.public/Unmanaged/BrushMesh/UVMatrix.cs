@@ -18,11 +18,6 @@ namespace Chisel.Core
         public const double kMinScale   = kScaleStep;
         const double kSnapEpsilon       = kScaleStep / 10.0f;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public UVMatrix(Matrix4x4 input) { U = input.GetRow(0); V = input.GetRow(1); }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public UVMatrix(Vector4 u, Vector4 v) { U = u; V = v; }
-
         /// <value>Used to convert a vertex coordinate to a U texture coordinate</value>
         public Vector4 U;
 
@@ -30,24 +25,48 @@ namespace Chisel.Core
         public Vector4 V;
 
 
-        // TODO: add description
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Matrix4x4 ToMatrix() { return (Matrix4x4)ToFloat4x4(); }
-
-        // TODO: add description
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float4x4 ToFloat4x4() 
+        public UVMatrix(float4 u, float4 v) 
         { 
-            return math.transpose(new float4x4 { c0 = U, c1 = V, c2 = new float4(math.cross((Vector3)U, (Vector3)V), 0), c3 = new Vector4(0, 0, 0, 1) }); 
+            U = u; 
+            V = v;
+            Validate();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public UVMatrix(Matrix4x4 input) 
+        { 
+            U = input.GetRow(0); 
+            V = input.GetRow(1);
+            Validate();
+        }
+
+        void Validate()
+        {
+            if (math.any(!math.isfinite(U)) || math.any(!math.isfinite(V)))
+            {
+                Debug.LogError("Resetting UV values since they are set to invalid floating point numbers.");
+                U = new float4(1, 0, 0, 0);
+                V = new float4(0, 1, 0, 0);
+            }
         }
 
         // TODO: add description
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public UVMatrix Set(Matrix4x4 input) { U = input.GetRow(0); V = input.GetRow(1); return this; }
+        public Matrix4x4 ToMatrix4x4() { return (Matrix4x4)ToFloat4x4(); }
 
         // TODO: add description
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static implicit operator Matrix4x4(UVMatrix input) { return input.ToMatrix(); }
+        public float4x4 ToFloat4x4()
+        {
+            Validate();
+            var w = new float4(math.cross(((float4)U).xyz, ((float4)V).xyz), 0);
+            return math.transpose(new float4x4 { c0 = U, c1 = V, c2 = w, c3 = new float4(0, 0, 0, 1) }); 
+        }
+
+        // TODO: add description
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static implicit operator Matrix4x4(UVMatrix input) { return input.ToMatrix4x4(); }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator UVMatrix(Matrix4x4 input) { return new UVMatrix(input); }
 
@@ -58,15 +77,14 @@ namespace Chisel.Core
         public static implicit operator UVMatrix(float4x4 input) { return new UVMatrix(input); }
 
         // TODO: add description
-        public static readonly UVMatrix identity = new UVMatrix(new Vector4(1,0,0,0.0f), new Vector4(0,1,0,0.0f));
-        public static readonly UVMatrix centered = new UVMatrix(new Vector4(1,0,0,0.5f), new Vector4(0,1,0,0.5f));
+        public static readonly UVMatrix identity = new(new float4(1,0,0,0.0f), new float4(0,1,0,0.0f));
+        public static readonly UVMatrix centered = new(new float4(1,0,0,0.5f), new float4(0,1,0,0.5f));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static UVMatrix TRS(float2 translation, float rotation, float2 scale)
         {
-            var rotation2d      = quaternion.AxisAngle(new float3(0, 0, 1), math.radians(rotation));
-            var scale3d         = new float3(scale.x, scale.y, 1.0f);
-
+            var scale3d = new float3(scale, 1.0f);
+            var rotation2d = quaternion.AxisAngle(new float3(0, 0, 1), math.radians(rotation));
             return (UVMatrix)(float4x4.TRS(new float3(translation, 0), rotation2d, scale3d));
         }
         
@@ -102,14 +120,13 @@ namespace Chisel.Core
             scale.y = (float)math.max(math.abs(scale.y), kMinScale) * Math.Sign(scale.y);
             
             var newUvMatrix = UVMatrix.TRS(translation, rotation, scale);
-            if (math.dot((Vector3)V, (Vector3)newUvMatrix.V) < 0) scale.y = -scale.y;
-            if (math.dot((Vector3)U, (Vector3)newUvMatrix.U) < 0) scale.x = -scale.x;
+            if (math.dot(((float4)V).xyz, ((float4)newUvMatrix.V).xyz) < 0) scale.y = -scale.y;
+            if (math.dot(((float4)U).xyz, ((float4)newUvMatrix.U).xyz) < 0) scale.x = -scale.x;
+            Validate();
         }
 
-        public override string ToString()
-        {
-            return $@"{{U: {U}, V: {V}}}";  
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override readonly string ToString() { return $@"{{U: {U}, V: {V}}}"; }
 
         #region Comparison
         [EditorBrowsable(EditorBrowsableState.Never), MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -118,9 +135,9 @@ namespace Chisel.Core
         public static bool operator !=(UVMatrix left, UVMatrix right) { return left.U != right.U || left.V != right.V; }
 
         [EditorBrowsable(EditorBrowsableState.Never), MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool Equals(object obj) { if (!(obj is UVMatrix)) return false; var uv = (UVMatrix)obj; return this == uv; }
+        public override readonly bool Equals(object obj) { if (obj is not UVMatrix) return false; var uv = (UVMatrix)obj; return this == uv; }
         [EditorBrowsable(EditorBrowsableState.Never), MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode() { unchecked { return (int)math.hash(new uint2(math.hash(U), math.hash(V))); } }
+        public override readonly int GetHashCode() { unchecked { return (int)math.hash(new uint2(math.hash(U), math.hash(V))); } }
         #endregion
     }
 }

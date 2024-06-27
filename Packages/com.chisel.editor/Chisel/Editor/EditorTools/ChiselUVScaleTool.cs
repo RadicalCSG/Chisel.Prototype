@@ -101,7 +101,7 @@ namespace Chisel.Editors
             Undo.RecordObjects(ChiselUVToolCommon.selectedNodes, "Scale UV coordinates");
             for (int i = 0; i < ChiselUVToolCommon.selectedSurfaceReferences.Length; i++)
             {
-                var rotationInPlaneSpace = ChiselUVToolCommon.selectedSurfaceReferences[i].WorldSpaceToPlaneSpace(in worldspaceRotation);
+                var rotationInPlaneSpace = ChiselUVToolCommon.selectedSurfaceReferences[i].WorldSpaceToPlaneSpace(worldspaceRotation);
 
                 // TODO: Finish this. If we have multiple surfaces selected, we want other non-aligned surfaces to move/rotate in a nice way
                 //		 last thing we want is that these surfaces are rotated in such a way that the uvs are rotated into infinity.
@@ -110,7 +110,7 @@ namespace Chisel.Editors
                 var rotateToPlane = Quaternion.FromToRotation(rotationInPlaneSpace.GetColumn(2), Vector3.forward);
                 var fixedRotation = Matrix4x4.TRS(Vector3.zero, rotateToPlane, Vector3.one) * rotationInPlaneSpace;
 
-                ChiselUVToolCommon.selectedSurfaceReferences[i].PlaneSpaceTransformUV(in fixedRotation, in ChiselUVToolCommon.selectedUVMatrices[i]);
+                ChiselUVToolCommon.selectedSurfaceReferences[i].PlaneSpaceTransformUV(fixedRotation, ChiselUVToolCommon.selectedUVMatrices[i]);
             }
         }
 
