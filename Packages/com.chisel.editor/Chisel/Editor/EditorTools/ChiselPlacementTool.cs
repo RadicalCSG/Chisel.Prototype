@@ -18,6 +18,9 @@ namespace Chisel.Editors
     [EditorTool("Chisel " + kToolName + " Tool")]
     class ChiselPlacementTool : ChiselEditToolBase
     {
+        static ChiselPlacementTool instance = null;
+        ChiselPlacementTool() { instance = this; }
+
         public const string kToolName = "Placement";
         public override string ToolName => kToolName;
 
@@ -130,21 +133,12 @@ namespace Chisel.Editors
             generatorMode.ShowSceneGUI(sceneView, dragArea);
         }
 
-        static SortedList<string, ChiselEditToolBase> editModes = new SortedList<string, ChiselEditToolBase>();
-
-        internal static void Register(ChiselEditToolBase editMode)
-        {
-            if (editMode.GetType() == typeof(ChiselPlacementTool))
-                return;
-            editModes[editMode.ToolName] = editMode;
-            editMode.UpdateIcon();
-        }
-
         public static void UpdatePlacementToolIcon()
         {
-            if (!editModes.TryGetValue(ChiselPlacementTool.kToolName, out ChiselEditToolBase toolBase))
-                return;
-            toolBase.UpdateIcon();
+            if (instance != null)
+            {
+                instance.UpdateIcon();
+            }
         }
     }
 }

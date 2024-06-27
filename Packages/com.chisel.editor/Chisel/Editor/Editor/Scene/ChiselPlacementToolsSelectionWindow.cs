@@ -172,6 +172,7 @@ namespace Chisel.Editors
                     {
                         ChiselPlacementTool.ActivateTool();
                         ChiselGeneratorManager.GeneratorMode = generator;
+                        ToolManager.RefreshAvailableTools();
                         ChiselEditorSettings.Save();
                     }
                     SceneView.RepaintAll();
@@ -305,7 +306,7 @@ namespace Chisel.Editors
         }
 
 
-        public static void RenderCreationTools()
+        public static void RenderGeneratorTools()
         {
             InitStyles();
 

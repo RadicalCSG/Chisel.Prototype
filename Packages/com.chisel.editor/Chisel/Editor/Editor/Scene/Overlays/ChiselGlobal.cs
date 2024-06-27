@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -29,6 +29,15 @@ namespace Chisel.Editors
         {
             ChiselToolbarUtility.SetupToolbarElement(this, kIcon, kTooltip);
             this.clicked += OnClicked;
+            ChiselSelectionManager.GeneratorSelectionUpdated += UpdateEnabledState;
+            UpdateEnabledState();
+        }
+
+        protected void UpdateEnabledState()
+        {
+            bool enabled = ChiselSelectionManager.AreNodesSelected;
+            if (this.enabledSelf != enabled)
+                this.SetEnabled(enabled);
         }
 
         private void OnClicked()
@@ -49,6 +58,15 @@ namespace Chisel.Editors
         {
             ChiselToolbarUtility.SetupToolbarElement(this, kIcon, kTooltip);
             this.clicked += OnClicked;
+            ChiselSelectionManager.GeneratorSelectionUpdated += UpdateEnabledState;
+            UpdateEnabledState();
+        }
+
+        protected void UpdateEnabledState()
+        {
+            bool enabled = ChiselSelectionManager.AreNodesSelected;
+            if (this.enabledSelf != enabled)
+                this.SetEnabled(enabled);
         }
 
         private void OnClicked()
