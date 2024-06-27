@@ -6,6 +6,7 @@ using Chisel.Core;
 using Chisel.Components;
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.Pool;
 
 namespace Chisel.Editors
 {
@@ -30,39 +31,38 @@ namespace Chisel.Editors
             selectedSurfacesArray = selectedSurfaces.ToArray();
         }
 
-        // Hack to ensure we don't have objects that have been removed
-        static List<SurfaceReference> s_DestroyedSurfaces = new List<SurfaceReference>();
         internal void Clean()
         {
-            s_DestroyedSurfaces.Clear();
+            var destroyedSurfaces = ListPool<SurfaceReference>.Get();
+            destroyedSurfaces.Clear();
             foreach (var surface in selectedSurfaces)
                 if (surface.node == null)
-                    s_DestroyedSurfaces.Add(surface);
-            foreach (var surface in s_DestroyedSurfaces)
+                    destroyedSurfaces.Add(surface);
+            foreach (var surface in destroyedSurfaces)
                 selectedSurfaces.Remove(surface);
 
-            s_DestroyedSurfaces.Clear();
+            destroyedSurfaces.Clear();
             foreach (var surface in hoverSurfaces)
                 if (surface.node == null)
-                    s_DestroyedSurfaces.Add(surface);
-            foreach (var surface in s_DestroyedSurfaces)
+                    destroyedSurfaces.Add(surface);
+            foreach (var surface in destroyedSurfaces)
                 hoverSurfaces.Remove(surface);
 
-            s_DestroyedSurfaces.Clear();
+            destroyedSurfaces.Clear();
             if (selectedSurfacesArray != null)
             {
                 foreach (var surface in selectedSurfacesArray)
                     if (surface.node == null)
-                        s_DestroyedSurfaces.Add(surface);
+                        destroyedSurfaces.Add(surface);
             }
-            if (s_DestroyedSurfaces.Count > 0)
+            if (destroyedSurfaces.Count > 0)
             {
                 var items = selectedSurfacesArray.ToList();
-                foreach (var surface in s_DestroyedSurfaces)
+                foreach (var surface in destroyedSurfaces)
                     items.Remove(surface);
                 selectedSurfacesArray = items.ToArray();
             }
-            s_DestroyedSurfaces.Clear();
+            ListPool<SurfaceReference>.Release(destroyedSurfaces);
         }
     }
     

@@ -22,54 +22,54 @@ namespace Chisel.Editors
         public static Action OperationNodesSelectionUpdated;
         public static Action GeneratorSelectionUpdated;
 
-        static bool currHaveNodes = false;
-        static bool currHaveOperationNodes = false;
-        static bool currHaveGenerators = false;
-        static CSGOperationType? currOperation = null;
-        static List<ChiselNode> nodes = new List<ChiselNode>();
-        static List<IChiselHasOperation> operationNodes = new List<IChiselHasOperation>();
-        static List<ChiselGeneratorComponent> generators = new List<ChiselGeneratorComponent>();
+        //static bool s_CurrHaveNodes = false;
+        static bool s_CurrHaveOperationNodes = false;
+        static bool s_CurrHaveGenerators = false;
+        static CSGOperationType? s_CurrOperation = null;
+        static readonly List<ChiselNode> s_Nodes = new();
+        static readonly List<IChiselHasOperation> s_OperationNodes = new();
+        static readonly List<ChiselGeneratorComponent> s_Generators = new();
 
         static void UpdateSelection()
         {
-            nodes.Clear();
-            nodes.AddRange(Selection.GetFiltered<ChiselNode>(SelectionMode.DeepAssets));
-            generators.Clear();
-            operationNodes.Clear();
-            foreach (var node in nodes)
+            s_Nodes.Clear();
+            s_Nodes.AddRange(Selection.GetFiltered<ChiselNode>(SelectionMode.DeepAssets));
+            s_Generators.Clear();
+            s_OperationNodes.Clear();
+            foreach (var node in s_Nodes)
             {
                 if (node is ChiselGeneratorComponent generator)
                 {
-                    generators.Add(generator);
-                    operationNodes.Add(generator);
+                    s_Generators.Add(generator);
+                    s_OperationNodes.Add(generator);
                 } else if (node is IChiselHasOperation hasOperation)
                 {
-                    operationNodes.Add(hasOperation);
+                    s_OperationNodes.Add(hasOperation);
                 }
             }
 
-            var prevOperation = currOperation;
+            var prevOperation = s_CurrOperation;
             UpdateOperationSelection();
 
             //var prevHaveNodes = currHaveNodes;
-            currHaveNodes = nodes.Count > 0;
+            //s_CurrHaveNodes = s_Nodes.Count > 0;
 
-            var prevHaveGenerators = currHaveGenerators;
-            currHaveGenerators = generators.Count > 0;
+            var prevHaveGenerators = s_CurrHaveGenerators;
+            s_CurrHaveGenerators = s_Generators.Count > 0;
 
-            var prevHaveOperationNodes = currHaveOperationNodes;
-            currHaveOperationNodes = operationNodes.Count > 0;
+            var prevHaveOperationNodes = s_CurrHaveOperationNodes;
+            s_CurrHaveOperationNodes = s_OperationNodes.Count > 0;
 
             //if (prevHaveNodes || currHaveNodes)
             //    NodesSelectionUpdated?.Invoke();
 
-            if (prevHaveGenerators || currHaveGenerators)
+            if (prevHaveGenerators || s_CurrHaveGenerators)
                 GeneratorSelectionUpdated?.Invoke();
 
-            if (prevHaveOperationNodes || currHaveOperationNodes)
+            if (prevHaveOperationNodes || s_CurrHaveOperationNodes)
                 OperationNodesSelectionUpdated?.Invoke();
 
-            if (prevOperation != currOperation)
+            if (prevOperation != s_CurrOperation)
                 NodeOperationUpdated?.Invoke();
         }
 
@@ -77,42 +77,42 @@ namespace Chisel.Editors
         // TODO: needs to be called when any operation changes, anywhere
         public static void UpdateOperationSelection()
         {
-            currOperation = null;
+            s_CurrOperation = null;
             bool found = false;
-            foreach (var operationNode in operationNodes)
+            foreach (var operationNode in s_OperationNodes)
             {
                 if (!found)
                 {
-                    currOperation = operationNode.Operation;
+                    s_CurrOperation = operationNode.Operation;
                     found = true;
                 } else
-                if (currOperation.HasValue && currOperation.Value != operationNode.Operation)
-                    currOperation = null;
+                if (s_CurrOperation.HasValue && s_CurrOperation.Value != operationNode.Operation)
+                    s_CurrOperation = null;
             }
         }
 
         public static void SetOperationForSelection(CSGOperationType newOperation)
         {
-            if (currOperation == newOperation)
+            if (s_CurrOperation == newOperation)
                 return;
 
-            foreach (var hasOperation in operationNodes)
+            foreach (var hasOperation in s_OperationNodes)
                 hasOperation.Operation = newOperation;
 
-            var prevOperation = currOperation;
+            var prevOperation = s_CurrOperation;
             UpdateOperationSelection();
-            if (prevOperation != currOperation)
+            if (prevOperation != s_CurrOperation)
                 NodeOperationUpdated?.Invoke();
         }
 
-        public static IReadOnlyList<ChiselGeneratorComponent> SelectedGenerators { get { return generators; } }
-        public static bool AreGeneratorsSelected { get { return generators.Count > 0; } }
+        public static IReadOnlyList<ChiselGeneratorComponent> SelectedGenerators { get { return s_Generators; } }
+        public static bool AreGeneratorsSelected { get { return s_Generators.Count > 0; } }
 
-        public static IReadOnlyList<ChiselNode> SelectedNodes { get { return nodes; } }
-        public static bool AreNodesSelected { get { return nodes.Count > 0; } }
+        public static IReadOnlyList<ChiselNode> SelectedNodes { get { return s_Nodes; } }
+        public static bool AreNodesSelected { get { return s_Nodes.Count > 0; } }
 
-        public static IReadOnlyList<IChiselHasOperation> SelectedOperationNodes { get { return operationNodes; } }
-        public static bool AreOperationNodesSelected { get { return operationNodes.Count > 0; } }
-        public static CSGOperationType? OperationOfSelectedNodes { get { return currOperation; } }
+        public static IReadOnlyList<IChiselHasOperation> SelectedOperationNodes { get { return s_OperationNodes; } }
+        public static bool AreOperationNodesSelected { get { return s_OperationNodes.Count > 0; } }
+        public static CSGOperationType? OperationOfSelectedNodes { get { return s_CurrOperation; } }
     }
 }

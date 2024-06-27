@@ -38,19 +38,19 @@ namespace Chisel.Editors
             else
                 this.camera = null;
             this.mouseCursor = null;
-            highlightHandles.Clear();
-            editorHandlesToDraw.Clear();
+            s_HighlightHandles.Clear();
+            s_EditorHandlesToDraw.Clear();
             if (Event.current != null)
                 internalMouseRay = UnityEditor.HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
         }
 
         public void End()
         {
-            if (editorHandlesToDraw.Count > 0)
+            if (s_EditorHandlesToDraw.Count > 0)
             {
-                foreach (var handle in editorHandlesToDraw)
+                foreach (var handle in s_EditorHandlesToDraw)
                 {
-                    var focus = highlightHandles.Contains(handle);
+                    var focus = s_HighlightHandles.Contains(handle);
                     handle.Draw(this, focus);
                 }
             }
@@ -60,8 +60,8 @@ namespace Chisel.Editors
                 rect.min = Vector2.zero;
                 EditorGUIUtility.AddCursorRect(rect, this.mouseCursor.Value);
             }
-            highlightHandles.Clear();
-            editorHandlesToDraw.Clear();
+            s_HighlightHandles.Clear();
+            s_EditorHandlesToDraw.Clear();
             this.focusControl = 0;
             this.disabled = true;
             this.generator = null;
@@ -88,8 +88,8 @@ namespace Chisel.Editors
             }
         }
 
-        static HashSet<IChiselEditorHandle> editorHandlesToDraw = new HashSet<IChiselEditorHandle>();
-        static HashSet<IChiselEditorHandle> highlightHandles = new HashSet<IChiselEditorHandle>();
+        static readonly HashSet<IChiselEditorHandle> s_EditorHandlesToDraw = new();
+        static readonly HashSet<IChiselEditorHandle> s_HighlightHandles = new();
 
         public bool IsIn2DMode
         {
@@ -679,8 +679,8 @@ namespace Chisel.Editors
                     var focus = lastHandleHadFocus || hot;
                     for (int i = 0; i < handles.Length; i++)
                     {
-                        if (focus) highlightHandles.Add((IChiselEditorHandle)handles[i]);
-                        editorHandlesToDraw.Add((IChiselEditorHandle)handles[i]);
+                        if (focus) s_HighlightHandles.Add((IChiselEditorHandle)handles[i]);
+                        s_EditorHandlesToDraw.Add((IChiselEditorHandle)handles[i]);
                     }
                     break;
                 }
@@ -723,8 +723,8 @@ namespace Chisel.Editors
                         var focus = lastHandleHadFocus || hot;
                         for (int i = 0; i < handles.Length; i++)
                         {
-                            if (focus) highlightHandles.Add((IChiselEditorHandle)handles[i]);
-                            editorHandlesToDraw.Add((IChiselEditorHandle)handles[i]);
+                            if (focus) s_HighlightHandles.Add((IChiselEditorHandle)handles[i]);
+                            s_EditorHandlesToDraw.Add((IChiselEditorHandle)handles[i]);
                         }
                         break;
                     }
@@ -784,8 +784,8 @@ namespace Chisel.Editors
                         var focus = lastHandleHadFocus || hot;
                         for (int i = 0; i < handles.Length; i++)
                         {
-                            if (focus) highlightHandles.Add((IChiselEditorHandle)handles[i]);
-                            editorHandlesToDraw.Add((IChiselEditorHandle)handles[i]);
+                            if (focus) s_HighlightHandles.Add((IChiselEditorHandle)handles[i]);
+                            s_EditorHandlesToDraw.Add((IChiselEditorHandle)handles[i]);
                         }
                         break;
                     }
@@ -900,8 +900,8 @@ namespace Chisel.Editors
                         var focus = lastHandleHadFocus || hot;
                         for (int i = 0; i < handles.Length; i++)
                         {
-                            if (focus) highlightHandles.Add((IChiselEditorHandle)handles[i]);
-                            editorHandlesToDraw.Add((IChiselEditorHandle)handles[i]);
+                            if (focus) s_HighlightHandles.Add((IChiselEditorHandle)handles[i]);
+                            s_EditorHandlesToDraw.Add((IChiselEditorHandle)handles[i]);
                         }
                         break;
                     }
@@ -1013,8 +1013,8 @@ namespace Chisel.Editors
                         var focus = lastHandleHadFocus || hot;
                         for (int i = 0; i < handles.Length; i++)
                         {
-                            if (focus) highlightHandles.Add((IChiselEditorHandle)handles[i]);
-                            editorHandlesToDraw.Add((IChiselEditorHandle)handles[i]);
+                            if (focus) s_HighlightHandles.Add((IChiselEditorHandle)handles[i]);
+                            s_EditorHandlesToDraw.Add((IChiselEditorHandle)handles[i]);
                         }
                         break;
                     }

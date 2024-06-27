@@ -49,7 +49,7 @@ namespace Chisel.Editors
             public Dictionary<Type, ToggleIcons[]>  toggleIconLookup    = new Dictionary<Type, ToggleIcons[]>();
         }
 
-        static Dictionary<Type, ObjectTypeLookup> objectTypeLookup = new Dictionary<Type, ObjectTypeLookup>();
+        static readonly Dictionary<Type, ObjectTypeLookup> s_ObjectTypeLookup = new();
         
         class Styles
         {
@@ -100,8 +100,8 @@ namespace Chisel.Editors
         static ToggleIcons[] GetIconsForProperty(SerializedProperty property)
         {
             var serializedObjectType = property.serializedObject.targetObject.GetType();
-            if (!objectTypeLookup.TryGetValue(serializedObjectType, out var lookup))
-                objectTypeLookup[serializedObjectType] = lookup = new ObjectTypeLookup();
+            if (!s_ObjectTypeLookup.TryGetValue(serializedObjectType, out var lookup))
+                s_ObjectTypeLookup[serializedObjectType] = lookup = new ObjectTypeLookup();
 
             var propertyPath = property.propertyPath;
             if (!lookup.propertyTypeLookup.TryGetValue(propertyPath, out var type))

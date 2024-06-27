@@ -737,7 +737,7 @@ namespace Chisel.Core
         }
 
         // Do not use. This method might be removed/renamed in the future
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ClearDirty(CompactNodeID compactNodeID)
@@ -750,7 +750,7 @@ namespace Chisel.Core
         }
 
         // Do not use. This method might be removed/renamed in the future
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ClearDirty(CSGTreeNode treeNode)
@@ -1773,9 +1773,9 @@ namespace Chisel.Core
             PickingEnabled  = 2,
             Selectable      = Visible | PickingEnabled
         }
-        static Dictionary<int, BrushVisibilityState> brushSelectableState = new Dictionary<int, BrushVisibilityState>();
+        static readonly Dictionary<int, BrushVisibilityState> brushSelectableState = new();
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetVisibility(NodeID nodeID, [MarshalAs(UnmanagedType.U1)] bool visible)
         {
@@ -1791,11 +1791,10 @@ namespace Chisel.Core
             var state = (visible ? BrushVisibilityState.Visible : BrushVisibilityState.None);
             if (brushSelectableState.TryGetValue(userID, out var result))
                 state |= (result & BrushVisibilityState.PickingEnabled);
-
             brushSelectableState[userID] = state;
         }
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetPickingEnabled(NodeID nodeID, [MarshalAs(UnmanagedType.U1)] bool pickingEnabled)
         {
@@ -1814,7 +1813,7 @@ namespace Chisel.Core
             brushSelectableState[userID] = state;
         }
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsBrushVisible(NodeID nodeID)
@@ -1833,7 +1832,7 @@ namespace Chisel.Core
             return (result & BrushVisibilityState.Visible) == BrushVisibilityState.Visible;
         }
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsBrushPickingEnabled(NodeID nodeID)
@@ -1852,7 +1851,7 @@ namespace Chisel.Core
             return (result & BrushVisibilityState.PickingEnabled) != BrushVisibilityState.None;
         }
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsBrushSelectable(NodeID nodeID)
@@ -2011,13 +2010,13 @@ namespace Chisel.Core
         internal static bool SetDirty(NodeID nodeID) { return instance.SetDirty(nodeID); }
 
         // Do not use. This method might be removed/renamed in the future
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ClearDirty(CompactNodeID compactNodeID) { return instance.ClearDirty(compactNodeID); }
 
         // Do not use. This method might be removed/renamed in the future
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ClearDirty(CSGTreeNode treeNode) { return instance.ClearDirty(treeNode); }

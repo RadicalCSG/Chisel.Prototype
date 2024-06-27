@@ -189,8 +189,8 @@ namespace Chisel.Editors
     // TODO: clean up, rename
     internal static class ChiselRectSelectionManager
     {
-        static HashSet<CSGTreeNode> rectFoundTreeNodes	= new HashSet<CSGTreeNode>();
-        static HashSet<GameObject> rectFoundGameObjects = new HashSet<GameObject>();
+        static HashSet<CSGTreeNode> rectFoundTreeNodes	= new();
+        static HashSet<GameObject> rectFoundGameObjects = new();
         static Vector2  prevStartGUIPoint;
         static Vector2  prevMouseGUIPoint;
         static Vector2  prevStartScreenPoint;

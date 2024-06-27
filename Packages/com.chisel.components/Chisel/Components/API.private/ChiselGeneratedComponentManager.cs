@@ -17,7 +17,7 @@ namespace Chisel.Components
         public const string kGeneratedDefaultModelName  = "‹[default-model]›";
         public const string kGeneratedContainerName     = "‹[generated]›";
 
-        static readonly HashSet<ChiselModel> models = new();
+        static readonly HashSet<ChiselModel> s_Models = new();
 
 #if UNITY_EDITOR
         const float kGenerateUVDelayTime = 1.0f;
@@ -27,7 +27,7 @@ namespace Chisel.Components
 
         public void Register(ChiselModel model)
         {
-            models.Add(model);
+            s_Models.Add(model);
         }
 
         public void Unregister(ChiselModel model)
@@ -35,8 +35,8 @@ namespace Chisel.Components
             // If we removed our model component, we should remove the containers
             if (!model && model.hierarchyItem.GameObject)
                 RemoveContainerGameObjectWithUndo(model);
-            
-            models.Remove(model);
+
+            s_Models.Remove(model);
         }
 
         public static void ForceUpdateDelayedUVGeneration()
@@ -73,7 +73,7 @@ namespace Chisel.Components
             float currentTime = Time.realtimeSinceStartup;
 
             haveUVsToUpdate = false;
-            foreach (var model in models)
+            foreach (var model in s_Models)
             {
                 if (!model)
                     continue;
@@ -183,7 +183,7 @@ namespace Chisel.Components
 
         public static DrawModeFlags UpdateHelperSurfaceState(DrawModeFlags helperStateFlags, bool ignoreBrushVisibility = true)
         {
-            foreach (var model in models)
+            foreach (var model in s_Models)
             {
                 if (!model || !model.isActiveAndEnabled || model.generated == null)
                     continue;
@@ -221,7 +221,7 @@ namespace Chisel.Components
 
         public static void OnRenderModels(Camera camera, DrawModeFlags helperStateFlags)
         {
-            foreach (var model in models)
+            foreach (var model in s_Models)
             {
                 if (model == null)
                     continue;
@@ -311,7 +311,7 @@ namespace Chisel.Components
             //          B. updating lightmaps needs to still work as if original mesh is changed
             s_VisibilityStateLookup.Clear();
             var sceneVisibilityManager = SceneVisibilityManager.instance;
-            foreach (var node in ChiselGeneratedModelMeshManager.registeredNodeLookup)
+            foreach (var node in ChiselGeneratedModelMeshManager.s_RegisteredNodeLookup)
             {
                 if (!node || !node.isActiveAndEnabled)
                     continue;
@@ -323,7 +323,7 @@ namespace Chisel.Components
                 }
             }
 
-            foreach (var model in models)
+            foreach (var model in s_Models)
             {
                 if (!model || !model.isActiveAndEnabled || model.generated == null)
                     continue;
@@ -655,7 +655,7 @@ namespace Chisel.Components
             BeginDrawModeForCamera(ignoreBrushVisibility: true);
 #endif
 
-            foreach (var model in models)
+            foreach (var model in s_Models)
             {
                 if (!IsValidModelToBeSelected(model))
                     continue;

@@ -188,46 +188,53 @@ namespace Chisel.Components
             return null;
         }
 
-        static List<Scene>                      s_RemoveScenes      = new List<Scene>();
-        static Dictionary<Scene, ChiselModel>   s_SetSceneModels    = new Dictionary<Scene, ChiselModel>();
         public static void CheckActiveModels()
         {
             // Go through all activeModels, which we store per scene, and make sure they still make sense
-            s_RemoveScenes.Clear();
-            s_SetSceneModels.Clear();
-            foreach (var pair in Instance.activeModels)
+
+            var removeScenes = ListPool<Scene>.Get();
+            var setSceneModels = DictionaryPool<Scene, ChiselModel>.Get();
+            try
             {
-                // If the scene is no longer loaded, remove it from our list
-                if (!pair.Key.isLoaded || !pair.Key.IsValid())
+                foreach (var pair in Instance.activeModels)
                 {
-                    s_RemoveScenes.Add(pair.Key);
+                    // If the scene is no longer loaded, remove it from our list
+                    if (!pair.Key.isLoaded || !pair.Key.IsValid())
+                    {
+                        removeScenes.Add(pair.Key);
+                    }
+
+                    // Check if a current activeModel still exists
+                    var sceneActiveModel = pair.Value;
+                    if (!sceneActiveModel)
+                    {
+                        setSceneModels[pair.Key] = FindModelInScene(pair.Key);
+                        //Instance.activeModels[pair.Key] = FindModelInScene(pair.Key);
+                        continue;
+                    }
+
+                    // Check if a model has been moved to another scene, and correct this if it has
+                    var gameObjectScene = sceneActiveModel.gameObject.scene;
+                    if (gameObjectScene != pair.Key)
+                    {
+                        setSceneModels[pair.Key] = FindModelInScene(pair.Key);
+                        setSceneModels[gameObjectScene] = FindModelInScene(pair.Key);
+                    }
                 }
-                
-                // Check if a current activeModel still exists
-                var sceneActiveModel = pair.Value;
-                if (!sceneActiveModel)
-                {
-                    s_SetSceneModels[pair.Key] = FindModelInScene(pair.Key);
-                    //Instance.activeModels[pair.Key] = FindModelInScene(pair.Key);
-                    continue;
-                } 
-                
-                // Check if a model has been moved to another scene, and correct this if it has
-                var gameObjectScene = sceneActiveModel.gameObject.scene;
-                if (gameObjectScene != pair.Key)
-                {
-                    s_SetSceneModels[pair.Key] = FindModelInScene(pair.Key);
-                    s_SetSceneModels[gameObjectScene] = FindModelInScene(pair.Key);
-                }
+
+
+                foreach (var scene in removeScenes)
+                    Instance.activeModels.Remove(scene);
+
+
+                foreach (var pair in setSceneModels)
+                    Instance.activeModels[pair.Key] = pair.Value;
             }
-
-
-            foreach(var scene in s_RemoveScenes)
-                Instance.activeModels.Remove(scene);
-
-
-            foreach (var pair in s_SetSceneModels)
-                Instance.activeModels[pair.Key] = pair.Value;
+            finally
+            {
+                ListPool<Scene>.Release(removeScenes);
+                DictionaryPool<Scene, ChiselModel>.Release(setSceneModels);
+            }
         }
 
 #if UNITY_EDITOR

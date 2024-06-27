@@ -11,7 +11,7 @@ namespace Chisel.Editors
     {
         static Matrix4x4		s_Transformation = Matrix4x4.identity;
         static ChiselModel		s_ModelBeneathCursor;
-        static List<Vector3>	s_Points = new List<Vector3>();
+        static List<Vector3>	s_Points = new();
         static bool             s_ModifyMode = false;
         static float            s_LastHeight = 1.0f;
         static float            s_NextHeight = 1.0f;

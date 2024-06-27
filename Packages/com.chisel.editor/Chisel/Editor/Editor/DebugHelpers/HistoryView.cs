@@ -10,8 +10,8 @@ namespace Chisel.Editors
         [MenuItem("Chisel DEBUG/Undo Window")]
         static void Create()
         {
-            window = (HistoryWindow)EditorWindow.GetWindow(typeof(HistoryWindow), false, "History");
-            window.autoRepaintOnSceneChange = true;
+            s_Window = (HistoryWindow)EditorWindow.GetWindow(typeof(HistoryWindow), false, "History");
+            s_Window.autoRepaintOnSceneChange = true;
         }
         [InitializeOnLoadMethod]
         public static void Initialize()
@@ -25,11 +25,11 @@ namespace Chisel.Editors
 
         }
 
-        static List<HistoryWindow> historyWindows = new List<HistoryWindow>();
-        static List<string> undoRecords = new List<string>();
-        static List<string> redoRecords = new List<string>();
-        static int undoPosition = 0;
-        static HistoryWindow window;
+        static readonly List<HistoryWindow> s_HistoryWindows = new();
+        static readonly List<string> s_UndoRecords = new();
+        static readonly List<string> s_RedoRecords = new();
+        static int s_UndoPosition = 0;
+        static HistoryWindow s_Window;
 
         static bool dirty = true;
         
@@ -38,18 +38,18 @@ namespace Chisel.Editors
 
         HistoryWindow()
         {
-            historyWindows.Add(this);
+            s_HistoryWindows.Add(this);
         }
 
         void OnDestroy()
         {
-            historyWindows.Remove(this);
+            s_HistoryWindows.Remove(this);
         }
         static void UpdateLists()
         {
             dirty = false;
-            GetRecords?.Invoke(undoRecords, redoRecords);
-            undoPosition = undoRecords.Count;
+            GetRecords?.Invoke(s_UndoRecords, s_RedoRecords);
+            s_UndoPosition = s_UndoRecords.Count;
         }
 
         class Styles
@@ -100,16 +100,16 @@ namespace Chisel.Editors
             do
             {
                 Undo.PerformUndo();
-                GetRecords?.Invoke(undoRecords, redoRecords);
+                GetRecords?.Invoke(s_UndoRecords, s_RedoRecords);
             }
-            while (undoRecords.Count > position);
+            while (s_UndoRecords.Count > position);
         }
         void RedoUntilAtPosition(int position)
         {
-            while (undoRecords.Count < position)
+            while (s_UndoRecords.Count < position)
             {
                 Undo.PerformRedo();
-                GetRecords?.Invoke(undoRecords, redoRecords);
+                GetRecords?.Invoke(s_UndoRecords, s_RedoRecords);
             }
         }
 
@@ -130,7 +130,7 @@ namespace Chisel.Editors
                 prevSkin != GUI.skin)
                 UpdateStyles();
 
-            int totalCount = undoRecords.Count + redoRecords.Count + 1;
+            int totalCount = s_UndoRecords.Count + s_RedoRecords.Count + 1;
             int viewCount = Mathf.CeilToInt(position.height / kItemHeight);
 
             Rect scrollpos = position;
@@ -145,7 +145,7 @@ namespace Chisel.Editors
 
             if (wasDirty)
             {
-                var selectedY0 = kPadding + (undoPosition * kItemHeight);
+                var selectedY0 = kPadding + (s_UndoPosition * kItemHeight);
                 if (selectedY0 < m_ScrollPos.y)
                 {
                     m_ScrollPos.y = selectedY0 - kPadding;
@@ -167,7 +167,7 @@ namespace Chisel.Editors
 
                 var rect		= new Rect((kPadding * 2), kPadding + start, position.width - kScrollWidth, kItemHeight);
 
-                int undoRecordsCount = undoRecords.Count;
+                int undoRecordsCount = s_UndoRecords.Count;
                 for (int i = firstIndex, iCount = Mathf.Min(totalCount, firstIndex + viewCount); i < iCount; i++)
                 {
                     string item;
@@ -175,18 +175,18 @@ namespace Chisel.Editors
                         item = "End of history";
                     else
                     if ((i - 1) < undoRecordsCount)
-                        item = undoRecords[i - 1];
+                        item = s_UndoRecords[i - 1];
                     else
-                        item = redoRecords[totalCount - 1 - i];
+                        item = s_RedoRecords[totalCount - 1 - i];
 
-                    if (i < undoPosition)
+                    if (i < s_UndoPosition)
                     {
                         if (GUI.Button(rect, item, styles.undoable))
                         {
                             UndoUntilAtPosition(i);
                             return;
                         }
-                    } else if (i > undoPosition)
+                    } else if (i > s_UndoPosition)
                     {
                         if (GUI.Button(rect, item, styles.redoable))
                         {
@@ -203,10 +203,10 @@ namespace Chisel.Editors
 
         private static void RepaintHistoryWindow()
         {
-            for (int i = 0; i < historyWindows.Count; i++)
+            for (int i = 0; i < s_HistoryWindows.Count; i++)
             {
-                if (historyWindows[i])
-                    historyWindows[i].Repaint();
+                if (s_HistoryWindows[i])
+                    s_HistoryWindows[i].Repaint();
             }
         }
 

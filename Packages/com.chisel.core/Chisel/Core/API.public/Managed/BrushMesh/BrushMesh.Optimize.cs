@@ -3,6 +3,7 @@ using System;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Profiling;
+using UnityEngine.Pool;
 
 namespace Chisel.Core
 {
@@ -37,76 +38,84 @@ namespace Chisel.Core
             }
         }
 
-        static List<int> sSnapPlaneIndices = new List<int>();
-        static List<float4> sSnapPlanes = new List<float4>();
         public float3 GetVertexFromIntersectingPlanes(int vertexIndex)
         {
-            sSnapPlaneIndices.Clear();
-            // TODO: precalculate this somehow
-            for (int e = 0; e < halfEdges.Length; e++)
+            var snapPlanes = ListPool<float4>.Get();
+            var snapPlaneIndices = ListPool<int>.Get();
+            try
             {
-                if (halfEdges[e].vertexIndex != vertexIndex)
-                    continue;
+                snapPlaneIndices.Clear();
+                // TODO: precalculate this somehow
+                for (int e = 0; e < halfEdges.Length; e++)
+                {
+                    if (halfEdges[e].vertexIndex != vertexIndex)
+                        continue;
 
-                sSnapPlaneIndices.Add(halfEdgePolygonIndices[e]);
-            }
+                    snapPlaneIndices.Add(halfEdgePolygonIndices[e]);
+                }
 
-            if (sSnapPlaneIndices.Count < 3)
-            {
-                return vertices[vertexIndex];
-            }
+                if (snapPlaneIndices.Count < 3)
+                {
+                    return vertices[vertexIndex];
+                }
 
-            sSnapPlanes.Clear();
-            sSnapPlaneIndices.Sort();
-            for (int i = 0; i < sSnapPlaneIndices.Count; i++)
-            {
-                sSnapPlanes.Add(planes[sSnapPlaneIndices[i]]);
-            }
+                snapPlanes.Clear();
+                snapPlaneIndices.Sort();
+                for (int i = 0; i < snapPlaneIndices.Count; i++)
+                {
+                    snapPlanes.Add(planes[snapPlaneIndices[i]]);
+                }
 
-            // most common case
-            if (sSnapPlanes.Count == 3)
-            {
-                var vertex = (float3)PlaneExtensions.Intersection(sSnapPlanes[0], sSnapPlanes[1], sSnapPlanes[2]);
-                if (double.IsNaN(vertex.x) || double.IsInfinity(vertex.x) ||
-                    double.IsNaN(vertex.y) || double.IsInfinity(vertex.y) ||
-                    double.IsNaN(vertex.z) || double.IsInfinity(vertex.z))
+                // most common case
+                if (snapPlanes.Count == 3)
+                {
+                    var vertex = (float3)PlaneExtensions.Intersection(snapPlanes[0], snapPlanes[1], snapPlanes[2]);
+                    if (double.IsNaN(vertex.x) || double.IsInfinity(vertex.x) ||
+                        double.IsNaN(vertex.y) || double.IsInfinity(vertex.y) ||
+                        double.IsNaN(vertex.z) || double.IsInfinity(vertex.z))
+                    {
+                        Debug.LogWarning("NaN");
+                        return vertices[vertexIndex];
+                    }
+                    return vertex;
+                }
+
+                double3 snappedVertex = double3.zero;
+                int snappedVertexCount = 0;
+                for (int a = 0; a < snapPlanes.Count - 2; a++)
+                {
+                    for (int b = a + 1; b < snapPlanes.Count - 1; b++)
+                    {
+                        for (int c = b + 1; c < snapPlanes.Count; c++)
+                        {
+                            // TODO: accumulate in a better way
+                            var vertex = PlaneExtensions.Intersection(snapPlanes[a], snapPlanes[b], snapPlanes[c]);
+                            if (double.IsNaN(vertex.x) || double.IsInfinity(vertex.x) ||
+                                double.IsNaN(vertex.y) || double.IsInfinity(vertex.y) ||
+                                double.IsNaN(vertex.z) || double.IsInfinity(vertex.z))
+                                continue;
+
+                            snappedVertex += vertex;
+                            snappedVertexCount++;
+                        }
+                    }
+                }
+
+                var finalVertex = (snappedVertex / snappedVertexCount);
+                if (double.IsNaN(finalVertex.x) || double.IsInfinity(finalVertex.x) ||
+                    double.IsNaN(finalVertex.y) || double.IsInfinity(finalVertex.y) ||
+                    double.IsNaN(finalVertex.z) || double.IsInfinity(finalVertex.z))
                 {
                     Debug.LogWarning("NaN");
                     return vertices[vertexIndex];
                 }
-                return vertex;
+                return (float3)finalVertex;
             }
-
-            double3 snappedVertex = double3.zero;
-            int snappedVertexCount = 0;
-            for (int a = 0; a < sSnapPlanes.Count - 2; a++)
+            finally
             {
-                for (int b = a + 1; b < sSnapPlanes.Count - 1; b++)
-                {
-                    for (int c = b + 1; c < sSnapPlanes.Count; c++)
-                    {
-                        // TODO: accumulate in a better way
-                        var vertex = PlaneExtensions.Intersection(sSnapPlanes[a], sSnapPlanes[b], sSnapPlanes[c]);
-                        if (double.IsNaN(vertex.x) || double.IsInfinity(vertex.x) ||
-                            double.IsNaN(vertex.y) || double.IsInfinity(vertex.y) ||
-                            double.IsNaN(vertex.z) || double.IsInfinity(vertex.z))
-                            continue;
-
-                        snappedVertex += vertex;
-                        snappedVertexCount++;
-                    }
-                }
+                ListPool<float4>.Release(snapPlanes);
+                ListPool<int>.Release(snapPlaneIndices);
             }
-
-            var finalVertex = (snappedVertex / snappedVertexCount);
-            if (double.IsNaN(finalVertex.x) || double.IsInfinity(finalVertex.x) ||
-                double.IsNaN(finalVertex.y) || double.IsInfinity(finalVertex.y) ||
-                double.IsNaN(finalVertex.z) || double.IsInfinity(finalVertex.z))
-            {
-                Debug.LogWarning("NaN");
-                return vertices[vertexIndex];
-            }
-            return (float3)finalVertex;
         }
 
         public Vector3 CenterAndSnapPlanes(ref ChiselSurfaceDefinition surfaceDefinition)

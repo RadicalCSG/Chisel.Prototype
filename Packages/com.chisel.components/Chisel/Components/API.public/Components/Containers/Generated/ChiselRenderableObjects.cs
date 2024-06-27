@@ -4,6 +4,7 @@ using Chisel.Core;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Profiling;
+using UnityEngine.Pool;
 
 namespace Chisel.Components
 {
@@ -399,25 +400,30 @@ namespace Chisel.Components
             Profiler.EndSample();
         }
 
-        static List<Material> sSharedMaterials = new List<Material>();
-
+        
         private void SetMaterialsIfModified(MeshRenderer meshRenderer, Material[] renderMaterials)
         {
-            meshRenderer.GetSharedMaterials(sSharedMaterials);
-            if (sSharedMaterials != null &&
-                sSharedMaterials.Count == renderMaterials.Length)
+            var s_SharedMaterials = ListPool<Material>.Get();
+            try
             {
-                for (int i = 0; i < renderMaterials.Length; i++)
+                meshRenderer.GetSharedMaterials(s_SharedMaterials);
+                if (s_SharedMaterials != null &&
+                    s_SharedMaterials.Count == renderMaterials.Length)
                 {
-                    if (renderMaterials[i] != sSharedMaterials[i])
-                        goto SetMaterials;
+                    for (int i = 0; i < renderMaterials.Length; i++)
+                    {
+                        if (renderMaterials[i] != s_SharedMaterials[i])
+                            goto SetMaterials;
+                    }
+                    return;
                 }
-                sSharedMaterials.Clear(); // prevent dangling references
-                return;
-            }
-            sSharedMaterials.Clear(); // prevent dangling references
             SetMaterials:
-            meshRenderer.sharedMaterials = renderMaterials;
+                meshRenderer.sharedMaterials = renderMaterials;
+            }
+            finally
+            {
+                ListPool<Material>.Release(s_SharedMaterials);
+            }
         }
 
 #if UNITY_EDITOR

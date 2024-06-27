@@ -12,6 +12,7 @@ using HandleRendering = UnitySceneExtensions.HandleRendering;
 using UnityEditor.EditorTools;
 using Grid = UnitySceneExtensions.Grid;
 using UnityEngine.Profiling;
+using UnityEngine.Pool;
 #if !UNITY_2020_2_OR_NEWER
 using ToolManager = UnityEditor.EditorTools;
 #endif
@@ -379,53 +380,60 @@ namespace Chisel.Editors
             EditorGUILayout.EndVertical();
         }
 
-        static HashSet<ChiselNode> modifiedNodes = new HashSet<ChiselNode>();
         public void CheckForTransformationChanges(SerializedObject serializedObject)
         {
             if (Event.current.type == EventType.Layout)
             {
-                modifiedNodes.Clear();
-                foreach (var target in serializedObject.targetObjects)
+                var modifiedNodes = HashSetPool<ChiselNode>.Get();
+                try
                 {
-                    var node = target as ChiselNode;
-                    if (!node)
-                        continue;
-
-                    var transform = node.transform;
-
-                    // TODO: probably not a good idea to use these matrices for this, since it calculates this all the way up the transformation tree
-                    var curLocalToWorldMatrix = transform.localToWorldMatrix;
-                    var oldLocalToWorldMatrix = node.hierarchyItem.LocalToWorldMatrix;
-                    if (curLocalToWorldMatrix.m00 != oldLocalToWorldMatrix.m00 ||
-                        curLocalToWorldMatrix.m01 != oldLocalToWorldMatrix.m01 ||
-                        curLocalToWorldMatrix.m02 != oldLocalToWorldMatrix.m02 ||
-                        curLocalToWorldMatrix.m03 != oldLocalToWorldMatrix.m03 ||
-
-                        curLocalToWorldMatrix.m10 != oldLocalToWorldMatrix.m10 ||
-                        curLocalToWorldMatrix.m11 != oldLocalToWorldMatrix.m11 ||
-                        curLocalToWorldMatrix.m12 != oldLocalToWorldMatrix.m12 ||
-                        curLocalToWorldMatrix.m13 != oldLocalToWorldMatrix.m13 ||
-
-                        curLocalToWorldMatrix.m20 != oldLocalToWorldMatrix.m20 ||
-                        curLocalToWorldMatrix.m21 != oldLocalToWorldMatrix.m21 ||
-                        curLocalToWorldMatrix.m22 != oldLocalToWorldMatrix.m22 ||
-                        curLocalToWorldMatrix.m23 != oldLocalToWorldMatrix.m23 //||
-
-                        //curLocalToWorldMatrix.m30 != oldLocalToWorldMatrix.m30 ||
-                        //curLocalToWorldMatrix.m31 != oldLocalToWorldMatrix.m31 ||
-                        //curLocalToWorldMatrix.m32 != oldLocalToWorldMatrix.m32 ||
-                        //curLocalToWorldMatrix.m33 != oldLocalToWorldMatrix.m33
-                        )
+                    modifiedNodes.Clear();
+                    foreach (var target in serializedObject.targetObjects)
                     {
-                        node.hierarchyItem.LocalToWorldMatrix = curLocalToWorldMatrix;
-                        node.hierarchyItem.WorldToLocalMatrix = transform.worldToLocalMatrix;
-                        modifiedNodes.Add(node);
+                        var node = target as ChiselNode;
+                        if (!node)
+                            continue;
+
+                        var transform = node.transform;
+
+                        // TODO: probably not a good idea to use these matrices for this, since it calculates this all the way up the transformation tree
+                        var curLocalToWorldMatrix = transform.localToWorldMatrix;
+                        var oldLocalToWorldMatrix = node.hierarchyItem.LocalToWorldMatrix;
+                        if (curLocalToWorldMatrix.m00 != oldLocalToWorldMatrix.m00 ||
+                            curLocalToWorldMatrix.m01 != oldLocalToWorldMatrix.m01 ||
+                            curLocalToWorldMatrix.m02 != oldLocalToWorldMatrix.m02 ||
+                            curLocalToWorldMatrix.m03 != oldLocalToWorldMatrix.m03 ||
+
+                            curLocalToWorldMatrix.m10 != oldLocalToWorldMatrix.m10 ||
+                            curLocalToWorldMatrix.m11 != oldLocalToWorldMatrix.m11 ||
+                            curLocalToWorldMatrix.m12 != oldLocalToWorldMatrix.m12 ||
+                            curLocalToWorldMatrix.m13 != oldLocalToWorldMatrix.m13 ||
+
+                            curLocalToWorldMatrix.m20 != oldLocalToWorldMatrix.m20 ||
+                            curLocalToWorldMatrix.m21 != oldLocalToWorldMatrix.m21 ||
+                            curLocalToWorldMatrix.m22 != oldLocalToWorldMatrix.m22 ||
+                            curLocalToWorldMatrix.m23 != oldLocalToWorldMatrix.m23 //||
+
+                            //curLocalToWorldMatrix.m30 != oldLocalToWorldMatrix.m30 ||
+                            //curLocalToWorldMatrix.m31 != oldLocalToWorldMatrix.m31 ||
+                            //curLocalToWorldMatrix.m32 != oldLocalToWorldMatrix.m32 ||
+                            //curLocalToWorldMatrix.m33 != oldLocalToWorldMatrix.m33
+                            )
+                        {
+                            node.hierarchyItem.LocalToWorldMatrix = curLocalToWorldMatrix;
+                            node.hierarchyItem.WorldToLocalMatrix = transform.worldToLocalMatrix;
+                            modifiedNodes.Add(node);
+                        }
+                    }
+                    if (modifiedNodes.Count > 0)
+                    {
+                        ChiselNodeHierarchyManager.NotifyTransformationChanged(modifiedNodes);
+                        ResetGridBounds(); // TODO: should only do this when rotating, not when moving
                     }
                 }
-                if (modifiedNodes.Count > 0)
+                finally
                 {
-                    ChiselNodeHierarchyManager.NotifyTransformationChanged(modifiedNodes);
-                    ResetGridBounds(); // TODO: should only do this when rotating, not when moving
+                    HashSetPool<ChiselNode>.Release(modifiedNodes);
                 }
             }
         }

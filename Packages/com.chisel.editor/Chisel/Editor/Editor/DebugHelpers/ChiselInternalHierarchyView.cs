@@ -15,7 +15,7 @@ namespace Chisel.Editors
     {
         ChiselInternalHierarchyView()
         {
-            windows.Add(this);
+            s_Windows.Add(this);
         }
 
         public void Awake()
@@ -39,15 +39,15 @@ namespace Chisel.Editors
 
         void OnDestroy()
         {
-            windows.Remove(this);
+            s_Windows.Remove(this);
         }
 
-        Dictionary<CSGTreeNode, bool> openNodes = new Dictionary<CSGTreeNode, bool>();
-        static List<ChiselInternalHierarchyView> windows = new List<ChiselInternalHierarchyView>();
+        Dictionary<CSGTreeNode, bool> openNodes = new();
+        static readonly List<ChiselInternalHierarchyView> s_Windows = new();
 
         public static void RepaintAll()
         {
-            foreach (var window in windows)
+            foreach (var window in s_Windows)
             {
                 if (window)
                     window.Repaint();
@@ -173,7 +173,7 @@ namespace Chisel.Editors
             public float xpos;
             public CSGTreeNode[] children;
         }
-        static List<StackItem>  itemStack = new List<StackItem>();
+        static readonly List<StackItem> s_ItemStack = new();
 
         static int GetVisibleItems(CSGTreeNode[] hierarchyItems, ref Dictionary<CSGTreeNode, bool> openNodes)
         {
@@ -181,13 +181,13 @@ namespace Chisel.Editors
                 return 0;
 
             int totalCount = hierarchyItems.Length;
-            itemStack.Add(new StackItem(hierarchyItems));
+            s_ItemStack.Add(new StackItem(hierarchyItems));
 
             ContinueOnNextStackItem:
-            if (itemStack.Count == 0)
+            if (s_ItemStack.Count == 0)
                 return totalCount;
 
-            var currentStackItem = itemStack[itemStack.Count - 1];
+            var currentStackItem = s_ItemStack[s_ItemStack.Count - 1];
             var children = currentStackItem.children;
 
             while (currentStackItem.index < currentStackItem.count)
@@ -210,13 +210,13 @@ namespace Chisel.Editors
                         if (childCount > 0)
                         {
                             totalCount += childCount;
-                            itemStack.Add(new StackItem(ChildrenToArray(children[i])));
+                            s_ItemStack.Add(new StackItem(ChildrenToArray(children[i])));
                             goto ContinueOnNextStackItem;
                         }
                     }
                 }
             }
-            itemStack.RemoveAt(itemStack.Count - 1);
+            s_ItemStack.RemoveAt(s_ItemStack.Count - 1);
             goto ContinueOnNextStackItem;
         }
 
@@ -270,10 +270,10 @@ namespace Chisel.Editors
         {
             if (hierarchyItems == null)
                 return;
-            itemStack.Add(new StackItem(hierarchyItems, itemRect.x));
+            s_ItemStack.Add(new StackItem(hierarchyItems, itemRect.x));
 
             ContinueOnNextStackItem:
-            if (itemStack.Count == 0)
+            if (s_ItemStack.Count == 0)
             {
                 return;
             }
@@ -282,7 +282,7 @@ namespace Chisel.Editors
 
             var prevColor = GUI.color;
             var prevBackgroundColor = GUI.backgroundColor;
-            var currentStackItem = itemStack[itemStack.Count - 1];
+            var currentStackItem = s_ItemStack[s_ItemStack.Count - 1];
             var children = currentStackItem.children;
             itemRect.x = currentStackItem.xpos;
             while (currentStackItem.index < currentStackItem.count)
@@ -354,12 +354,12 @@ namespace Chisel.Editors
                 {
                     if (childCount > 0)
                     {
-                        itemStack.Add(new StackItem(ChildrenToArray(child), itemRect.x + kItemIndent));
+                        s_ItemStack.Add(new StackItem(ChildrenToArray(child), itemRect.x + kItemIndent));
                         goto ContinueOnNextStackItem;
                     }
                 }
             }
-            itemStack.RemoveAt(itemStack.Count - 1);
+            s_ItemStack.RemoveAt(s_ItemStack.Count - 1);
             goto ContinueOnNextStackItem;
         }
 

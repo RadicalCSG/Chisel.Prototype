@@ -10,17 +10,17 @@ namespace Chisel.Editors
     [CustomPropertyDrawer(typeof(ConditionalHideAttribute))]
     public class ConditionalFieldAttributeDrawer : PropertyDrawer
 	{
-        static Dictionary<int, string> pathLookup = new Dictionary<int, string>();
+        static readonly Dictionary<int, string> s_PathLookup = new();
         static SerializedProperty GetSiblingByName(SerializedProperty property, string name)
         {
             if (string.IsNullOrWhiteSpace(name) || property == null)
                 return null;
             
             var hash = (property.propertyPath.GetHashCode() * 31) + name.GetHashCode();
-            if (!pathLookup.TryGetValue(hash, out var siblingPath))
+            if (!s_PathLookup.TryGetValue(hash, out var siblingPath))
             {
                 siblingPath = property.propertyPath.Remove(property.propertyPath.LastIndexOf('.') + 1) + name;
-                pathLookup[hash] = siblingPath;
+                s_PathLookup[hash] = siblingPath;
             }
             return property.serializedObject.FindProperty(siblingPath);
         }
@@ -28,7 +28,7 @@ namespace Chisel.Editors
         public override bool CanCacheInspectorGUI(SerializedProperty property) { return false; }
 
 
-        static Dictionary<string, string> foundParts = new Dictionary<string, string>();
+        static readonly Dictionary<string, string> s_FoundParts = new();
         bool TryGetName(SerializedProperty property, out string name)
         {
             name = null;
@@ -54,12 +54,12 @@ namespace Chisel.Editors
                 return false;
             }
 
-            foundParts.Clear();
+            s_FoundParts.Clear();
             foreach (var attribute in conditionalNameParts)
             {
                 var conditionalNamePart = attribute as ConditionalNamePartAttribute;
-                if (IsVisible(property, conditionalNamePart.Condition)) foundParts[conditionalNamePart.Pattern] = conditionalNamePart.TrueName;
-                else                                                    foundParts[conditionalNamePart.Pattern] = conditionalNamePart.FalseName;
+                if (IsVisible(property, conditionalNamePart.Condition)) s_FoundParts[conditionalNamePart.Pattern] = conditionalNamePart.TrueName;
+                else                                                    s_FoundParts[conditionalNamePart.Pattern] = conditionalNamePart.FalseName;
             }
 
             var conditionalName = conditionalNames[0] as ConditionalNameAttribute;
@@ -67,7 +67,7 @@ namespace Chisel.Editors
                 return false;
 
             name = conditionalName.Name;
-            foreach (var part in foundParts)
+            foreach (var part in s_FoundParts)
                 name = name.Replace(part.Key, part.Value);
             return true;
         }
