@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using System.Runtime.CompilerServices;
 using Unity.Mathematics;
-using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
-using Unity.Jobs;
-using Unity.Burst;
-using System.Runtime.CompilerServices;
 
 // Note: Based on Unity.Entities.MinMaxAABB
 namespace Chisel.Core

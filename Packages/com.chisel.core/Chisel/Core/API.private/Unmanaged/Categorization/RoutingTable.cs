@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Chisel.Core
+﻿namespace Chisel.Core
 {
     struct RoutingTable
     {

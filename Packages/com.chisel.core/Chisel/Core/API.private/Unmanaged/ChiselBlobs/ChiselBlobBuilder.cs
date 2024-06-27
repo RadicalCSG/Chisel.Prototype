@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Diagnostics;
 using Chisel.Core.Memory;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
-using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
-using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 
 // Note: Based on Unity.Entities.BlobBuilder
@@ -31,7 +28,7 @@ namespace Chisel.Core
             m_length = length;
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         private void CheckIndexOutOfRange(int index)
         {
             if (0 > index || index >= m_length)
@@ -429,7 +426,7 @@ namespace Chisel.Core
             return alloc;
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         void ValidateAllocation(void* address)
         {
             // ValidateAllocation is most often called with data in recently allocated allocations

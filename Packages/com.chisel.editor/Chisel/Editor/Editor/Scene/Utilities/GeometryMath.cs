@@ -1,5 +1,4 @@
-﻿using UnityEditor;
-using UnityEngine;
+﻿using UnityEngine;
 
 // TODO: remove redundancy, clean up
 namespace Chisel.Utilities

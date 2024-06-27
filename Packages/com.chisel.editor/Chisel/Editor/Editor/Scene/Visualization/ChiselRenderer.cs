@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using System.Collections.Generic;
 using Chisel.Core;
 using Unity.Mathematics;
+using UnityEngine;
 
 namespace Chisel.Editors
 {

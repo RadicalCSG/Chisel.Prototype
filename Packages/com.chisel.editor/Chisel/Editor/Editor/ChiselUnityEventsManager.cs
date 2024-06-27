@@ -1,12 +1,10 @@
-using Chisel.Core;
-using Chisel.Components;
-using UnitySceneExtensions;
 using System;
 using System.Collections.Generic;
+using Chisel.Components;
 using UnityEditor;
+using UnityEditor.EditorTools;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEditor.EditorTools;
 using UnityEngine.Profiling;
 #if !UNITY_2020_2_OR_NEWER
 using ToolManager = UnityEditor.EditorTools;

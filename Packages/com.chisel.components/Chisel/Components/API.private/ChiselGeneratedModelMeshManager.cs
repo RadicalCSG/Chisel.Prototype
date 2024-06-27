@@ -1,8 +1,6 @@
-using Chisel.Core;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using Chisel.Core;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;

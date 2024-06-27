@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
-using UnityEditor;
-using UnityEngine;
 using Chisel.Core;
 using Chisel.Components;
+using UnityEditor;
+using UnityEngine;
 using Object = UnityEngine.Object;
 using UnityEngine.SceneManagement;
 

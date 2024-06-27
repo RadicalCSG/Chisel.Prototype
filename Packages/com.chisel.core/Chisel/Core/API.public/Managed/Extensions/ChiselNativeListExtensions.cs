@@ -1,15 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core
 {
@@ -56,7 +52,7 @@ namespace Chisel.Core
 
         [BurstDiscard] static void LogRangeError() { Debug.LogError("Invalid range used in RemoveRange"); }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void CheckPositive(int length)
         {
@@ -66,7 +62,7 @@ namespace Chisel.Core
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void CheckLengthInRange(int length, int range)
         {
@@ -76,7 +72,7 @@ namespace Chisel.Core
             }
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void CheckIndexInRangeExc(int index, int length)
         {
@@ -84,7 +80,7 @@ namespace Chisel.Core
                 throw new ArgumentOutOfRangeException("index");
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void CheckIndexInRangeInc(int index, int length)
         {
@@ -92,7 +88,7 @@ namespace Chisel.Core
                 throw new ArgumentOutOfRangeException("index");
         }
 
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         static void CheckCreated(bool isCreated)
         {
             if (!isCreated)

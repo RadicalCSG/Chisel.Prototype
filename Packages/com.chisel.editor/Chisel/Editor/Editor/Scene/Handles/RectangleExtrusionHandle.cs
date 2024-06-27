@@ -1,11 +1,7 @@
-﻿using Chisel.Core;
+﻿using System.Collections.Generic;
+using Chisel.Core;
 using Chisel.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
 using UnityEngine;
-using Chisel.Utilities;
 using UnitySceneExtensions;
 using Grid = UnitySceneExtensions.Grid;
 

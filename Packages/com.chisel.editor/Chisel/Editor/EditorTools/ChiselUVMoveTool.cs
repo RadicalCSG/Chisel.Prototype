@@ -1,15 +1,8 @@
-using Chisel.Core;
-using Chisel.Components;
-using Chisel.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
 using UnityEngine;
-using UnitySceneExtensions;
+using UnityEditor;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.EditorTools;
-using Snapping = UnitySceneExtensions.Snapping;
+using UnitySceneExtensions;
 #if !UNITY_2020_2_OR_NEWER
 using ToolManager = UnityEditor.EditorTools;
 #endif

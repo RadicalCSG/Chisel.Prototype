@@ -1,14 +1,11 @@
-﻿using Chisel.Core;
-using Chisel.Components;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEditor;
+using Chisel.Core;
+using Chisel.Components;
+using Unity.Mathematics;
 using UnityEngine;
+using UnityEditor;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.EditorTools;
-using Unity.Mathematics;
 using UnitySceneExtensions;
 using Snapping = UnitySceneExtensions.Snapping;
 using Grid = UnitySceneExtensions.Grid;

@@ -1,11 +1,7 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using Unity.Mathematics;
 using UnityEngine;
-using UnitySceneExtensions;
-using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core.External
 {

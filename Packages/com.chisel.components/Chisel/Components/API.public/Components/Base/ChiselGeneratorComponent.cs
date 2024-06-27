@@ -1,15 +1,7 @@
-using System;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using AOT;
 using Chisel.Core;
-using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
-using Unity.Jobs;
-using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {

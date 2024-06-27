@@ -1,14 +1,8 @@
-using Chisel.Core;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using UnityEngine;
 using UnityEditor;
 using UnityEditor.EditorTools;
 using UnityEditor.ShortcutManagement;
-using UnityEngine;
 using UnitySceneExtensions;
-using UnityObject = UnityEngine.Object;
 #if !UNITY_2020_2_OR_NEWER
 using ToolManager = UnityEditor.EditorTools;
 #endif

@@ -1,10 +1,9 @@
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Chisel.Core
 {
-    [DebuggerTypeProxy(typeof(CategoryRoutingRow.DebuggerProxy))]
+    [System.Diagnostics.DebuggerTypeProxy(typeof(CategoryRoutingRow.DebuggerProxy))]
     [StructLayout(LayoutKind.Explicit)]
     readonly struct CategoryRoutingRow
     {

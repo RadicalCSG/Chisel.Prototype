@@ -1,10 +1,12 @@
-using Chisel.Core;
-using System;
 using System.Collections.Generic;
-using UnityEditor;
+using Chisel.Core;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.SceneManagement;
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEditor.SceneManagement;
+#endif
 
 namespace Chisel.Components
 {

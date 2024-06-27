@@ -1,15 +1,9 @@
-using Chisel.Core;
-using Chisel.Components;
-using UnitySceneExtensions;
-using System;
 using System.Collections.Generic;
+using Chisel.Components;
 using UnityEditor;
+using UnityEditor.Callbacks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEditor.EditorTools;
-using NUnit.Framework.Constraints;
-using UnityEditor.Callbacks;
-using UnityEditor.SceneManagement;
 
 namespace Chisel.Editors
 {

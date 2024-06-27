@@ -1,9 +1,6 @@
-using UnityEngine;
-using System.Collections;
 using System;
 using Chisel.Core;
-using UnityEngine.SceneManagement;
-using System.Collections.Generic;
+using UnityEngine;
 
 namespace Chisel.Components
 {

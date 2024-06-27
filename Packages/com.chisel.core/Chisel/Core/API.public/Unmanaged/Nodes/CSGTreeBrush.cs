@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using System.ComponentModel;
-using Unity.Mathematics;
-using Bounds = UnityEngine.Bounds;
-using UnityEngine;
-using Unity.Collections;
+using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Unity.Mathematics;
+using Unity.Collections;
+using UnityEngine;
 
 namespace Chisel.Core
 {

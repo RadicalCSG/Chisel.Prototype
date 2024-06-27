@@ -1,9 +1,8 @@
-using Chisel.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
+using Chisel.Core;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.SceneManagement;

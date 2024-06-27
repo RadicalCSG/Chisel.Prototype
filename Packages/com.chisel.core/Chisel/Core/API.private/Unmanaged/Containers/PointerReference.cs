@@ -1,13 +1,5 @@
-﻿using System;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using Unity.Burst;
-using Unity.Burst.CompilerServices;
-using Unity.Collections;
+﻿using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Jobs;
-using Unity.Mathematics;
-using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core
 {

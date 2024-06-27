@@ -1,6 +1,6 @@
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using Unity.Mathematics;
-using System.Runtime.CompilerServices;
 
 // TODO: remove redundancy, clean up
 namespace Chisel.Core

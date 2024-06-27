@@ -1,12 +1,9 @@
 using System;
-using Debug = UnityEngine.Debug;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
-using Unity.Jobs;
 using Unity.Burst;
+using UnityEngine;
 using UnitySceneExtensions;
-using Vector3 = UnityEngine.Vector3;
 
 namespace Chisel.Core
 {

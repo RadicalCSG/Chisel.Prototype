@@ -1,18 +1,11 @@
-using UnityEngine;
-using System.Collections;
-using Chisel.Core;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
+using Chisel.Core;
+using UnityEngine;
 using UnityEngine.Rendering;
-using System.Transactions;
 using UnityEngine.Profiling;
-using Unity.Collections;
 using Unity.Jobs;
-using Unity.Burst;
-using UnityEditor;
-using System.Runtime.InteropServices;
-using System.Linq;
-using Unity.Collections.LowLevel.Unsafe;
+using Unity.Collections;
 
 namespace Chisel.Components
 {        

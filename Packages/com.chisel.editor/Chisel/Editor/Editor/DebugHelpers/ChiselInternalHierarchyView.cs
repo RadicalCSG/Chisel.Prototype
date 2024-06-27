@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
-using UnityEngine;
 using Chisel.Core;
 using Chisel.Components;
 using Unity.Collections;
+using UnityEngine;
+using UnityEditor;
 
 namespace Chisel.Editors
 {

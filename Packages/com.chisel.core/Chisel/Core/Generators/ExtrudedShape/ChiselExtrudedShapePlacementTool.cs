@@ -1,5 +1,4 @@
-﻿using UnityEngine;
-using UnitySceneExtensions;
+﻿using UnitySceneExtensions;
 
 namespace Chisel.Core
 {

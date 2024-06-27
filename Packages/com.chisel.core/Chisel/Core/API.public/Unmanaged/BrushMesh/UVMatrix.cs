@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Mathematics;
 using UnityEngine;
-using Vector3 = UnityEngine.Vector3;
 
 namespace Chisel.Core
 {

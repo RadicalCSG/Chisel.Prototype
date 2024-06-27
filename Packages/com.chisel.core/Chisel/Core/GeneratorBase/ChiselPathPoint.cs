@@ -1,9 +1,5 @@
 ﻿using System;
-using Vector2 = UnityEngine.Vector2;
-using Vector3 = UnityEngine.Vector3;
-using Vector4 = UnityEngine.Vector4;
-using Quaternion = UnityEngine.Quaternion;
-using Matrix4x4 = UnityEngine.Matrix4x4;
+using UnityEngine;
 using UnitySceneExtensions;
 
 namespace Chisel.Core

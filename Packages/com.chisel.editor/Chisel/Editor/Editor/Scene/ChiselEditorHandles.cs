@@ -1,16 +1,12 @@
-using Chisel.Components;
-using Chisel.Core;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using Chisel.Components;
+using Chisel.Core;
+using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
-using UnityEditor.EditorTools;
 using UnitySceneExtensions;
 using Snapping = UnitySceneExtensions.Snapping;
-using Unity.Mathematics;
-using Grid = UnitySceneExtensions.Grid;
 #if !UNITY_2020_2_OR_NEWER
 using ToolManager = UnityEditor.EditorTools;
 #endif

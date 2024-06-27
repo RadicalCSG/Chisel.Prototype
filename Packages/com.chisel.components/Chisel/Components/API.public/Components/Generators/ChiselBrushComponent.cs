@@ -1,9 +1,5 @@
-﻿using UnityEngine;
-using Chisel.Core;
-using Unity.Jobs;
-using Unity.Collections;
-using UnityEngine.Profiling;
-using System;
+﻿using Chisel.Core;
+using UnityEngine;
 
 namespace Chisel.Components
 {

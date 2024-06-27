@@ -1,15 +1,8 @@
 ﻿using System;
-using Unity.Burst;
-using Unity.Collections;
-using Unity.Jobs;
-using Unity.Mathematics;
-using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using System.Runtime.CompilerServices;
-using Unity.Collections.LowLevel.Unsafe;
-using UnityEngine.Assertions.Must;
-using UnityEngine;
 using System.Threading;
-using System.Diagnostics;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst.CompilerServices;
 
 namespace Chisel.Core
@@ -243,7 +236,7 @@ namespace Chisel.Core
 
 #endif
 
-            [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+            [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void CheckSufficientCapacity(int capacity, int length)
             {
@@ -251,7 +244,7 @@ namespace Chisel.Core
                     throw new Exception($"Length {length} exceeds capacity Capacity {capacity}");
             }
 
-            [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+            [System.Diagnostics.Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void CheckArgPositive(int value)
             {

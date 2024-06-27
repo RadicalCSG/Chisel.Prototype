@@ -1,11 +1,8 @@
-﻿using UnityEngine;
-using System.Collections;
-using System;
 using Chisel.Core;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using Unity.Mathematics;
-using ChiselAABB = Chisel.Core.ChiselAABB;
+using UnityEngine;
 
 namespace Chisel.Components
 {
