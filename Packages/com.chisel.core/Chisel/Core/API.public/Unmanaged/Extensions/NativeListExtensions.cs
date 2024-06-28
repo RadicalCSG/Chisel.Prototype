@@ -318,9 +318,19 @@ namespace Chisel.Core
             public int AddRangeNoResize(NativeArray<T> array, int length)
             {
                 CheckArgPositive(length);
-                CheckSufficientCapacity(array.Length, length);
-                var arrayPtr = array.GetUnsafePtr();
-                return AddRangeNoResize(UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), arrayPtr, AssumePositive(length));
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+#endif
+                var idx = Interlocked.Add(ref ListData->m_length, length) - length;
+                CheckSufficientCapacity(ListData->Capacity, idx + length);
+
+                int sizeOf = UnsafeUtility.SizeOf<T>();
+                int alignOf = UnsafeUtility.AlignOf<T>();
+                var ptr = array.GetUnsafeReadOnlyPtr();
+                void* dst = (byte*)Ptr + idx * sizeOf;
+                UnsafeUtility.MemCpy(dst, ptr, length * sizeOf);
+                return idx;
             }
 
             /// <summary>
