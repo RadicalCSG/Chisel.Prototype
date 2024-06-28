@@ -78,7 +78,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static JobHandle ScheduleSetCapacity<T>(ref NativeList<T> list, NativeReference<int> capacity, Allocator allocator, JobHandle dependsOn = default)
+        public static JobHandle ScheduleSetCapacity<T>([NoAlias, ReadOnly] ref NativeList<T> list, [NoAlias, WriteOnly] NativeReference<int> capacity, Allocator allocator, JobHandle dependsOn = default)
            where T : unmanaged
         {
             if (!list.IsCreated)
@@ -88,7 +88,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static JobHandle ScheduleEnsureCapacity<T>(bool runInParallel, ref NativeList<T> list, NativeReference<int> capacity, Allocator allocator, JobHandle dependsOn = default)
+        public static JobHandle ScheduleEnsureCapacity<T>(bool runInParallel, [NoAlias, ReadOnly] ref NativeList<T> list, [NoAlias, WriteOnly] NativeReference<int> capacity, Allocator allocator, JobHandle dependsOn = default)
             where T : unmanaged
         {
             JobExtensions.CheckDependencies(runInParallel, dependsOn);
@@ -102,7 +102,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static JobHandle ScheduleEnsureCapacity<T>(bool runInParallel, ref NativeList<T> list, NativeReference<int> capacity, ReadJobHandles readDependencies, WriteJobHandles writeDependencies, Allocator allocator)
+        public static JobHandle ScheduleEnsureCapacity<T>(bool runInParallel, [NoAlias, ReadOnly] ref NativeList<T> list, [NoAlias, WriteOnly] NativeReference<int> capacity, ReadJobHandles readDependencies, WriteJobHandles writeDependencies, Allocator allocator)
             where T : unmanaged
         {
             var dependencies = JobHandleExtensions.CombineDependencies(readDependencies.Handles, writeDependencies.Handles);

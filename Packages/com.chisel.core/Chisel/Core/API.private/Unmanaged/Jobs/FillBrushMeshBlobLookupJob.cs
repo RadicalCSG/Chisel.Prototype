@@ -35,6 +35,7 @@ namespace Chisel.Core
                 {
                     if (brushMeshHash == 0)
                     {
+                        Debug.LogError($"The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly.");
                         // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly
                         brushMeshLookup[nodeOrder] = ChiselBlobAssetReference<BrushMeshBlob>.Null;
                     } else
@@ -49,7 +50,7 @@ namespace Chisel.Core
                     }
                 }
             }
-            surfaceCountRef.Value = surfaceCount;
+            surfaceCountRef.Value = surfaceCount * 2; // TODO: figure out why we need to allocate more surfaces than we have?
         }
     }
 }
