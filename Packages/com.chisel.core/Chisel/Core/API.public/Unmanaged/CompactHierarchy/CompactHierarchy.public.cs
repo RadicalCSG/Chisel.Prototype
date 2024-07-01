@@ -138,9 +138,9 @@ namespace Chisel.Core
         public ChiselAABB           bounds;         // TODO: move this somewhere else, 1:1 relationship with brushMeshID
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe uint GetHash() { return math.hash(UnsafeUtility.AddressOf(ref this), sizeof(CompactNode)); }
+        public int GetHashcode() { unchecked { return (int)MathExtensions.Hash(ref this); } }
 
-        public override string ToString() { return $"{nameof(brushMeshHash)} = {brushMeshHash}, {nameof(operation)} = {operation}, {nameof(userID)} = {userID}, {nameof(transformation)} = {transformation}"; }
+        public override readonly string ToString() { return $"{nameof(brushMeshHash)} = {brushMeshHash}, {nameof(operation)} = {operation}, {nameof(userID)} = {userID}, {nameof(transformation)} = {transformation}"; }
     }
 
     [GenerateTestsForBurstCompatibility]

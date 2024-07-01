@@ -116,7 +116,7 @@ namespace Chisel.Core
 
                     using (segmentIndices)
                     {
-                        CreateExtrudedSubMesh(range.Length, (int*)segmentIndices.GetUnsafePtr(), segmentIndices.Length, 0, 1, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out var polygons, out var halfEdges);
+                        CreateExtrudedSubMesh(range.Length, segmentIndices, segmentIndices.Length, 0, 1, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out var polygons, out var halfEdges);
 
                         if (!Validate(in localVertices, in halfEdges, in polygons, logErrors: true))
                             return false;

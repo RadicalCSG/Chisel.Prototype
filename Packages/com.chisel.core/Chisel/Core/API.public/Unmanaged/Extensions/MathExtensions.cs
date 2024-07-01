@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
 using Unity.Mathematics;
+using Unity.Burst;
+using Unity.Collections;
 
 namespace Chisel.Core
 {
@@ -395,6 +397,39 @@ namespace Chisel.Core
             var rz = pz - (dot * nz);
 
             return new double3(rx, ry, rz);
+        }
+
+        public static unsafe uint Hash<T>(T[] array) where T : unmanaged
+        {
+            if (array == null)
+                return 0;
+
+            var length = array.Length;
+            if (length == 0)
+                return 0;
+
+            fixed (void* ptr = &array[0])
+            {
+                return math.hash((byte*)ptr, length * System.Runtime.InteropServices.Marshal.SizeOf<T>());
+            }
+        }
+
+        public static unsafe uint Hash<T>([NoAlias, ReadOnly] ref T input) where T : unmanaged
+        {
+            fixed (void* ptr = &input)
+            {
+                return math.hash((byte*)ptr, sizeof(T));
+            }
+        }
+
+        public static unsafe uint Hash<T>([NoAlias, ReadOnly] ref ChiselBlobArray<T> input) where T : unmanaged
+        {
+            var ptr = input.GetUnsafePtr();
+            if (ptr == null)
+            {
+                throw new System.NullReferenceException($"{nameof(input)} is null");
+            }
+            return math.hash((byte*)ptr, input.Length * sizeof(T));
         }
     }
 }

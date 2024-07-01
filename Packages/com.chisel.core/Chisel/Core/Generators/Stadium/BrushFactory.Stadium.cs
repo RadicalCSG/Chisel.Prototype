@@ -7,7 +7,7 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        public static unsafe bool GenerateStadium(float width, float height, float length,
+        public static bool GenerateStadium(float width, float height, float length,
                                                   float topLength,     int topSides,
                                                   float bottomLength,  int bottomSides, 
                                                   in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
@@ -29,7 +29,7 @@ namespace Chisel.Core
                 var haveCenter			= (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= ChiselStadium.kNoCenterEpsilon;
                 var sides               = (haveCenter ? 2 : 0) + math.max(topSides, 1) + math.max(bottomSides, 1);
 
-                CreateExtrudedSubMesh(sides, null, 0, 0, 1, 
+                CreateExtrudedSubMesh(sides, 0, 1, 
                                       in localVertices, in surfaceDefinitionBlob, in builder, ref root,
                                       out var polygons, out var halfEdges);
 

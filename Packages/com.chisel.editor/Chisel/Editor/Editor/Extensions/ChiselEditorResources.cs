@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEditor;
+using Chisel.Core;
+using System.Buffers;
 
 namespace Chisel.Editors
 {
@@ -129,29 +131,24 @@ namespace Chisel.Editors
             return image;
         }
 
-        static byte[] nameBuffer;
-
-        static unsafe int HashLowerInvariant(string name)
+        static int HashLowerInvariant(string name)
         {
             var length = name.Length;
             if (length == 0)
                 return 0;
 
-            if (nameBuffer == null || nameBuffer.Length < length)
-                nameBuffer = new byte[length];
-            else
-                Array.Clear(nameBuffer, 0, length);
+            var nameBuffer = ArrayPool<char>.Shared.Rent(length);
 
             for (int i = 0; i < length; i++)
             {
                 var lowerChar = char.ToLowerInvariant(name[i + 0]);
-                nameBuffer[i] = (byte)lowerChar; // yes, we're making the assumption that the character is ASCII ...
+                nameBuffer[i] = lowerChar;
             }
 
-            fixed (byte* nameBufferPtr = &nameBuffer[0])
-            {
-                unchecked { return (int)math.hash(nameBufferPtr, length); }
-            }
+            int result;
+            unchecked { result = (int)MathExtensions.Hash(nameBuffer); }
+            ArrayPool<char>.Shared.Return(nameBuffer);
+            return result; 
         }
 
 

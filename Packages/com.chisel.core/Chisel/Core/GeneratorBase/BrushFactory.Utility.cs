@@ -1,7 +1,13 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using UnityEngine;
+
+using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
+using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 namespace Chisel.Core
 {
@@ -256,14 +262,33 @@ namespace Chisel.Core
         }
 
 
-
-        //public static bool CreateExtrudedSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, int segmentTopIndex, int segmentBottomIndex, Vector3[] vertices, in ChiselSurfaceDefinition surfaceDefinition)
-        public static unsafe void CreateExtrudedSubMesh(int segments, int* segmentDescriptionIndices, int segmentDescriptionLength, int segmentTopIndex, int segmentBottomIndex, 
-                                                        in ChiselBlobBuilderArray<float3>                          localVertices,
+        public static unsafe void CreateExtrudedSubMesh(int segments, int segmentTopIndex, int segmentBottomIndex,
+                                                        in ChiselBlobBuilderArray<float3> localVertices,
                                                         in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
                                                         in ChiselBlobBuilder builder, ref BrushMeshBlob root,
-                                                        out ChiselBlobBuilderArray<BrushMeshBlob.Polygon>    polygons,
-                                                        out ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge>   halfEdges)
+                                                        out ChiselBlobBuilderArray<BrushMeshBlob.Polygon> polygons,
+                                                        out ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges)
+        {
+            CreateExtrudedSubMesh(segments, null, 0, segmentTopIndex, segmentBottomIndex, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out polygons, out halfEdges);
+        }
+
+        public static unsafe void CreateExtrudedSubMesh(int segments, [ReadOnly] NativeArray<int> segmentDescriptionIndices, int segmentDescriptionLength, int segmentTopIndex, int segmentBottomIndex, 
+                                                in ChiselBlobBuilderArray<float3>                          localVertices,
+                                                in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                in ChiselBlobBuilder builder, ref BrushMeshBlob root,
+                                                out ChiselBlobBuilderArray<BrushMeshBlob.Polygon>    polygons,
+                                                out ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge>   halfEdges)
+        {
+            CreateExtrudedSubMesh(segments, (int*)segmentDescriptionIndices.GetUnsafePtr(), segmentDescriptionLength, segmentTopIndex, segmentBottomIndex,
+                                                        in localVertices, in surfaceDefinitionBlob, in builder, ref root, out polygons, out halfEdges);
+        }
+
+        static unsafe void CreateExtrudedSubMesh(int segments, int* segmentDescriptionIndices, int segmentDescriptionLength, int segmentTopIndex, int segmentBottomIndex, 
+                                                 in ChiselBlobBuilderArray<float3>                          localVertices,
+                                                 in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                 in ChiselBlobBuilder builder, ref BrushMeshBlob root,
+                                                 out ChiselBlobBuilderArray<BrushMeshBlob.Polygon>    polygons,
+                                                 out ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge>   halfEdges)
         {
             ref var surfaceDefinition = ref surfaceDefinitionBlob.Value;
 
@@ -643,35 +668,39 @@ namespace Chisel.Core
             }
         }
 
-        public static unsafe bool CreateExtrudedSubMesh(float3* sideVertices, int sideVertexCount, float3 extrusion, 
-                                                        int* segmentDescriptionIndices, int segmentDescriptionLength,
+        public static unsafe bool CreateExtrudedSubMesh([ReadOnly] NativeArray<float3> sideVertices, float3 extrusion,
+                                                        [ReadOnly] NativeArray<int> segmentDescriptionIndices, 
                                                         ref NativeChiselSurfaceDefinition surfaceDefinition,
                                                         in ChiselBlobBuilder builder, ref BrushMeshBlob root,
                                                         out ChiselBlobBuilderArray<BrushMeshBlob.Polygon>    polygons,
                                                         out ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge>   halfEdges,
                                                         out ChiselBlobBuilderArray<float3>                   localVertices)
         {
+            int sideVerticesLength = sideVertices.Length;
+            
+            // TODO: fix this
+            /*
             const float kDistanceEpsilon = 0.0000001f;
-            for (int i = sideVertexCount - 1; i >= 0; i--)
+            for (int i = sideVerticesLength - 1; i >= 0; i--)
             {
-                var j = (i - 1 + sideVertexCount) % sideVertexCount;
+                var j = (i - 1 + sideVerticesLength) % sideVerticesLength;
                 var magnitude = math.lengthsq(sideVertices[j] - sideVertices[i]);
                 if (magnitude < kDistanceEpsilon)
                 {
                     // TODO: improve on this
-                    NativeListExtensions.MemMove(sideVertices, sideVertexCount, i, i + 1, sideVertexCount - (i + 1));
-                    sideVertexCount--;
+                    NativeListExtensions.MemMove(sideVertices, sideVerticesLength, i, i + 1, sideVerticesLength - (i + 1));
+                    sideVerticesLength--;
                 }
-            }
+            }*/
 
             polygons = default;
             halfEdges = default;
             localVertices = default;
 
-            if (sideVertexCount < 3)
+            if (sideVerticesLength < 3)
                 return false;
 
-            var segments		= sideVertexCount;
+            var segments		= sideVerticesLength;
             var isSegmentConvex = stackalloc sbyte[segments]; // TODO: get rid of stackalloc
             var edgeIndices		= stackalloc int[segments * 2];// TODO: get rid of stackalloc
 
@@ -730,8 +759,8 @@ namespace Chisel.Core
 
             polygons = builder.Allocate(ref root.polygons, polygonCount);
             
-            var surfaceIndex0 = (segmentDescriptionIndices == null || 0 >= segmentDescriptionLength) ? 0 : (segmentDescriptionIndices[0]);
-            var surfaceIndex1 = (segmentDescriptionIndices == null || 1 >= segmentDescriptionLength) ? 1 : (segmentDescriptionIndices[1]);
+            var surfaceIndex0 = (segmentDescriptionIndices == null || 0 >= segmentDescriptionIndices.Length) ? 0 : (segmentDescriptionIndices[0]);
+            var surfaceIndex1 = (segmentDescriptionIndices == null || 1 >= segmentDescriptionIndices.Length) ? 1 : (segmentDescriptionIndices[1]);
             var surface0 = surfaceDefinition.surfaces[surfaceIndex0];
             var surface1 = surfaceDefinition.surfaces[surfaceIndex1];
 
@@ -740,7 +769,7 @@ namespace Chisel.Core
 
             for (int s = 0, surfaceID = 2; s < segments; s++)
             {
-                var descriptionIndex = (segmentDescriptionIndices == null || (s + 2) >= segmentDescriptionLength) ? s + 2 : (segmentDescriptionIndices[s + 2]);
+                var descriptionIndex = (segmentDescriptionIndices == null || (s + 2) >= segmentDescriptionIndices.Length) ? s + 2 : (segmentDescriptionIndices[s + 2]);
                 var firstEdge		 = edgeIndices[(s * 2) + 0] - 1;
                 if (isSegmentConvex[s] == 0)
                 {

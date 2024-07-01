@@ -875,7 +875,7 @@ namespace Chisel.Core
                         var userID = branch.UserID;
                         for (int i = 0; i < newBrushCount; i++)
                             newRange[i] = tree.CreateBrush(userID: userID, operation: CSGOperationType.Additive);
-                        branch.AddRange(newRange, newBrushCount);
+                        branch.AddRange(newRange);
                     }
                     finally { newRange.Dispose(); }
                 } else

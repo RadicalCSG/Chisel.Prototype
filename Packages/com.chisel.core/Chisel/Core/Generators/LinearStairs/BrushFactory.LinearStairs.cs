@@ -8,7 +8,7 @@ namespace Chisel.Core
     public sealed partial class BrushMeshFactory
     {
         // TODO: Fix all overlapping brushes
-        internal static unsafe bool GenerateLinearStairsSubMeshes(NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes, int subMeshOffset, in LineairStairsData description, in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        internal static bool GenerateLinearStairsSubMeshes(NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes, int subMeshOffset, in LineairStairsData description, in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             // TODO: properly assign all materials
 
@@ -55,7 +55,7 @@ namespace Chisel.Core
                         var minZ = math.max(description.bounds.Min.z, min.z);
                         var maxZ = math.min(description.bounds.Max.z, max.z);
 
-                        float3* vertices = stackalloc float3[4];
+                        var vertices = new NativeArray<float3>(4, allocator);
                         if (i == 0 || description.riserType != StairsRiserType.Smooth)
                         {
                             vertices[0] = new float3(min.x, min.y, minZ);	// 0
@@ -70,9 +70,20 @@ namespace Chisel.Core
                             vertices[3] = new float3(min.x, max.y, minZ - description.stepDepth);	// 3
                         }
 
-                        const int indicesLength = 6;
-                        var indices = stackalloc[] { 0, 1, 2, 3, 3, 3 }; // TODO: fix this
-                        brushMeshes[subMeshOffset + i] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                        var indices = new NativeArray<int>(6, allocator);
+                        indices[0] = 0;
+                        indices[1] = 1;
+                        indices[2] = 2;
+                        indices[3] = 0;
+                        indices[4] = 2;
+                        indices[5] = 3;
+                        using (indices)
+                        {
+                            using (vertices)
+                            {
+                                brushMeshes[subMeshOffset + i] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                            }
+                        }
                         
 
                         if (description.riserType != StairsRiserType.FillDown)
@@ -94,18 +105,27 @@ namespace Chisel.Core
                         {
                             min.z = max.z - (description.stepDepth + description.nosingDepth);
                         }
-                        var vertices = stackalloc[] {
-                                                new float3( min.x, min.y, min.z), // 0
-                                                new float3( min.x, min.y, max.z), // 1
-                                                new float3( min.x, max.y, max.z), // 2
-                                                new float3( min.x, max.y, min.z), // 3
-                                            };
+                        var vertices = new NativeArray<float3>(4, allocator);
+                        vertices[0] = new float3(min.x, min.y, min.z); // 0
+                        vertices[0] = new float3(min.x, min.y, max.z); // 1
+                        vertices[0] = new float3(min.x, max.y, max.z); // 2
+                        vertices[0] = new float3(min.x, max.y, min.z); // 3
                         var extrusion = new float3(max.x - min.x, 0, 0);
 
-
-                        const int indicesLength = 6;
-                        var indices = stackalloc[] { 0, 1, 2, 2, 2, 2 }; // TODO: fix this
-                        brushMeshes[subMeshOffset + description.startTread + i] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                        var indices = new NativeArray<int>(6, allocator);
+                        indices[0] = 0;
+                        indices[1] = 1;
+                        indices[2] = 2;
+                        indices[3] = 0;
+                        indices[4] = 2;
+                        indices[5] = 3;
+                        using (indices)
+                        {
+                            using (vertices)
+                            {
+                                brushMeshes[subMeshOffset + description.startTread + i] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                            }
+                        }
 
                         min += stepOffset;
                         max += stepOffset;
@@ -131,12 +151,12 @@ namespace Chisel.Core
             return true;
         }
 
-        static unsafe ChiselBlobAssetReference<BrushMeshBlob> CreateExtrudedSubMeshBlob(float3* vertices, int vertexCount, float3 extrusion, int* indices, int indicesLength, ref NativeChiselSurfaceDefinition surfaceDefinition, Allocator allocator)
+        static ChiselBlobAssetReference<BrushMeshBlob> CreateExtrudedSubMeshBlob([ReadOnly] NativeArray<float3> vertices, float3 extrusion, [ReadOnly] NativeArray<int> indices, ref NativeChiselSurfaceDefinition surfaceDefinition, Allocator allocator)
         {
             using (var builder = new ChiselBlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
-                if (BrushMeshFactory.CreateExtrudedSubMesh(vertices, vertexCount, extrusion, indices, indicesLength,
+                if (BrushMeshFactory.CreateExtrudedSubMesh(vertices, extrusion, indices,
                                                            ref surfaceDefinition,
                                                            in builder, ref root,
                                                            out var polygons,
@@ -160,7 +180,7 @@ namespace Chisel.Core
             }
         }
 
-        private static unsafe void GenerateStairsSide(NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes, int startIndex, int stepCount, float minX, float maxX, StairsSideType sideType, in LineairStairsData description, ref NativeChiselSurfaceDefinition surfaceDefinition, in LinearStairsSideData side, Allocator allocator)
+        private static void GenerateStairsSide(NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes, int startIndex, int stepCount, float minX, float maxX, StairsSideType sideType, in LineairStairsData description, ref NativeChiselSurfaceDefinition surfaceDefinition, in LinearStairsSideData side, Allocator allocator)
         {
             var min = new float3(minX, description.bounds.Max.y - description.treadHeight - description.stepHeight, description.bounds.Min.z + description.stepDepthOffset);
             var max = new float3(maxX, description.bounds.Max.y - description.treadHeight                         , description.bounds.Min.z + description.stepDepthOffset + description.stepDepth);
@@ -183,16 +203,25 @@ namespace Chisel.Core
                     var y2 = min.y;
                     var z0 = description.bounds.Min.z;
                     var z1 = min.z - description.sideDepth;
-                    var vertices = stackalloc[] {
-                                        new float3( min.x, y0, z0), // 0
-                                        new float3( min.x, y1, z0), // 1
-                                        new float3( min.x, y1, z1), // 2
-                                        new float3( min.x, y0, z1), // 3
-                                    };
-
-                    const int indicesLength = 7;
-                    var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                    brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                    var vertices = new NativeArray<float3>(4, allocator);
+                    vertices[0] = new float3(min.x, y0, z0); // 0
+                    vertices[1] = new float3(min.x, y1, z0); // 1
+                    vertices[2] = new float3(min.x, y1, z1); // 2
+                    vertices[3] = new float3(min.x, y0, z1); // 3
+                    var indices = new NativeArray<int>(6, allocator);
+                    indices[0] = 0; 
+                    indices[1] = 1; 
+                    indices[2] = 2;
+                    indices[3] = 0; 
+                    indices[4] = 2; 
+                    indices[5] = 3;
+                    using (indices)
+                    {
+                        using (vertices)
+                        {
+                            brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                        }
+                    }
                 } else
                     startIndex--;
 
@@ -222,16 +251,25 @@ namespace Chisel.Core
                     //             \|
                     //              * z1 y2 
 
-                    var vertices = stackalloc[] {
-                                        new float3( min.x, y0, z0), // 0
-                                        new float3( min.x, y1, z0), // 1
-                                        new float3( min.x, y2, z1), // 2
-                                        new float3( min.x, y3, z1), // 3
-                                    };
-
-                    const int indicesLength = 7;
-                    var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                    brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                    var vertices = new NativeArray<float3>(4, allocator);
+                    vertices[0] = new float3(min.x, y0, z0); // 0
+                    vertices[1] = new float3(min.x, y1, z0); // 1
+                    vertices[2] = new float3(min.x, y2, z1); // 2
+                    vertices[3] = new float3(min.x, y3, z1); // 3
+                    var indices = new NativeArray<int>(6, allocator);
+                    indices[0] = 0;
+                    indices[1] = 1;
+                    indices[2] = 2;
+                    indices[3] = 0;
+                    indices[4] = 2;
+                    indices[5] = 3;
+                    using (indices)
+                    {
+                        using (vertices)
+                        {
+                            brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                        }
+                    }
                 } else
                 {
                     var y1 = max.y;
@@ -267,17 +305,30 @@ namespace Chisel.Core
                         //       |          |
                         // y2 z2 *----------* y2 z1 
 
-                        var vertices = stackalloc[] {
-                                            new float3( min.x, y0, z2), // 0
-                                            new float3( min.x, y2, z2), // 1
-                                            new float3( min.x, y2, z1), // 2
-                                            new float3( min.x, y3, z1), // 3
-                                            new float3( min.x, y0, z0), // 4
-                                        };
+                        var vertices = new NativeArray<float3>(5, allocator);
+                        vertices[0] = new float3(min.x, y0, z2); // 0
+                        vertices[1] = new float3(min.x, y2, z2); // 1
+                        vertices[2] = new float3(min.x, y2, z1); // 2
+                        vertices[3] = new float3(min.x, y3, z1); // 3
+                        vertices[4] = new float3(min.x, y0, z0); // 4
 
-                        const int indicesLength = 9;
-                        var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3, 3, 3 }; // TODO: fix this
-                        brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, 5, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                        var indices = new NativeArray<int>(9, allocator);
+                        indices[0] = 0;
+                        indices[1] = 1;
+                        indices[2] = 2;
+                        indices[3] = 0;
+                        indices[4] = 2;
+                        indices[5] = 3;
+                        indices[6] = 0;
+                        indices[7] = 3;
+                        indices[8] = 4; // TODO: fix this
+                        using (indices)
+                        {
+                            using (vertices)
+                            {
+                                brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                            }
+                        }
                     } else
                     if (z3 > maxZ)
                     {
@@ -296,19 +347,31 @@ namespace Chisel.Core
                         //             \|
                         //              * y5 z4 
 
-                        { 
-                            var vertices = stackalloc[] {
-                                                new float3( min.x, y0, z2), // 0
-                                                new float3( min.x, y1, z2), // 1
-                                                new float3( min.x, y5, z4), // 2
-                                                new float3( min.x, y6, z4), // 3
-                                                new float3( min.x, y0, z0), // 4
-                                            };
+                        {
+                            var vertices = new NativeArray<float3>(5, allocator);
+                            vertices[0] = new float3(min.x, y0, z2); // 0
+                            vertices[1] = new float3(min.x, y1, z2); // 1
+                            vertices[2] = new float3(min.x, y5, z4); // 2
+                            vertices[3] = new float3(min.x, y6, z4); // 3
+                            vertices[4] = new float3(min.x, y0, z0); // 4
 
-
-                            const int indicesLength = 9;
-                            var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, 5, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                            var indices = new NativeArray<int>(9, allocator);
+                            indices[0] = 0;
+                            indices[1] = 1;
+                            indices[2] = 2;
+                            indices[3] = 0;
+                            indices[4] = 2;
+                            indices[5] = 3;
+                            indices[6] = 0;
+                            indices[7] = 3;
+                            indices[8] = 4;
+                            using (indices)
+                            {
+                                using (vertices)
+                                {
+                                    brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                                }
+                            }
                         }
 
                         if ((description.sideDepth * aspect) < (description.plateauHeight - description.treadHeight))
@@ -323,16 +386,26 @@ namespace Chisel.Core
                             //       |    |
                             // y7 z4 *----* y7 z1 
 
-                            var vertices = stackalloc[] {
-                                        new float3( min.x, y6, z4), // 0
-                                        new float3( min.x, y7, z4), // 1
-                                        new float3( min.x, y7, z1), // 2
-                                        new float3( min.x, y3, z1), // 3
-                                    };
+                            var vertices = new NativeArray<float3>(4, allocator);
+                            vertices[0] = new float3(min.x, y6, z4); // 0
+                            vertices[1] = new float3(min.x, y7, z4); // 1
+                            vertices[2] = new float3(min.x, y7, z1); // 2
+                            vertices[3] = new float3(min.x, y3, z1); // 3
 
-                            const int indicesLength = 7;
-                            var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[startIndex + 2] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                            var indices = new NativeArray<int>(6, allocator);
+                            indices[0] = 0;
+                            indices[1] = 1;
+                            indices[2] = 2;
+                            indices[3] = 0;
+                            indices[4] = 2;
+                            indices[5] = 3;
+                            using (indices)
+                            {
+                                using (vertices)
+                                {
+                                    brushMeshes[startIndex + 2] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                                }
+                            }
                         }
                     } else
                     {
@@ -352,18 +425,31 @@ namespace Chisel.Core
                         //             \    |
                         //        y2 z3 *---* y2 z1 
 
-                        var vertices = stackalloc[] {
-                                            new float3( min.x, y0, z2), // 0
-                                            new float3( min.x, y1, z2), // 1
-                                            new float3( min.x, y2, z3), // 2
-                                            new float3( min.x, y2, z1), // 3
-                                            new float3( min.x, y3, z1), // 4
-                                            new float3( min.x, y0, z0), // 5
-                                        };
+                        var vertices = new NativeArray<float3>(6, allocator);
+                        vertices[0] = new float3(min.x, y0, z2); // 0
+                        vertices[1] = new float3(min.x, y1, z2); // 1
+                        vertices[2] = new float3(min.x, y2, z3); // 2
+                        vertices[3] = new float3(min.x, y2, z1); // 3
+                        vertices[4] = new float3(min.x, y3, z1); // 4
+                        vertices[5] = new float3(min.x, y0, z0); // 5
 
-                        const int indicesLength = 9;
-                        var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3, 3, 3 }; // TODO: fix this
-                        brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, 6, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                        var indices = new NativeArray<int>(9, allocator);
+                        indices[0] = 0;
+                        indices[1] = 1;
+                        indices[2] = 2;
+                        indices[3] = 0;
+                        indices[4] = 2;
+                        indices[5] = 3;
+                        indices[6] = 0;
+                        indices[7] = 3;
+                        indices[8] = 4;
+                        using (indices)
+                        {
+                            using (vertices)
+                            {
+                                brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                            }
+                        }
                     }
                 }
             } else
@@ -381,16 +467,26 @@ namespace Chisel.Core
                     var y2 = min.y;
                     var z0 = description.bounds.Min.z;
                     var z1 = min.z;
-                    var vertices = stackalloc[] {
-                                        new float3( min.x, y0, z0), // 0
-                                        new float3( min.x, y1, z0), // 1
-                                        new float3( min.x, y1, z1), // 2
-                                        new float3( min.x, y0, z1), // 3
-                                    };
+                    var vertices = new NativeArray<float3>(4, allocator);
+                    vertices[0] = new float3(min.x, y0, z0); // 0
+                    vertices[1] = new float3(min.x, y1, z0); // 1
+                    vertices[2] = new float3(min.x, y1, z1); // 2
+                    vertices[3] = new float3(min.x, y0, z1); // 3
 
-                    const int indicesLength = 7;
-                    var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                    brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                    var indices = new NativeArray<int>(6, allocator);
+                    indices[0] = 0;
+                    indices[1] = 1;
+                    indices[2] = 2;
+                    indices[3] = 0;
+                    indices[4] = 2;
+                    indices[5] = 3;
+                    using (indices)
+                    {
+                        using (vertices)
+                        {
+                            brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                        }
+                    }
                 } else
                     startIndex--;
                 // "wall" on stair steps
@@ -412,16 +508,26 @@ namespace Chisel.Core
                     //       |    |
                     // z0 y1 *----* z1 y2 
 
-                    var vertices = stackalloc[] {
-                                        new float3( min.x, y0, z0), // 0
-                                        new float3( min.x, y1, z0), // 1
-                                        new float3( min.x, y1, z1), // 2
-                                        new float3( min.x, y3, z1), // 3
-                                    };
+                    var vertices = new NativeArray<float3>(4, allocator);
+                    vertices[0] = new float3(min.x, y0, z0); // 0
+                    vertices[1] = new float3(min.x, y1, z0); // 1
+                    vertices[2] = new float3(min.x, y1, z1); // 2
+                    vertices[3] = new float3(min.x, y3, z1); // 3
 
-                    const int indicesLength = 7;
-                    var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                    brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                    var indices = new NativeArray<int>(6, allocator);
+                    indices[0] = 0;
+                    indices[1] = 1;
+                    indices[2] = 2;
+                    indices[3] = 0;
+                    indices[4] = 2;
+                    indices[5] = 3;
+                    using (indices)
+                    {
+                        using (vertices)
+                        {
+                            brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                        }
+                    }
 
                     min.z += description.stepDepth;
                     max.z += description.stepDepth;
@@ -449,15 +555,25 @@ namespace Chisel.Core
                         //            \ |
                         //             \|
                         //              * z1 y1 
-                        var vertices = stackalloc[] {
-                                        new float3( min.x, y0, z0), // 0
-                                        new float3( min.x, y1, z1), // 1
-                                        new float3( min.x, y0, z1), // 2
-                                    };
+                        var vertices = new NativeArray<float3>(3, allocator);
+                        vertices[0] = new float3(min.x, y0, z0); // 0
+                        vertices[1] = new float3(min.x, y1, z1); // 1
+                        vertices[2] = new float3(min.x, y0, z1); // 2
 
-                        const int indicesLength = 7;
-                        var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                        brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, 3, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                        var indices = new NativeArray<int>(6, allocator);
+                        indices[0] = 0;
+                        indices[1] = 1;
+                        indices[2] = 2;
+                        indices[3] = 0;
+                        indices[4] = 2;
+                        indices[5] = 3;
+                        using (indices)
+                        {
+                            using (vertices)
+                            {
+                                brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                            }
+                        }
 
                         min.z += description.stepDepth;
                         max.z += description.stepDepth;
@@ -486,16 +602,26 @@ namespace Chisel.Core
                                 //       |         |
                                 //       |         |
                                 // z3 y2 *---------* z1 y2 
-                                var vertices = stackalloc[] {
-                                                new float3( min.x, y0, z3), // 0
-                                                new float3( min.x, y2, z3), // 1
-                                                new float3( min.x, y2, z1), // 2
-                                                new float3( min.x, y0, z1), // 3
-                                            };
+                                var vertices = new NativeArray<float3>(4, allocator);
+                                vertices[0] = new float3(min.x, y0, z3); // 0
+                                vertices[1] = new float3(min.x, y2, z3); // 1
+                                vertices[2] = new float3(min.x, y2, z1); // 2
+                                vertices[3] = new float3(min.x, y0, z1); // 3
 
-                                const int indicesLength = 7;
-                                var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                                brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                                var indices = new NativeArray<int>(6, allocator);
+                                indices[0] = 0;
+                                indices[1] = 1;
+                                indices[2] = 2;
+                                indices[3] = 0;
+                                indices[4] = 2;
+                                indices[5] = 3;
+                                using (indices)
+                                {
+                                    using (vertices)
+                                    {
+                                        brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                                    }
+                                }
 
                                 min.z += description.stepDepth;
                                 max.z += description.stepDepth;
@@ -518,17 +644,27 @@ namespace Chisel.Core
                                 //            \    |
                                 //             \   |
                                 //        y2 z2 *--* z1 y2
-                                var vertices = stackalloc[] {
-                                                new float3( min.x, y0, z3), // 0
-                                                new float3( min.x, y3, z3), // 1
-                                                new float3( min.x, y2, z2), // 2
-                                                new float3( min.x, y2, z1), // 3
-                                                new float3( min.x, y0, z1), // 4
-                                            };
+                                var vertices = new NativeArray<float3>(5, allocator);
+                                vertices[0] = new float3(min.x, y0, z3); // 0
+                                vertices[1] = new float3(min.x, y3, z3); // 1
+                                vertices[2] = new float3(min.x, y2, z2); // 2
+                                vertices[3] = new float3(min.x, y2, z1); // 3
+                                vertices[4] = new float3(min.x, y0, z1); // 4
 
-                                const int indicesLength = 7;
-                                var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                                brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 5, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                                var indices = new NativeArray<int>(6, allocator);
+                                indices[0] = 0;
+                                indices[1] = 1;
+                                indices[2] = 2;
+                                indices[3] = 0;
+                                indices[4] = 2;
+                                indices[5] = 3;
+                                using (indices)
+                                {
+                                    using (vertices)
+                                    {
+                                        brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                                    }
+                                }
 
                                 min.z += description.stepDepth;
                                 max.z += description.stepDepth;
@@ -544,16 +680,26 @@ namespace Chisel.Core
                                 //            \    |
                                 //             \   |
                                 //        z2 y2 *--* z1 y2 
-                                var vertices = stackalloc[] {
-                                                new float3( min.x, y0, z0), // 0
-                                                new float3( min.x, y2, z2), // 1
-                                                new float3( min.x, y2, z1), // 2
-                                                new float3( min.x, y0, z1), // 3
-                                            };
+                                var vertices = new NativeArray<float3>(4, allocator);
+                                vertices[0] = new float3(min.x, y0, z0); // 0
+                                vertices[1] = new float3(min.x, y2, z2); // 1
+                                vertices[2] = new float3(min.x, y2, z1); // 2
+                                vertices[3] = new float3(min.x, y0, z1); // 3
 
-                                const int indicesLength = 7;
-                                var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                                brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                                var indices = new NativeArray<int>(6, allocator);
+                                indices[0] = 0;
+                                indices[1] = 1;
+                                indices[2] = 2;
+                                indices[3] = 0;
+                                indices[4] = 2;
+                                indices[5] = 3;
+                                using (indices)
+                                {
+                                    using (vertices)
+                                    {
+                                        brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                                    }
+                                }
 
                                 min.z += description.stepDepth;
                                 max.z += description.stepDepth;
@@ -577,16 +723,26 @@ namespace Chisel.Core
                             //            \ |
                             //             \|
                             //              * z1 y1 
-                            var vertices = stackalloc[] {
-                                            new float3( min.x, y0, z2), // 0
-                                            new float3( min.x, y2, z2), // 1
-                                            new float3( min.x, y1, z1), // 2
-                                            new float3( min.x, y0, z1), // 3
-                                        };
+                            var vertices = new NativeArray<float3>(4, allocator);
+                            vertices[0] = new float3(min.x, y0, z2); // 0
+                            vertices[1] = new float3(min.x, y2, z2); // 1
+                            vertices[2] = new float3(min.x, y1, z1); // 2
+                            vertices[3] = new float3(min.x, y0, z1); // 3
 
-                            const int indicesLength = 7;
-                            var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                            var indices = new NativeArray<int>(6, allocator);
+                            indices[0] = 0;
+                            indices[1] = 1;
+                            indices[2] = 2;
+                            indices[3] = 0;
+                            indices[4] = 2;
+                            indices[5] = 3;
+                            using (indices)
+                            {
+                                using (vertices)
+                                {
+                                    brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                                }
+                            }
 
                             min.z += description.stepDepth;
                             max.z += description.stepDepth;
@@ -602,15 +758,25 @@ namespace Chisel.Core
                             //            \ |
                             //             \|
                             //              * z1 y1 
-                            var vertices = stackalloc[] {
-                                            new float3( min.x, y0, z0), // 0
-                                            new float3( min.x, y1, z1), // 1
-                                            new float3( min.x, y0, z1), // 2
-                                        };
+                            var vertices = new NativeArray<float3>(3, allocator);
+                            vertices[0] = new float3(min.x, y0, z0); // 0
+                            vertices[1] = new float3(min.x, y1, z1); // 1
+                            vertices[2] = new float3(min.x, y0, z1); // 2
 
-                            const int indicesLength = 7;
-                            var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 3, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                            var indices = new NativeArray<int>(6, allocator);
+                            indices[0] = 0;
+                            indices[1] = 1;
+                            indices[2] = 2;
+                            indices[3] = 0;
+                            indices[4] = 2;
+                            indices[5] = 3;
+                            using (indices)
+                            {
+                                using (vertices)
+                                {
+                                    brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                                }
+                            }
 
                             min.z += description.stepDepth;
                             max.z += description.stepDepth;
@@ -634,16 +800,26 @@ namespace Chisel.Core
                             //       |      |
                             //       |      |
                             // z0 y3 *------* z1 y3 
-                            var vertices = stackalloc[] {
-                                            new float3( min.x, y0, z0), // 0
-                                            new float3( min.x, y3, z0), // 1
-                                            new float3( min.x, y3, z1), // 2
-                                            new float3( min.x, y0, z1), // 3
-                                        };
+                            var vertices = new NativeArray<float3>(4, allocator);
+                            vertices[0] = new float3(min.x, y0, z0); // 0
+                            vertices[1] = new float3(min.x, y3, z0); // 1
+                            vertices[2] = new float3(min.x, y3, z1); // 2
+                            vertices[3] = new float3(min.x, y0, z1); // 3
 
-                            const int indicesLength = 7;
-                            var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                            var indices = new NativeArray<int>(6, allocator);
+                            indices[0] = 0;
+                            indices[1] = 1;
+                            indices[2] = 2;
+                            indices[3] = 0;
+                            indices[4] = 2;
+                            indices[5] = 3;
+                            using (indices)
+                            {
+                                using (vertices)
+                                {
+                                    brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                                }
+                            }
                         } else
                         if (y1 < description.bounds.Min.y)
                         {
@@ -661,17 +837,27 @@ namespace Chisel.Core
                             //            \    |
                             //             \   |
                             //        y3 z2 *--* z1 y3
-                            var vertices = stackalloc[] {
-                                            new float3( min.x, y0, z0), // 0
-                                            new float3( min.x, y2, z0), // 1
-                                            new float3( min.x, y3, z2), // 2
-                                            new float3( min.x, y3, z1), // 3
-                                            new float3( min.x, y0, z1), // 4
-                                        };
+                            var vertices = new NativeArray<float3>(5, allocator);
+                            vertices[0] = new float3(min.x, y0, z0); // 0
+                            vertices[1] = new float3(min.x, y2, z0); // 1
+                            vertices[2] = new float3(min.x, y3, z2); // 2
+                            vertices[3] = new float3(min.x, y3, z1); // 3
+                            vertices[4] = new float3(min.x, y0, z1); // 4
 
-                            const int indicesLength = 7;
-                            var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, 5, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                            var indices = new NativeArray<int>(6, allocator);
+                            indices[0] = 0;
+                            indices[1] = 1;
+                            indices[2] = 2;
+                            indices[3] = 0;
+                            indices[4] = 2;
+                            indices[5] = 3;
+                            using (indices)
+                            {
+                                using (vertices)
+                                {
+                                    brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                                }
+                            }
                         } else
                         {
                             // z0 y0 *------* z1 y0 
@@ -686,16 +872,26 @@ namespace Chisel.Core
                             //            \ |
                             //             \|
                             //              * z1 y1 
-                            var vertices = stackalloc[] {
-                                            new float3( min.x, y0, z0), // 0
-                                            new float3( min.x, y2, z0), // 1
-                                            new float3( min.x, y1, z1), // 2
-                                            new float3( min.x, y0, z1), // 3
-                                        };
+                            var vertices = new NativeArray<float3>(4, allocator);
+                            vertices[0] = new float3(min.x, y0, z0); // 0
+                            vertices[1] = new float3(min.x, y2, z0); // 1
+                            vertices[2] = new float3(min.x, y1, z1); // 2
+                            vertices[3] = new float3(min.x, y0, z1); // 3
 
-                            const int indicesLength = 7;
-                            var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                            var indices = new NativeArray<int>(6, allocator);
+                            indices[0] = 0;
+                            indices[1] = 1;
+                            indices[2] = 2;
+                            indices[3] = 0;
+                            indices[4] = 2;
+                            indices[5] = 3;
+                            using (indices)
+                            {
+                                using (vertices)
+                                {
+                                    brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                                }
+                            }
                         }
 
                         min.z += description.stepDepth;
@@ -724,15 +920,25 @@ namespace Chisel.Core
                             //       | \ 
                             //       |  \
                             // y3 z0 *---* y3 z1 
-                            var vertices = stackalloc[] {
-                                                new float3( min.x, y1, z0), // 0
-                                                new float3( min.x, y3, z0), // 1
-                                                new float3( min.x, y3, z1), // 2
-                                            };
+                            var vertices = new NativeArray<float3>(3, allocator);
+                            vertices[0] = new float3(min.x, y1, z0); // 0
+                            vertices[1] = new float3(min.x, y3, z0); // 1
+                            vertices[2] = new float3(min.x, y3, z1); // 2
 
-                            const int indicesLength = 7;
-                            var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[startIndex + stepCount] = CreateExtrudedSubMeshBlob(vertices, 3, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                            var indices = new NativeArray<int>(6, allocator);
+                            indices[0] = 0;
+                            indices[1] = 1;
+                            indices[2] = 2;
+                            indices[3] = 0;
+                            indices[4] = 2;
+                            indices[5] = 3;
+                            using (indices)
+                            {
+                                using (vertices)
+                                {
+                                    brushMeshes[startIndex + stepCount] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                                }
+                            }
                         } else
                         {
                             // y1 z0 *
@@ -742,16 +948,26 @@ namespace Chisel.Core
                             //       |   * y2 z1 
                             //       |   |
                             // y3 z0 *---* y3 z1 
-                            var vertices = stackalloc[] {
-                                                new float3( min.x, y1, z0), // 0
-                                                new float3( min.x, y3, z0), // 1
-                                                new float3( min.x, y3, z1), // 2
-                                                new float3( min.x, y2, z1), // 3
-                                            };
+                            var vertices = new NativeArray<float3>(4, allocator);
+                            vertices[0] = new float3(min.x, y1, z0); // 0
+                            vertices[1] = new float3(min.x, y3, z0); // 1
+                            vertices[2] = new float3(min.x, y3, z1); // 2
+                            vertices[3] = new float3(min.x, y2, z1); // 3
 
-                            const int indicesLength = 7;
-                            var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[startIndex + stepCount] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                            var indices = new NativeArray<int>(6, allocator);
+                            indices[0] = 0;
+                            indices[1] = 1;
+                            indices[2] = 2;
+                            indices[3] = 0;
+                            indices[4] = 2;
+                            indices[5] = 3;
+                            using (indices)
+                            {
+                                using (vertices)
+                                {
+                                    brushMeshes[startIndex + stepCount] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                                }
+                            }
                         }
                     }
                 }
@@ -766,16 +982,26 @@ namespace Chisel.Core
                     //       |      |
                     //       |      |
                     // z0 y3 *------* z1 y3 
-                    var vertices = stackalloc[] {
-                                        new float3( min.x, y0, z0), // 0
-                                        new float3( min.x, y3, z0), // 1
-                                        new float3( min.x, y3, z1), // 2
-                                        new float3( min.x, y0, z1), // 3
-                                    };
+                    var vertices = new NativeArray<float3>(4, allocator);
+                    vertices[0] = new float3(min.x, y0, z0); // 0
+                    vertices[1] = new float3(min.x, y3, z0); // 1
+                    vertices[2] = new float3(min.x, y3, z1); // 2
+                    vertices[3] = new float3(min.x, y0, z1); // 3
 
-                    const int indicesLength = 7;
-                    var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                    brushMeshes[startIndex + stepCount - 1] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
+                    var indices = new NativeArray<int>(6, allocator);
+                    indices[0] = 0;
+                    indices[1] = 1;
+                    indices[2] = 2;
+                    indices[3] = 0;
+                    indices[4] = 2;
+                    indices[5] = 3;
+                    using (indices)
+                    {
+                        using (vertices)
+                        {
+                            brushMeshes[startIndex + stepCount - 1] = CreateExtrudedSubMeshBlob(vertices, extrusion, indices, ref surfaceDefinition, allocator);
+                        }
+                    }
                 }
             }
         }

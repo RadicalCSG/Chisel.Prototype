@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
 {
@@ -46,7 +45,7 @@ namespace Chisel.Core
         /// <param name="list">The list whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTree"/>. The list itself cannot be null.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool SetChildren(in this CSGTreeNode treeNode, List<CSGTreeNode> list) 
+        public static bool SetChildren(in this CSGTreeNode treeNode, List<CSGTreeNode> list) 
         {
             if (treeNode.Type == CSGNodeType.Brush)
                 return false;
@@ -61,7 +60,7 @@ namespace Chisel.Core
 
             using (childNodes)
             {
-                success = CompactHierarchyManager.SetChildNodes(treeNode.nodeID, (CSGTreeNode*)childNodes.GetUnsafePtr(), childNodes.Length);
+                success = CompactHierarchyManager.SetChildNodes(treeNode.nodeID, childNodes);
             }
             return success;
         }
@@ -98,19 +97,14 @@ namespace Chisel.Core
         /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTree"/>. The array itself cannot be null.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool InsertRange(in this Chisel.Core.CSGTree tree, int index, params Chisel.Core.CSGTreeNode[] array)
+        public static bool InsertRange(in this Chisel.Core.CSGTree tree, int index, params Chisel.Core.CSGTreeNode[] array)
         {
             if (array == null) throw new ArgumentNullException(nameof(array));
             var length = array.Length;
             if (length == 0) return true;
-            var arrayPtr = (Chisel.Core.CSGTreeNode*)Unity.Collections.LowLevel.Unsafe.UnsafeUtility.PinGCArrayAndGetDataAddress(array, out var handle);
-            try
+            using (var nativeArray = array.ToNativeArray(Allocator.Temp))
             {
-                return tree.InsertRange(index, arrayPtr, length);
-            }
-            finally
-            {
-                Unity.Collections.LowLevel.Unsafe.UnsafeUtility.ReleaseGCObject(handle);
+                return tree.InsertRange(index, array);
             }
         }
 
@@ -120,19 +114,15 @@ namespace Chisel.Core
         /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTreeBranch"/>. The array itself cannot be null.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool InsertRange(in this Chisel.Core.CSGTreeBranch branch, int index, params Chisel.Core.CSGTreeNode[] array)
+        public static bool InsertRange(in this Chisel.Core.CSGTreeBranch branch, int index, params Chisel.Core.CSGTreeNode[] array)
         {
             if (array == null) throw new ArgumentNullException(nameof(array));
             var length = array.Length;
             if (length == 0) return true;
-            var arrayPtr = (Chisel.Core.CSGTreeNode*)Unity.Collections.LowLevel.Unsafe.UnsafeUtility.PinGCArrayAndGetDataAddress(array, out var handle);
-            try
+
+            using (var nativeArray = array.ToNativeArray(Allocator.Temp))
             {
-                return branch.InsertRange(index, arrayPtr, length);
-            }
-            finally
-            {
-                Unity.Collections.LowLevel.Unsafe.UnsafeUtility.ReleaseGCObject(handle);
+                return branch.InsertRange(index, nativeArray);
             }
         }
 

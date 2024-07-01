@@ -1,6 +1,5 @@
 using Unity.Mathematics;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
 {
@@ -73,7 +72,7 @@ namespace Chisel.Core
         }
 
               
-        public static unsafe bool GenerateTorus(NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes, 
+        public static bool GenerateTorus(NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes, 
                                                 in NativeArray<float3> vertices, int verticalSegments, int horizontalSegments,
                                                 in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
                                                 Allocator allocator)
@@ -104,7 +103,7 @@ namespace Chisel.Core
                         }
 
                         // TODO: could probably just create one torus section and repeat that with different transformations
-                        CreateExtrudedSubMesh(verticalSegments, (int*)segmentIndices.GetUnsafePtr(), segmentIndices.Length, 0, 1, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out var polygons, out var halfEdges);
+                        CreateExtrudedSubMesh(verticalSegments, segmentIndices, segmentIndices.Length, 0, 1, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out var polygons, out var halfEdges);
                         
                         if (!Validate(in localVertices, in halfEdges, in polygons, logErrors: true))
                             return false;

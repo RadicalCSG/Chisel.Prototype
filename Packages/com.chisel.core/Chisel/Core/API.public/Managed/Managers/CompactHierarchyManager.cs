@@ -10,6 +10,8 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
+using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
+using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 namespace Chisel.Core
 {
@@ -1274,7 +1276,7 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        internal unsafe bool InsertChildNodeRange(NodeID parent, int index, CSGTreeNode* arrayPtr, int arrayLength)
+        internal bool InsertChildNodeRange(NodeID parent, int index, [ReadOnly] NativeArray<CSGTreeNode> array)
         {
             if (!IsValidNodeID(parent, out var parentNodeIndex))
                 throw new ArgumentException($"The {nameof(NodeID)} {nameof(parent)} (value: {parent.value}, generation: {parent.generation}) is invalid", nameof(parent));
@@ -1300,9 +1302,9 @@ namespace Chisel.Core
                     Debug.LogError($"{nameof(index)} is invalid, its value '{index}' must be between 0 .. {count}");
                 return false;
             }
-            for (int i = 0, lastNodex = arrayLength; i < lastNodex; i++)
+            for (int i = 0, lastNodex = array.Length; i < lastNodex; i++)
             {
-                var childNode = arrayPtr[i].nodeID;
+                var childNode = array[i].nodeID;
 
                 if (!IsValidNodeID(childNode, out var childIndex))
                 {
@@ -1350,9 +1352,9 @@ namespace Chisel.Core
                 }
             }
             
-            for (int i = 0, lastNodex = arrayLength; i < lastNodex; i++)
+            for (int i = 0, lastNodex = array.Length; i < lastNodex; i++)
             {
-                var childNode               = arrayPtr[i].nodeID;
+                var childNode               = array[i].nodeID;
                 var childCompactNodeID      = GetCompactNodeID(childNode, out var childIndex);
                 var currParentHierarchyID   = childCompactNodeID.hierarchyID;
                 ref var oldParentHierarchy  = ref GetHierarchy(currParentHierarchyID);
@@ -1392,14 +1394,19 @@ namespace Chisel.Core
 
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe bool InsertChildNode(NodeID parent, int index, NodeID item)
+        internal bool InsertChildNode(NodeID parent, int index, NodeID item)
         {
             var treeNode = CSGTreeNode.Find(item);
-            return InsertChildNodeRange(parent, index, &treeNode, 1);
+            var nodeArray = new NativeArray<CSGTreeNode>(1, Allocator.Temp);
+            nodeArray[0] = treeNode;
+            using (nodeArray)
+            {
+                return InsertChildNodeRange(parent, index, nodeArray);
+            }
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        internal unsafe bool SetChildNodes(NodeID parent, CSGTreeNode* arrayPtr, int arrayLength)
+        internal bool SetChildNodes(NodeID parent, [ReadOnly] NativeArray<CSGTreeNode> array)
         {
             if (!IsValidNodeID(parent, out var newParentNodeIndex))
                 throw new ArgumentException($"The {nameof(NodeID)} {nameof(parent)} (value: {parent.value}, generation: {parent.generation}) is invalid", nameof(parent));
@@ -1415,20 +1422,20 @@ namespace Chisel.Core
             ref var hierarchy = ref GetHierarchy(newParentCompactNodeID);
             hierarchy.DetachAllChildrenFromParent(newParentCompactNodeID);
 
-            if (arrayLength == 0)
+            if (array.Length == 0)
                 return true;
 
             ref var newParentHierarchy = ref GetHierarchy(newParentHierarchyID);
 
-            using (var newChildren = new NativeList<CompactNodeID>(arrayLength, Allocator.Temp))
+            using (var newChildren = new NativeList<CompactNodeID>(array.Length, Allocator.Temp))
             {
-                newParentHierarchy.ReserveChildren(arrayLength);
+                newParentHierarchy.ReserveChildren(array.Length);
 
-                using (var usedTreeNodes = new NativeParallelHashSet<CSGTreeNode>(arrayLength, Allocator.Temp))
+                using (var usedTreeNodes = new NativeParallelHashSet<CSGTreeNode>(array.Length, Allocator.Temp))
                 {
-                    for (int i = 0; i < arrayLength; i++)
+                    for (int i = 0; i < array.Length; i++)
                     {
-                        var treeNode = arrayPtr[i];
+                        var treeNode = array[i];
 
                         if (!usedTreeNodes.Add(treeNode))
                         {
@@ -2091,7 +2098,7 @@ namespace Chisel.Core
 
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe bool InsertChildNodeRange(NodeID parent, int index, CSGTreeNode* arrayPtr, int arrayLength) { return instance.InsertChildNodeRange(parent, index, arrayPtr, arrayLength); }
+        internal static bool InsertChildNodeRange(NodeID parent, int index, [ReadOnly] NativeArray<CSGTreeNode> array) { return instance.InsertChildNodeRange(parent, index, array); }
 
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2099,7 +2106,7 @@ namespace Chisel.Core
 
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe bool SetChildNodes(NodeID parent, CSGTreeNode* arrayPtr, int arrayLength) { return instance.SetChildNodes(parent, arrayPtr, arrayLength); }
+        internal static bool SetChildNodes(NodeID parent, [ReadOnly] NativeArray<CSGTreeNode> array) { return instance.SetChildNodes(parent, array); }
 
         [return: MarshalAs(UnmanagedType.U1)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -43,15 +43,11 @@ namespace Chisel.Core
         public SurfaceDescription   surfaceDescription;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override unsafe int GetHashCode()
+        public override int GetHashCode()
         {
             unchecked
             {
-                uint hash = 0;
-                fixed (SurfaceDescription* surfaceDescriptionPtr = &surfaceDescription)
-                {
-                    hash = math.hash(surfaceDescriptionPtr, sizeof(SurfaceDescription));
-                }
+                uint hash = MathExtensions.Hash(ref surfaceDescription);
                 hash = math.hash(new uint2(hash, (uint)brushMaterial.GetHashCode()));
                 return (int)hash;
             }

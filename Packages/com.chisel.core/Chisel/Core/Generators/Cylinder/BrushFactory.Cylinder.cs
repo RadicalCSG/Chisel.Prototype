@@ -34,14 +34,14 @@ namespace Chisel.Core
                                                  in surfaceDefinitionBlob, out brushMesh, allocator);
         }
 
-        public static unsafe bool GenerateConicalFrustumSubMesh(float2 topDiameter,    float topHeight,
-                                                                float2 bottomDiameter, float bottomHeight, 
-                                                                float                  rotation, 
-                                                                int                    segments, 
-                                                                bool                   fitToBounds, 
-                                                                in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
-                                                                out ChiselBlobAssetReference<BrushMeshBlob>                brushMesh,
-                                                                Allocator                                            allocator)
+        public static bool GenerateConicalFrustumSubMesh(float2 topDiameter,    float topHeight,
+                                                         float2 bottomDiameter, float bottomHeight, 
+                                                         float                  rotation, 
+                                                         int                    segments, 
+                                                         bool                   fitToBounds, 
+                                                         in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                         out ChiselBlobAssetReference<BrushMeshBlob>                brushMesh,
+                                                         Allocator                                            allocator)
         {
             brushMesh = ChiselBlobAssetReference<BrushMeshBlob>.Null;
             if (topHeight > bottomHeight) 
@@ -92,7 +92,7 @@ namespace Chisel.Core
                                               in builder, ref root, out localVertices, fitToBounds: fitToBounds);
 
                     // TODO: the polygon/half-edge part would be the same for any extruded shape and should be re-used
-                    CreateExtrudedSubMesh(segments, null, 0, 0, 1, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out polygons, out halfEdges);
+                    CreateExtrudedSubMesh(segments, 0, 1, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out polygons, out halfEdges);
                 }
 
                 if (!Validate(in localVertices, in halfEdges, in polygons, logErrors: true))

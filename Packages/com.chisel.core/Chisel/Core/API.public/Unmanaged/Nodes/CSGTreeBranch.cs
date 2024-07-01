@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 using Unity.Mathematics;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
 namespace Chisel.Core
@@ -27,43 +26,26 @@ namespace Chisel.Core
         #region Create
         /// <summary>Generates a branch and returns a <see cref="Chisel.Core.CSGTreeBranch"/> struct that contains a reference to it.</summary>
         /// <param name="userID">A unique id to help identify this particular branch. For instance, this could be an InstanceID to a [UnityEngine.Object](https://docs.unity3d.com/ScriptReference/Object.html)</param>
-        /// <param name="childrenArray">A pointer to an array of child nodes that are children of this branch. A branch may not have duplicate children, contain itself or contain a <see cref="Chisel.Core.CSGTree"/>.</param>
-        /// <param name="childrenArray">The length of an array of child nodes that are children of this branch. </param>
+        /// <param name="children">The child nodes that are children of this branch. A branch may not have duplicate children, contain itself or contain a <see cref="Chisel.Core.CSGTree"/>.</param>
         /// <returns>A new <see cref="Chisel.Core.CSGTreeBranch"/>. May be an invalid node if it failed to create it.</returns>
-        [EditorBrowsable(EditorBrowsableState.Never), MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe CSGTreeBranch CreateUnsafe(Int32 userID = 0, CSGOperationType operation = CSGOperationType.Additive, CSGTreeNode* childrenArray = null, int childrenArrayLength = 0)
+        [BurstDiscard, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static CSGTreeBranch Create(Int32 userID = 0, CSGOperationType operation = CSGOperationType.Additive, params CSGTreeNode[] children)
         {
             var branchNodeID = CompactHierarchyManager.CreateBranch(operation, userID);
             Debug.Assert(CompactHierarchyManager.IsValidNodeID(branchNodeID));
-            if (childrenArray != null && childrenArrayLength > 0)
+            if (children != null && children.Length > 0)
             {
-                if (!CompactHierarchyManager.SetChildNodes(branchNodeID, childrenArray, childrenArrayLength))
+                using (var childrenNativeArray = children.ToNativeArray(Allocator.Temp))
                 {
-                    CompactHierarchyManager.DestroyNode(branchNodeID);
-                    return CSGTreeBranch.Invalid;
+                    if (!CompactHierarchyManager.SetChildNodes(branchNodeID, childrenNativeArray))
+                    {
+                        CompactHierarchyManager.DestroyNode(branchNodeID);
+                        return CSGTreeBranch.Invalid;
+                    }
                 }
             }
             CompactHierarchyManager.SetDirty(branchNodeID);
             return CSGTreeBranch.Find(branchNodeID);
-        }
-
-        /// <summary>Generates a branch and returns a <see cref="Chisel.Core.CSGTreeBranch"/> struct that contains a reference to it.</summary>
-        /// <param name="userID">A unique id to help identify this particular branch. For instance, this could be an InstanceID to a [UnityEngine.Object](https://docs.unity3d.com/ScriptReference/Object.html)</param>
-        /// <param name="children">The child nodes that are children of this branch. A branch may not have duplicate children, contain itself or contain a <see cref="Chisel.Core.CSGTree"/>.</param>
-        /// <returns>A new <see cref="Chisel.Core.CSGTreeBranch"/>. May be an invalid node if it failed to create it.</returns>
-        [BurstDiscard, MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe CSGTreeBranch Create(Int32 userID = 0, CSGOperationType operation = CSGOperationType.Additive, params CSGTreeNode[] children)
-        {
-            if (children == null || children.Length == 0)
-                return CreateUnsafe(userID, operation, null, 0);
-
-            var length = children.Length;
-            var arrayPtr = (CSGTreeNode*)Unity.Collections.LowLevel.Unsafe.UnsafeUtility.PinGCArrayAndGetDataAddress(children, out var handle);
-            try
-            {
-                return CreateUnsafe(userID, operation, arrayPtr, length);
-            }
-            finally { Unity.Collections.LowLevel.Unsafe.UnsafeUtility.ReleaseGCObject(handle); }
         }
 
         /// <summary>Generates a branch and returns a <see cref="Chisel.Core.CSGTreeBranch"/> struct that contains a reference to it.</summary>
@@ -184,29 +166,11 @@ namespace Chisel.Core
         /// <param name="length">The length of the array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be added to the end of the <see cref="Chisel.Core.CSGTreeBranch"/>. </param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe bool AddRange	(CSGTreeNode* arrayPtr, int length) 
-        { 
-            if (arrayPtr == null) 
-                throw new ArgumentNullException(nameof(arrayPtr));
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length));
-            if (length == 0)
-                return true;
-            return CompactHierarchyManager.InsertChildNodeRange(nodeID, Count, arrayPtr, length);
-        }
-
-        /// <summary>Adds the <see cref="Chisel.Core.CSGTreeNode"/>s of the specified array to the end of the  <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
-        /// <param name="arrayPtr">The pointer to the array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be added to the end of the <see cref="Chisel.Core.CSGTreeBranch"/>. The array itself cannot be null.</param>
-        /// <param name="length">The length of the array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be added to the end of the <see cref="Chisel.Core.CSGTreeBranch"/>. </param>
-        /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe bool AddRange(NativeArray<CSGTreeNode> array, int length)
+        public bool AddRange(NativeArray<CSGTreeNode> array)
         {
-            if (length < 0 || array.Length < length)
-                throw new ArgumentOutOfRangeException(nameof(length));
-            if (length == 0)
+            if (array.Length == 0)
                 return true;
-            return CompactHierarchyManager.InsertChildNodeRange(nodeID, Count, (CSGTreeNode*)array.GetUnsafePtr(), length);
+            return CompactHierarchyManager.InsertChildNodeRange(nodeID, Count, array);
         }
 
         /// <summary>Inserts an element into the <see cref="Chisel.Core.CSGTreeNode"/> at the specified index.</summary>
@@ -214,7 +178,7 @@ namespace Chisel.Core
         /// <param name="item">The <see cref="Chisel.Core.CSGTreeNode"/> to insert.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Insert		(int index, CSGTreeNode item)	        { return CompactHierarchyManager.InsertChildNode(nodeID, index, item.nodeID); }
+        public bool Insert(int index, CSGTreeNode item) { return CompactHierarchyManager.InsertChildNode(nodeID, index, item.nodeID); }
 
         /// <summary>Inserts an array of <see cref="Chisel.Core.CSGTreeNode"/>s into the <see cref="Chisel.Core.CSGTreeBranch"/> at the specified index.</summary>
         /// <param name="index">The zero-based index at which the new <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted.</param>
@@ -223,15 +187,11 @@ namespace Chisel.Core
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe bool InsertRange(int index, CSGTreeNode* arrayPtr, int length)
+        public bool InsertRange(int index, NativeArray<CSGTreeNode> array)
         {
-            if (arrayPtr == null)
-                throw new ArgumentNullException(nameof(arrayPtr));
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length));
-            if (length == 0)
+            if (array.Length == 0)
                 return true;
-            return CompactHierarchyManager.InsertChildNodeRange(nodeID, index, arrayPtr, length);
+            return CompactHierarchyManager.InsertChildNodeRange(nodeID, index, array);
         }
 
         /// <summary>Removes a specific <see cref="Chisel.Core.CSGTreeNode"/> from the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>

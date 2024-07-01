@@ -2,7 +2,6 @@ using System;
 using Unity.Jobs;
 using Unity.Collections;
 using System.Runtime.CompilerServices;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
 using Unity.Mathematics;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
@@ -285,31 +284,6 @@ namespace Chisel.Core
         {
             if (list.Capacity < reference.Value)
                 list.Capacity = math.max(4, reference.Value);
-        }
-    }
-
-    //[BurstCompile(CompileSynchronously = true)]
-    public unsafe struct SafeDisposeListJob<T> : IJob
-        where T : unmanaged
-    {
-        // Read / Write
-        [NativeDisableUnsafePtrRestriction]
-        [NoAlias] public UnsafeList<T>* list;
-
-        public void Execute()
-        {
-            if (list == null ||
-                !list->IsCreated)
-                return;
-
-            try
-            {
-                UnsafeList<T>.Destroy(list);
-            }
-            catch
-            {
-                UnityEngine.Debug.LogError(typeof(T));
-            }
         }
     }
 

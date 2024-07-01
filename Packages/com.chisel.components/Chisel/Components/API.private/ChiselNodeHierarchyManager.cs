@@ -1157,7 +1157,6 @@ ForceRerun:
 
                         hierarchyItem.Component.ResetTreeNodes();
                     
-                        //Debug.Log($"addToHierarchyQueue {hierarchyItem.Component}", hierarchyItem.Component);
                         var sceneHierarchy = GetSceneHierarchyForScene(hierarchyItem.Scene);
                         hierarchyItem.sceneHierarchy = sceneHierarchy;
                     
