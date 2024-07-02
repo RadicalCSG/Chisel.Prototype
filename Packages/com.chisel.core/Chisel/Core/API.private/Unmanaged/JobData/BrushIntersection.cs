@@ -10,7 +10,7 @@ namespace Chisel.Core
         public int              bottomUpStart;
         public int              bottomUpEnd;
 
-        public override string ToString() { return $"({nameof(nodeIndexOrder.compactNodeID)}: {nodeIndexOrder.compactNodeID}, {nameof(type)}: {type}, {nameof(bottomUpStart)}: {bottomUpStart}, {nameof(bottomUpEnd)}: {bottomUpEnd})"; }
+        public override readonly string ToString() { return $"({nameof(nodeIndexOrder.compactNodeID)}: {nodeIndexOrder.compactNodeID}, {nameof(type)}: {type}, {nameof(bottomUpStart)}: {bottomUpStart}, {nameof(bottomUpEnd)}: {bottomUpEnd})"; }
     }
 
 }

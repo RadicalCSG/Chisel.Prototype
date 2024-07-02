@@ -26,7 +26,7 @@ namespace Chisel.Core
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-		BlobAssetReference<BrushTreeSpacePlanes> Build(ref BrushMeshBlob brushMeshBlob, float4x4 nodeToTreeTransformation)
+		readonly BlobAssetReference<BrushTreeSpacePlanes> Build(ref BrushMeshBlob brushMeshBlob, float4x4 nodeToTreeTransformation)
         {
             var nodeToTreeInversed = math.inverse(nodeToTreeTransformation);
             var nodeToTreeInverseTransposed = math.transpose(nodeToTreeInversed);

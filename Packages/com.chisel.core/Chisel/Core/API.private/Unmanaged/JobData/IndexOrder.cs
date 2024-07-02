@@ -7,19 +7,19 @@ namespace Chisel.Core
         public CompactNodeID compactNodeID;
         public int nodeOrder;
 
-        public bool Equals(IndexOrder other)
+        public readonly bool Equals(IndexOrder other)
         {
             return compactNodeID == other.compactNodeID;
         }
 
-        public override bool Equals(object obj)
+        public override readonly bool Equals(object obj)
         {
-            if (!(obj is IndexOrder))
+            if (obj is not IndexOrder)
                 return false;
             return Equals((IndexOrder)obj);
         }
 
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return compactNodeID.GetHashCode();
         }

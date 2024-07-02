@@ -10,7 +10,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 namespace Chisel.Core
-{
+{/*
     [BurstCompile(CompileSynchronously = true)]
     struct MergeTouchingBrushVerticesJob : IJobParallelForDefer
     {
@@ -64,7 +64,7 @@ namespace Chisel.Core
             //treeSpaceVerticesLookup.TryAdd(brushNodeIndex, treeSpaceVerticesBlob);
         }
     }
-    
+    */
     [BurstCompile(CompileSynchronously = true)]
     struct MergeTouchingBrushVerticesIndirectJob : IJobParallelForDefer
     {

@@ -87,7 +87,7 @@ namespace Chisel.Core
         internal CompactNodeID(CompactHierarchyID hierarchyID, Int32 value, Int32 generation = 0) { this.hierarchyID = hierarchyID; this.value = value; this.generation = generation; }
 
         [EditorBrowsable(EditorBrowsableState.Never), BurstDiscard]
-        public override string ToString() { return $"{nameof(value)} = {value}, {nameof(generation)} = {generation}, {nameof(hierarchyID)} = {hierarchyID}"; }
+        public readonly override string ToString() { return $"{nameof(value)} = {value}, {nameof(generation)} = {generation}, {nameof(hierarchyID)} = {hierarchyID}"; }
 
         #region Comparison
         [EditorBrowsable(EditorBrowsableState.Never), MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -101,7 +101,7 @@ namespace Chisel.Core
             return false;
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override int GetHashCode() { return value; }
+        public readonly override int GetHashCode() { return value; }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public int CompareTo(CompactNodeID other)

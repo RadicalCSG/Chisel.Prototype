@@ -93,6 +93,7 @@ namespace Poly2Tri
                 edgeFlags[1] &= (int)~EdgeFlags.Delaunay;
                 edgeFlags[2] &= (int)~EdgeFlags.Delaunay;
             }
+
             public void SetDelauneyEdge(int index, bool value)
             {
                 if (value)

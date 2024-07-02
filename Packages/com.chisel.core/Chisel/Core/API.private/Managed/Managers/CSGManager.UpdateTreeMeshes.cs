@@ -1998,7 +1998,7 @@ namespace Chisel.Core
                 lastJobHandle.AddDependency(Temporaries.surfaceCountRef                 .Dispose(JobHandles.surfaceCountRefJobHandle.readWriteBarrier));
                 lastJobHandle.AddDependency(Temporaries.needRemappingRef                .Dispose(JobHandles.needRemappingRefJobHandle.readWriteBarrier));
                 lastJobHandle.AddDependency(Temporaries.nodeIDValueToNodeOrderOffsetRef .Dispose(JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle.readWriteBarrier));
-                lastJobHandle.AddDependency(Temporaries.compactTreeRef                  .DisposeDeep(JobHandles.compactTreeRefJobHandle.readWriteBarrier));
+                lastJobHandle.AddDependency(Temporaries.compactTreeRef                  .DisposeBlobDeep(JobHandles.compactTreeRefJobHandle.readWriteBarrier));
 
                 chiselLookupValues.lastJobHandle = lastJobHandle;
                 return lastJobHandle;

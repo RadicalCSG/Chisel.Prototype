@@ -633,7 +633,7 @@ skipMe:
         }
 
         // Handles situation where a vertex leads back to itself, could potentially happen when planes graze edges
-        private int RemoveDuplicateEdges(ref NativeList<ushort> uniqueIndices, int start, int end)
+        private readonly int RemoveDuplicateEdges(ref NativeList<ushort> uniqueIndices, int start, int end)
         {
             int length = end - start;
             if (length <= 2)

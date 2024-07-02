@@ -99,7 +99,7 @@ namespace Chisel.Core
             return false;
         }
 
-
+        /*
         public unsafe static bool IsPointInPolygon(float3 right, float3 forward, [NoAlias, ReadOnly] in NativeArray<Edge> edges, [NoAlias] in HashedVertices vertices, float3 point)
         {
             var px = math.dot(right, point);
@@ -126,7 +126,7 @@ namespace Chisel.Core
                 }
             }
             return result;
-        }
+        }*/
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static EdgeCategory CategorizeEdge(Edge edge, [NoAlias, ReadOnly] in NativeList<float4> planes, [NoAlias, ReadOnly] in NativeArray<Edge> edges, [NoAlias, ReadOnly] in LoopSegment segment, [NoAlias, ReadOnly] in HashedVertices vertices)
@@ -140,7 +140,7 @@ namespace Chisel.Core
 
             return IsOutsidePlanes(in planes, segment.planesOffset, segment.planesLength, new float4(midPoint, 1));
         }
-
+        /*
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static EdgeCategory CategorizeEdge(Edge edge, [NoAlias, ReadOnly] ref BlobArray<float4> planes, [NoAlias, ReadOnly] in NativeArray<Edge> edges, [NoAlias, ReadOnly] in HashedVertices vertices)
         {
@@ -152,7 +152,7 @@ namespace Chisel.Core
             if (IsOutsidePlanes(ref planes, new float4(midPoint, 1)))
                 return EdgeCategory.Outside;
             return EdgeCategory.Inside;
-        }
+        }*/
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static EdgeCategory CategorizeEdge(Edge edge, [NoAlias, ReadOnly] ref BlobArray<float4> planes, [NoAlias, ReadOnly] in UnsafeList<Edge> edges, [NoAlias, ReadOnly] in HashedVertices vertices)

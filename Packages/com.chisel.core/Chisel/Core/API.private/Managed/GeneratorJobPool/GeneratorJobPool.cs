@@ -31,13 +31,13 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     public class GeneratorJobPoolManager : System.IDisposable
     {
-        System.Collections.Generic.HashSet<GeneratorJobPool> generatorPools = new System.Collections.Generic.HashSet<GeneratorJobPool>();
+        System.Collections.Generic.HashSet<IGeneratorJobPool> generatorPools = new System.Collections.Generic.HashSet<IGeneratorJobPool>();
 
         static GeneratorJobPoolManager s_Instance;
         public static GeneratorJobPoolManager Instance => (s_Instance ??= new GeneratorJobPoolManager());
 
-        public static bool Register  (GeneratorJobPool pool) { return Instance.generatorPools.Add(pool); }
-        public static bool Unregister(GeneratorJobPool pool) { return Instance.generatorPools.Remove(pool); }
+        public static bool Register  (IGeneratorJobPool pool) { return Instance.generatorPools.Add(pool); }
+        public static bool Unregister(IGeneratorJobPool pool) { return Instance.generatorPools.Remove(pool); }
 
 #if UNITY_EDITOR
         [UnityEditor.InitializeOnLoadMethod]
@@ -85,7 +85,7 @@ namespace Chisel.Core
 
         const Allocator defaultAllocator = Allocator.TempJob;
 
-        static readonly List<GeneratorJobPool> generatorJobs = new List<GeneratorJobPool>();
+        static readonly List<IGeneratorJobPool> generatorJobs = new List<IGeneratorJobPool>();
 
         // TODO: Optimize this
         public static JobHandle ScheduleJobs(bool runInParallel, JobHandle dependsOn = default)
@@ -340,7 +340,7 @@ namespace Chisel.Core
     }
 
     // TODO: move to core
-    public interface GeneratorJobPool : System.IDisposable
+    public interface IGeneratorJobPool : System.IDisposable
     {
         void AllocateOrClear();
         bool HasJobs { get; }
@@ -443,7 +443,7 @@ namespace Chisel.Core
 
     // TODO: move to core, call ScheduleUpdate when hash of definition changes (no more manual calls)
     [BurstCompile(CompileSynchronously = true)]
-    public class GeneratorBrushJobPool<Generator> : GeneratorJobPool
+    public class GeneratorBrushJobPool<Generator> : IGeneratorJobPool
         where Generator : unmanaged, IBrushGenerator
     {
         NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
@@ -700,7 +700,7 @@ namespace Chisel.Core
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    public class GeneratorBranchJobPool<Generator> : GeneratorJobPool
+    public class GeneratorBranchJobPool<Generator> : IGeneratorJobPool
         where Generator : unmanaged, IBranchGenerator
     {
         NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;

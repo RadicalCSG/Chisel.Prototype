@@ -78,11 +78,11 @@ namespace Chisel.Core
         {
             return CalculateHashCode(ref this);
         }
-
+        /*
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsEmpty()
         {
             return (localPlanes.Length == 0 || polygons.Length == 0 || localVertices.Length == 0 || halfEdges.Length == 0);
-        }
+        }*/
     }
 }

@@ -251,7 +251,7 @@ namespace Chisel.Core
 
         readonly Dictionary<CSGTree, int>   chiselTreeLookup    = new Dictionary<CSGTree, int>();
         readonly List<Data>                 chiselTreeData      = new List<Data>();
-
+        /*
         public void Remove(CSGTree tree)
         {
             if (!chiselTreeLookup.TryGetValue(tree, out int dataIndex))
@@ -277,14 +277,13 @@ namespace Chisel.Core
             chiselTreeLookup.Clear();
             DestroyImmediate(_singleton);
             _singleton = null;
-        }
+        }*/
 
         internal void OnDisable()
         {
             foreach (var data in chiselTreeData)
             {
-                if (data != null)
-                    data.Dispose();
+                data?.Dispose();
             }
             chiselTreeData.Clear();
             chiselTreeLookup.Clear();
@@ -292,6 +291,7 @@ namespace Chisel.Core
                 _singleton = null;
         }
     }
+
     public struct RefCountedBrushMeshBlob
     {
         public int refCount;
@@ -308,12 +308,12 @@ namespace Chisel.Core
             {
                 brushMeshBlobCache = new NativeParallelHashMap<int, RefCountedBrushMeshBlob>(1000, Allocator.Persistent);
             }
-
+            /*
             public void EnsureCapacity(int capacity)
             {
                 if (brushMeshBlobCache.Capacity < capacity)
                     brushMeshBlobCache.Capacity = capacity;
-            }
+            }*/
 
             internal void Dispose()
             {

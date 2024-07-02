@@ -209,7 +209,27 @@ namespace Chisel.Core
 
         public static JobHandle DisposeDeep<T>(ref this NativeList<T> list, JobHandle dependencies) where T : unmanaged, IDisposable { return DisposeDeep(true, ref list, dependencies); }
 
-        public static JobHandle DisposeDeep<T>(bool runInParallel, ref NativeReference<T> reference, JobHandle dependencies)
+		
+		public static JobHandle DisposeDeep<T>(bool runInParallel, ref NativeReference<BlobAssetReference<T>> reference, JobHandle dependencies)
+			where T : unmanaged, IDisposable
+		{
+			var disposeListJob = new DisposeBlobReferenceChildJob<T> { reference = reference };
+			JobExtensions.CheckDependencies(runInParallel, dependencies);
+			var currentHandle = disposeListJob.Schedule(runInParallel, dependencies);
+			if (runInParallel)
+			{
+				var result = reference.Dispose(currentHandle);
+				reference = default;
+				return result;
+			}
+
+			currentHandle.Complete();// TODO: get rid of this
+			reference.Dispose();
+			reference = default;
+			return default;
+		}
+
+		public static JobHandle DisposeDeep<T>(bool runInParallel, ref NativeReference<T> reference, JobHandle dependencies)
             where T : unmanaged, IDisposable
         {
             var disposeListJob = new DisposeReferenceChildJob<T> { reference = reference };
@@ -228,9 +248,11 @@ namespace Chisel.Core
             return default;
         }
 
-        public static JobHandle DisposeDeep<T>(ref this NativeReference<T> reference, JobHandle dependencies) where T : unmanaged, IDisposable { return DisposeDeep<T>(true, ref reference, dependencies); }
+		public static JobHandle DisposeBlobDeep<T>(ref this NativeReference<BlobAssetReference<T>> reference, JobHandle dependencies) where T : unmanaged { return DisposeBlobDeep<T>(true, ref reference, dependencies); }
 
-        public static JobHandle DisposeDeep<T>(bool runInParallel, ref NativeReference<BlobAssetReference<T>> reference, JobHandle dependencies) 
+		public static JobHandle DisposeDeep<T>(ref this NativeReference<T> reference, JobHandle dependencies) where T : unmanaged, IDisposable { return DisposeDeep<T>(true, ref reference, dependencies); }
+
+        public static JobHandle DisposeBlobDeep<T>(bool runInParallel, ref NativeReference<BlobAssetReference<T>> reference, JobHandle dependencies) 
             where T : unmanaged
         {
             var disposeListJob = new DisposeReferenceChildBlobAssetReferenceJob<T> { reference = reference };
@@ -245,7 +267,7 @@ namespace Chisel.Core
 
             currentHandle.Complete();
             reference.Dispose();
-            reference = default;
+            reference = default; 
             return default;
         }
 
@@ -368,10 +390,30 @@ namespace Chisel.Core
             reference.Value.Dispose();
             reference.Value = default;
         }
-    }
+	}
 
-    //[BurstCompile(CompileSynchronously = true)]
-    public struct DisposeReferenceChildBlobAssetReferenceJob<T> : IJob
+	//[BurstCompile(CompileSynchronously = true)]
+	public struct DisposeBlobReferenceChildJob<T> : IJob
+		where T : unmanaged, IDisposable
+	{
+		// Read / Write
+		[NativeDisableParallelForRestriction]
+		[NoAlias] public NativeReference<BlobAssetReference<T>> reference;
+
+		public void Execute()
+		{
+			if (!reference.IsCreated)
+				return;
+            if (reference.Value != BlobAssetReference<T>.Null)
+            {
+                reference.Value.Dispose();
+            }
+			reference.Value = default;
+		}
+	}
+
+	//[BurstCompile(CompileSynchronously = true)]
+	public struct DisposeReferenceChildBlobAssetReferenceJob<T> : IJob
         where T : unmanaged
     {
         // Read / Write
