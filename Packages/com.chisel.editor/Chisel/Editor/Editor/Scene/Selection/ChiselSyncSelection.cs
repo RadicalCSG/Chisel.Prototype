@@ -17,7 +17,11 @@ namespace Chisel.Editors
                 if (_instance)
                     return _instance;
 
+#if UNITY_2023_1_OR_NEWER
+				var foundInstances = UnityEngine.Object.FindObjectsByType<ChiselSyncSelection>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+#else
                 var foundInstances = UnityEngine.Object.FindObjectsOfType<ChiselSyncSelection>();
+#endif
                 if (foundInstances == null ||
                     foundInstances.Length == 0)
                 {

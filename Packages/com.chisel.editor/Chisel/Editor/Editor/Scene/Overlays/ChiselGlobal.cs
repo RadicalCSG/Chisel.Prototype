@@ -7,6 +7,7 @@ using UnityEditor.EditorTools;
 using UnityEditor.Overlays;
 using UnityEditor.Toolbars;
 using UnityEngine;
+using UnityEngine.UI;
 
 // Just a misc. collections of buttons we don't have a more sensible place for
 namespace Chisel.Editors
@@ -34,13 +35,14 @@ namespace Chisel.Editors
 
         public override void OnWillBeDeactivated()
         {
-        }
+
+		}
 
 
         // TODO: put all tool functionality in here instead, so it's easy to find
-        //public override void OnToolGUI(EditorWindow window)
-        //{
-        //}
+        public override void OnToolGUI(EditorWindow window)
+        {
+        }
     }
 
 

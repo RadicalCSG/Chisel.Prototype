@@ -45,57 +45,57 @@ namespace Chisel.Editors
             return model;
         }
 
-        static readonly GUIContent LightingContent                        = new GUIContent("Lighting");
-        static readonly GUIContent ProbesContent                          = new GUIContent("Probes");
-        static readonly GUIContent AdditionalSettingsContent              = new GUIContent("Additional Settings");
-        static readonly GUIContent GenerationSettingsContent              = new GUIContent("Geometry Output");
-        static readonly GUIContent ColliderSettingsContent                = new GUIContent("Collider");
-        static readonly GUIContent CreateRenderComponentsContents         = new GUIContent("Renderable");
-        static readonly GUIContent CreateColliderComponentsContents       = new GUIContent("Collidable");
-        static readonly GUIContent UnwrapParamsContents                   = new GUIContent("UV Generation");
+        static readonly GUIContent LightingContent                        = new("Lighting");
+        static readonly GUIContent ProbesContent                          = new("Probes");
+        static readonly GUIContent AdditionalSettingsContent              = new("Additional Settings");
+        static readonly GUIContent GenerationSettingsContent              = new("Geometry Output");
+        static readonly GUIContent ColliderSettingsContent                = new("Collider");
+        static readonly GUIContent CreateRenderComponentsContents         = new("Renderable");
+        static readonly GUIContent CreateColliderComponentsContents       = new("Collidable");
+        static readonly GUIContent UnwrapParamsContents                   = new("UV Generation");
 
-        static readonly GUIContent ForceBuildUVsContents                  = new GUIContent("Build", "Manually build lightmap UVs for generated meshes. This operation can be slow for more complicated meshes");
-        static readonly GUIContent ForceRebuildUVsContents                = new GUIContent("Rebuild", "Manually rebuild lightmap UVs for generated meshes. This operation can be slow for more complicated meshes");
-        static readonly GUIContent AutoRebuildUVsContents                 = new GUIContent("Auto UV Generation", "Automatically lightmap UVs for generated meshes. This operation can be slow for more complicated meshes");
-        static readonly GUIContent NeedsLightmapBuildContents             = new GUIContent("In order for lightmapping to work properly the lightmap UVs need to be build.");
-        static readonly GUIContent NeedsLightmapRebuildContents           = new GUIContent("In order for lightmapping to work properly the lightmap UVs need to be rebuild.");
+        static readonly GUIContent ForceBuildUVsContents                  = new("Build", "Manually build lightmap UVs for generated meshes. This operation can be slow for more complicated meshes");
+        static readonly GUIContent ForceRebuildUVsContents                = new("Rebuild", "Manually rebuild lightmap UVs for generated meshes. This operation can be slow for more complicated meshes");
+        static readonly GUIContent AutoRebuildUVsContents                 = new("Auto UV Generation", "Automatically lightmap UVs for generated meshes. This operation can be slow for more complicated meshes");
+        static readonly GUIContent NeedsLightmapBuildContents             = new("In order for lightmapping to work properly the lightmap UVs need to be build.");
+        static readonly GUIContent NeedsLightmapRebuildContents           = new("In order for lightmapping to work properly the lightmap UVs need to be rebuild.");
 
-        static readonly GUIContent MotionVectorsContent                   = new GUIContent("Motion Vectors", "Specifies whether the Model renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture.");
-        static readonly GUIContent LightmappingContents                   = new GUIContent("Lightmapping");
-        static readonly GUIContent GINotEnabledInfoContents               = new GUIContent("Lightmapping settings are currently disabled. Enable Baked Global Illumination or Realtime Global Illumination to display these settings.");
-        static readonly GUIContent UVChartingContents                     = new GUIContent("UV Charting Control");
-        static readonly GUIContent ImportantGIContents                    = new GUIContent("Prioritize Illumination", "When enabled, the object will be marked as a priority object and always included in lighting calculations. Useful for objects that will be strongly emissive to make sure that other objects will be illuminated by this object.");
-        static readonly GUIContent ScaleInLightmapContents                = new GUIContent("Scale In Lightmap", "Specifies the relative size of object's UVs within a lightmap. A value of 0 will result in the object not being light mapped, but still contribute lighting to other objects in the Scene.");
-        static readonly GUIContent OptimizeRealtimeUVsContents            = new GUIContent("Optimize Realtime UVs", "Specifies whether the generated model UVs get optimized for Realtime Global Illumination or not. When enabled, the UVs can get merged, scaled, and packed for optimization purposes. When disabled, the UVs will get scaled and packed, but not merged.");
-        static readonly GUIContent AutoUVMaxDistanceContents              = new GUIContent("Max Distance", "Specifies the maximum worldspace distance to be used for UV chart simplification. If charts are within this distance they will be simplified for optimization purposes.");
-        static readonly GUIContent AutoUVMaxAngleContents                 = new GUIContent("Max Angle", "Specifies the maximum angle in degrees between faces sharing a UV edge. If the angle between the faces is below this value, the UV charts will be simplified.");
-        static readonly GUIContent IgnoreNormalsForChartDetectionContents = new GUIContent("Ignore Normals", "When enabled, prevents the UV charts from being split during the precompute process for Realtime Global Illumination lighting.");
-        static readonly GUIContent LightmapParametersContents             = new GUIContent("Lightmap Parameters", "Allows the adjustment of advanced parameters that affect the process of generating a lightmap for an object using global illumination.");
-        static readonly GUIContent DynamicOccludeeContents                = new GUIContent("Dynamic Occluded", "Controls if dynamic occlusion culling should be performed for this model.");
-        static readonly GUIContent ProbeAnchorContents                    = new GUIContent("Anchor Override", "Specifies the Transform ` that will be used for sampling the light probes and reflection probes.");
-        static readonly GUIContent ReflectionProbeUsageContents           = new GUIContent("Reflection Probes", "Specifies if or how the object is affected by reflections in the Scene. This property cannot be disabled in deferred rendering modes.");
-        static readonly GUIContent LightProbeUsageContents                = new GUIContent("Light Probes", "Specifies how Light Probes will handle the interpolation of lighting and occlusion. Disabled if the object is set to Lightmap Static.");
-        static readonly GUIContent LightProbeVolumeOverrideContents       = new GUIContent("Proxy Volume Override", "If set, the Model will use the Light Probe Proxy Volume component from another GameObject.");
-        static readonly GUIContent LightProbeCustomContents               = new GUIContent("The Custom Provided mode is not supported.");
-        static readonly GUIContent LightProbeVolumeContents               = new GUIContent("A valid Light Probe Proxy Volume component could not be found.");
-        static readonly GUIContent LightProbeVolumeUnsupportedContents    = new GUIContent("The Light Probe Proxy Volume feature is unsupported by the current graphics hardware or API configuration. Simple 'Blend Probes' mode will be used instead.");
-        static readonly GUIContent RenderingLayerMaskStyle                = new GUIContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
-        static readonly GUIContent StaticBatchingWarningContents          = new GUIContent("This model is statically batched and uses an instanced shader at the same time. Instancing will be disabled in such a case. Consider disabling static batching if you want it to be instanced.");
-        static readonly GUIContent NoNormalsNoLightmappingContents        = new GUIContent("VertexChannels is set to not have any normals. Normals are needed for lightmapping.");
-        //static readonly GUIContent LightmapInfoBoxContents                = new GUIContent("To enable generation of lightmaps for this Model, please enable the 'Lightmap Static' property.");
-        static readonly GUIContent ClampedPackingResolutionContents       = new GUIContent("Object's size in the realtime lightmap has reached the maximum size. Try dividing large brushes into smaller pieces.");
-        static readonly GUIContent UVOverlapContents                      = new GUIContent("This model has overlapping UVs. This is caused by Unity's own code.");
-        static readonly GUIContent ClampedSizeContents                    = new GUIContent("Object's size in lightmap has reached the max atlas size.", "If you need higher resolution for this object, try dividing large brushes into smaller pieces or set higher max atlas size via the LightmapEditorSettings class.");
-        static readonly GUIContent IsTriggerContents                      = new GUIContent("Is Trigger", "Is this model a trigger? Triggers are only supported on convex models.");
-        static readonly GUIContent ConvextContents                        = new GUIContent("Convex", "Create a convex collider for this model?");
-        static readonly GUIContent VertexChannelMaskContents              = new GUIContent("Vertex Channel Mask", "Select which vertex channels will be used in the generated meshes");
-        //static readonly GUIContent SkinWidthContents                      = new GUIContent("Skin Width", "How far out to inflate the mesh when building collision mesh.");
-        static readonly GUIContent CookingOptionsContents                 = new GUIContent("Cooking Options", "Options affecting the result of the mesh processing by the physics engine.");
-        static readonly GUIContent DefaultModelContents                   = new GUIContent("This model is the default model, all nodes that are not part of a model are automatically added to this model.");
-        static readonly GUIContent StitchLightmapSeamsContents            = new GUIContent("Stitch Seams", "When enabled, seams in baked lightmaps will get smoothed.");
-        static readonly GUIContent ContributeGIContents                   = new GUIContent("Contribute Global Illumination", "When enabled, this GameObject influences lightmaps and Light Probes. If you want this object itself to be lightmapped, you must enable this property.");
-        static readonly GUIContent MinimumChartSizeContents               = new GUIContent("Min Chart Size", "Specifies the minimum texel size used for a UV chart. If stitching is required, a value of 4 will create a chart of 4x4 texels to store lighting and directionality. If stitching is not required, a value of 2 will reduce the texel density and provide better lighting build times and run time performance.");
-        static readonly GUIContent ReceiveGITitle                         = new GUIContent("Receive Global Illumination", "If enabled, this GameObject receives global illumination from lightmaps or Light Probes. To use lightmaps, Contribute Global Illumination must be enabled.");
+        static readonly GUIContent MotionVectorsContent                   = new("Motion Vectors", "Specifies whether the Model renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture.");
+        static readonly GUIContent LightmappingContents                   = new("Lightmapping");
+        static readonly GUIContent GINotEnabledInfoContents               = new("Lightmapping settings are currently disabled. Enable Baked Global Illumination or Realtime Global Illumination to display these settings.");
+        static readonly GUIContent UVChartingContents                     = new("UV Charting Control");
+        static readonly GUIContent ImportantGIContents                    = new("Prioritize Illumination", "When enabled, the object will be marked as a priority object and always included in lighting calculations. Useful for objects that will be strongly emissive to make sure that other objects will be illuminated by this object.");
+        static readonly GUIContent ScaleInLightmapContents                = new("Scale In Lightmap", "Specifies the relative size of object's UVs within a lightmap. A value of 0 will result in the object not being light mapped, but still contribute lighting to other objects in the Scene.");
+        static readonly GUIContent OptimizeRealtimeUVsContents            = new("Optimize Realtime UVs", "Specifies whether the generated model UVs get optimized for Realtime Global Illumination or not. When enabled, the UVs can get merged, scaled, and packed for optimization purposes. When disabled, the UVs will get scaled and packed, but not merged.");
+        static readonly GUIContent AutoUVMaxDistanceContents              = new("Max Distance", "Specifies the maximum worldspace distance to be used for UV chart simplification. If charts are within this distance they will be simplified for optimization purposes.");
+        static readonly GUIContent AutoUVMaxAngleContents                 = new("Max Angle", "Specifies the maximum angle in degrees between faces sharing a UV edge. If the angle between the faces is below this value, the UV charts will be simplified.");
+        static readonly GUIContent IgnoreNormalsForChartDetectionContents = new("Ignore Normals", "When enabled, prevents the UV charts from being split during the precompute process for Realtime Global Illumination lighting.");
+        static readonly GUIContent LightmapParametersContents             = new("Lightmap Parameters", "Allows the adjustment of advanced parameters that affect the process of generating a lightmap for an object using global illumination.");
+        static readonly GUIContent DynamicOccludeeContents                = new("Dynamic Occluded", "Controls if dynamic occlusion culling should be performed for this model.");
+        static readonly GUIContent ProbeAnchorContents                    = new("Anchor Override", "Specifies the Transform ` that will be used for sampling the light probes and reflection probes.");
+        static readonly GUIContent ReflectionProbeUsageContents           = new("Reflection Probes", "Specifies if or how the object is affected by reflections in the Scene. This property cannot be disabled in deferred rendering modes.");
+        static readonly GUIContent LightProbeUsageContents                = new("Light Probes", "Specifies how Light Probes will handle the interpolation of lighting and occlusion. Disabled if the object is set to Lightmap Static.");
+        static readonly GUIContent LightProbeVolumeOverrideContents       = new("Proxy Volume Override", "If set, the Model will use the Light Probe Proxy Volume component from another GameObject.");
+        static readonly GUIContent LightProbeCustomContents               = new("The Custom Provided mode is not supported.");
+        static readonly GUIContent LightProbeVolumeContents               = new("A valid Light Probe Proxy Volume component could not be found.");
+        static readonly GUIContent LightProbeVolumeUnsupportedContents    = new("The Light Probe Proxy Volume feature is unsupported by the current graphics hardware or API configuration. Simple 'Blend Probes' mode will be used instead.");
+        static readonly GUIContent RenderingLayerMaskStyle                = new("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
+        static readonly GUIContent StaticBatchingWarningContents          = new("This model is statically batched and uses an instanced shader at the same time. Instancing will be disabled in such a case. Consider disabling static batching if you want it to be instanced.");
+        static readonly GUIContent NoNormalsNoLightmappingContents        = new("VertexChannels is set to not have any normals. Normals are needed for lightmapping.");
+        //static readonly GUIContent LightmapInfoBoxContents              = new("To enable generation of lightmaps for this Model, please enable the 'Lightmap Static' property.");
+        static readonly GUIContent ClampedPackingResolutionContents       = new("Object's size in the realtime lightmap has reached the maximum size. Try dividing large brushes into smaller pieces.");
+        static readonly GUIContent UVOverlapContents                      = new("This model has overlapping UVs. This is caused by Unity's own code.");
+        static readonly GUIContent ClampedSizeContents                    = new("Object's size in lightmap has reached the max atlas size.", "If you need higher resolution for this object, try dividing large brushes into smaller pieces or set higher max atlas size via the LightmapEditorSettings class.");
+        static readonly GUIContent IsTriggerContents                      = new("Is Trigger", "Is this model a trigger? Triggers are only supported on convex models.");
+        static readonly GUIContent ConvextContents                        = new("Convex", "Create a convex collider for this model?");
+        static readonly GUIContent VertexChannelMaskContents              = new("Vertex Channel Mask", "Select which vertex channels will be used in the generated meshes");
+        //static readonly GUIContent SkinWidthContents                    = new("Skin Width", "How far out to inflate the mesh when building collision mesh.");
+        static readonly GUIContent CookingOptionsContents                 = new("Cooking Options", "Options affecting the result of the mesh processing by the physics engine.");
+        static readonly GUIContent DefaultModelContents                   = new("This model is the default model, all nodes that are not part of a model are automatically added to this model.");
+        static readonly GUIContent StitchLightmapSeamsContents            = new("Stitch Seams", "When enabled, seams in baked lightmaps will get smoothed.");
+        static readonly GUIContent ContributeGIContents                   = new("Contribute Global Illumination", "When enabled, this GameObject influences lightmaps and Light Probes. If you want this object itself to be lightmapped, you must enable this property.");
+        static readonly GUIContent MinimumChartSizeContents               = new("Min Chart Size", "Specifies the minimum texel size used for a UV chart. If stitching is required, a value of 4 will create a chart of 4x4 texels to store lighting and directionality. If stitching is not required, a value of 2 will reduce the texel density and provide better lighting build times and run time performance.");
+        static readonly GUIContent ReceiveGITitle                         = new("Receive Global Illumination", "If enabled, this GameObject receives global illumination from lightmaps or Light Probes. To use lightmaps, Contribute Global Illumination must be enabled.");
         
         static readonly int[] MinimumChartSizeValues        = { 2, 4 };
         static readonly GUIContent[] MinimumChartSizeStrings =
@@ -176,11 +176,16 @@ namespace Chisel.Editors
         delegate bool HasUVOverlapsDelegate(Renderer renderer);
         delegate bool HasInstancingDelegate(Shader s);
 
-#if UNITY_2020_2_OR_NEWER
+#if UNITY_2023_1_OR_NEWER
+		delegate void LightmapParametersGUIDelegate(SerializedProperty prop, GUIContent content);
+		static readonly LightmapParametersGUIDelegate LightmapParametersGUI = ReflectionExtensions.CreateDelegate<LightmapParametersGUIDelegate>("UnityEditor.RendererLightingSettings", "LightmapParametersGUI");
+		static readonly HasClampedResolutionDelegate HasClampedResolution = typeof(Lightmapping).CreateDelegate<HasClampedResolutionDelegate>("HasClampedResolution");
+		static readonly HasUVOverlapsDelegate HasUVOverlaps = typeof(Lightmapping).CreateDelegate<HasUVOverlapsDelegate>("HasUVOverlaps");
+#elif UNITY_2020_2_OR_NEWER
         delegate void LightmapParametersGUIDelegate(SerializedProperty prop, GUIContent content);
-        static LightmapParametersGUIDelegate	LightmapParametersGUI   = ReflectionExtensions.CreateDelegate<LightmapParametersGUIDelegate>("UnityEditor.SharedLightingSettingsEditor", "LightmapParametersGUI");
-        static HasClampedResolutionDelegate     HasClampedResolution    = typeof(Lightmapping).CreateDelegate<HasClampedResolutionDelegate>("HasClampedResolution");
-        static HasUVOverlapsDelegate            HasUVOverlaps           = typeof(Lightmapping).CreateDelegate<HasUVOverlapsDelegate>("HasUVOverlaps");
+        static readonly LightmapParametersGUIDelegate	LightmapParametersGUI   = ReflectionExtensions.CreateDelegate<LightmapParametersGUIDelegate>("UnityEditor.SharedLightingSettingsEditor", "LightmapParametersGUI");
+        static readonly HasClampedResolutionDelegate    HasClampedResolution    = typeof(Lightmapping).CreateDelegate<HasClampedResolutionDelegate>("HasClampedResolution");
+        static readonly HasUVOverlapsDelegate           HasUVOverlaps           = typeof(Lightmapping).CreateDelegate<HasUVOverlapsDelegate>("HasUVOverlaps");
 #elif UNITY_2020_1_OR_NEWER
         delegate bool LightmapParametersGUIDelegate(SerializedProperty prop, GUIContent content);
         static LightmapParametersGUIDelegate	LightmapParametersGUI   = ReflectionExtensions.CreateDelegate<LightmapParametersGUIDelegate>("UnityEditor.SharedLightingSettingsEditor", "LightmapParametersGUI");
@@ -192,7 +197,7 @@ namespace Chisel.Editors
         static HasClampedResolutionDelegate     HasClampedResolution    = typeof(LightmapEditorSettings).CreateDelegate<HasClampedResolutionDelegate>("HasClampedResolution");
         static HasUVOverlapsDelegate            HasUVOverlaps           = typeof(LightmapEditorSettings).CreateDelegate<HasUVOverlapsDelegate>("HasUVOverlaps");
 #endif
-        static GetCachedMeshSurfaceAreaDelegate GetCachedMeshSurfaceArea    = ReflectionExtensions.CreateDelegate<GetCachedMeshSurfaceAreaDelegate>("UnityEditor.InternalMeshUtil", "GetCachedMeshSurfaceArea");
+		static GetCachedMeshSurfaceAreaDelegate GetCachedMeshSurfaceArea    = ReflectionExtensions.CreateDelegate<GetCachedMeshSurfaceAreaDelegate>("UnityEditor.InternalMeshUtil", "GetCachedMeshSurfaceArea");
         static HasInstancingDelegate            HasInstancing               = typeof(ShaderUtil).CreateDelegate<HasInstancingDelegate>("HasInstancing");
          
         internal void OnEnable()
@@ -260,7 +265,19 @@ namespace Chisel.Editors
             }
         }
 
-        bool IsPrefabAsset
+		bool IsPreset
+		{
+			get
+			{
+				if (serializedObject == null || serializedObject.targetObject == null)
+					return false;
+
+				var type = PrefabUtility.GetPrefabAssetType(serializedObject.targetObject);
+				return (type == PrefabAssetType.Regular || type == PrefabAssetType.Model);
+			}
+		}
+
+		bool IsPrefabAsset
         {
             get
             {
@@ -319,25 +336,39 @@ namespace Chisel.Editors
         {
             get
             {
-                if (Lightmapping.realtimeGI || IsPrefabAsset)
-                    return true;
-                if (!Lightmapping.TryGetLightingSettings(out LightingSettings lightingSettings))
-                    return false;
-                return lightingSettings.lightmapper == (LightingSettings.Lightmapper)0;
+                return (IsPreset || IsPrefabAsset || RealtimeGI) && SupportedRenderingFeatures.active.enlighten;
             }
+		}
+
+		bool RealtimeGI
+		{
+			get
+			{
+				if (!Lightmapping.TryGetLightingSettings(out LightingSettings lightingSettings))
+				{
+					lightingSettings = Lightmapping.lightingSettingsDefaults;
+				}
+				return lightingSettings.realtimeGI;
+			}
+		}
+
+		bool IsBaked
+        {
+            get
+			{
+                if (!Lightmapping.TryGetLightingSettings(out LightingSettings lightingSettings))
+                {
+                    lightingSettings = Lightmapping.lightingSettingsDefaults;
+				}
+				return lightingSettings.bakedGI;
+			}
         }
 
-        bool ShowProgressiveSettings
+		bool ShowProgressiveSettings
         {
             get
             {
-                if (IsPrefabAsset)
-                    return true;
-                if (!Lightmapping.bakedGI)
-                    return false;
-                if (!Lightmapping.TryGetLightingSettings(out LightingSettings lightingSettings))
-                    return false;
-                return lightingSettings.lightmapper != (LightingSettings.Lightmapper)0;
+                return (IsPrefabAsset || IsPreset || IsBaked);
             }
         }
 
@@ -516,12 +547,6 @@ namespace Chisel.Editors
         {
             if (targets == null)
                 return false;
-
-            bool lightmapStatic = ContributeGI;
-
-            if (lightmapStatic)
-                return false;
-
             foreach (UnityEngine.Object obj in targets)
                 if (AreLightProbesAllowed((ChiselModel)obj) == false)
                     return false;
@@ -619,8 +644,8 @@ namespace Chisel.Editors
 
 
         void RenderProbeFieldsGUI(bool isDeferredRenderingPath)
-        {
-            bool isDeferredReflections = isDeferredRenderingPath && ChiselEditorUtility.IsDeferredReflections();
+		{
+			bool isDeferredReflections = isDeferredRenderingPath && ChiselEditorUtility.IsDeferredReflections();
             bool areLightProbesAllowed = AreLightProbesAllowed();
 
             RenderLightProbeUsage(areLightProbesAllowed);
@@ -946,7 +971,7 @@ namespace Chisel.Editors
                 if (showLightmapSettings)
                 {
                     EditorGUI.indentLevel++;
-                    var showEnlightenSettings   = ShowEnlightenSettings;
+                    var showEnlightenSettings   = ShowEnlightenSettings; 
                     var showProgressiveSettings = ShowProgressiveSettings;
                     
                     if (showEnlightenSettings)
@@ -969,7 +994,6 @@ namespace Chisel.Editors
                     if (LightmapParametersGUI != null && lightmapParametersProp != null)
                         LightmapParametersGUI(lightmapParametersProp, LightmapParametersContents);
 
-
                     EditorGUILayout.Space();
 
                     if (TargetsHaveClampedResolution())
@@ -987,14 +1011,17 @@ namespace Chisel.Editors
 
 
 
-            showProbes = EditorGUILayout.BeginFoldoutHeaderGroup(showProbes, ProbesContent);
-            if (showProbes)
+            if (SupportedRenderingFeatures.active.rendererProbes)
             {
-                EditorGUI.indentLevel++;
-                RenderProbeFieldsGUI(isDeferredRenderingPath);
-                EditorGUI.indentLevel--;
+                showProbes = EditorGUILayout.BeginFoldoutHeaderGroup(showProbes, ProbesContent);
+                if (showProbes)
+                {
+                    EditorGUI.indentLevel++;
+                    RenderProbeFieldsGUI(isDeferredRenderingPath);
+                    EditorGUI.indentLevel--;
+                }
+                EditorGUILayout.EndFoldoutHeaderGroup();
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
 
             showAdditionalSettings = EditorGUILayout.BeginFoldoutHeaderGroup(showAdditionalSettings, AdditionalSettingsContent);
             if (showAdditionalSettings)

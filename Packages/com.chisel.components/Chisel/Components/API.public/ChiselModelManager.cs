@@ -18,8 +18,12 @@ namespace Chisel.Components
             {
                 if (_instance)
                     return _instance;
-
+                 
+#if UNITY_2023_1_OR_NEWER
+                var foundInstances = UnityEngine.Object.FindObjectsByType<ChiselModelManager>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+#else
                 var foundInstances = UnityEngine.Object.FindObjectsOfType<ChiselModelManager>();
+#endif
                 if (foundInstances == null ||
                     foundInstances.Length == 0)
                 {
@@ -38,7 +42,7 @@ namespace Chisel.Components
                 return _instance;
             }
         }
-        #endregion
+#endregion
 
         // TODO: potentially have a history per scene, so when one model turns out to be invalid, go back to the previously selected model
         readonly Dictionary<Scene, ChiselModel> activeModels = new Dictionary<Scene, ChiselModel>();

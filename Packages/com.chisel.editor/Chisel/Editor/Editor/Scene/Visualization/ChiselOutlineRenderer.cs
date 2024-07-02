@@ -69,7 +69,11 @@ namespace Chisel.Editors
                 if (_instance)
                     return _instance;
 
+#if UNITY_2023_1_OR_NEWER
+				var foundInstances = UnityEngine.Object.FindObjectsByType<ChiselOutlineRenderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+#else
                 var foundInstances = UnityEngine.Object.FindObjectsOfType<ChiselOutlineRenderer>();
+#endif
                 if (foundInstances == null ||
                     foundInstances.Length == 0)
                 {
@@ -82,7 +86,7 @@ namespace Chisel.Editors
                 return _instance;
             }
         }
-        #endregion
+#endregion
 
         ChiselRenderer	brushOutlineRenderer;
         ChiselRenderer	surfaceOutlineRenderer;

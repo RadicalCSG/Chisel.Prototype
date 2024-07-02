@@ -25,8 +25,9 @@ namespace Chisel.Editors
             return property.serializedObject.FindProperty(siblingPath);
         }
 
+#if !UNITY_2023_1_OR_NEWER
         public override bool CanCacheInspectorGUI(SerializedProperty property) { return false; }
-
+#endif
 
         static readonly Dictionary<string, string> s_FoundParts = new();
         bool TryGetName(SerializedProperty property, out string name)

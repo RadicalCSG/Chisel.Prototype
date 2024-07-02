@@ -40,8 +40,12 @@ public class SceneObjectsWindow : EditorWindow
     private void UpdateValues()
     {
         sceneTypeList.Clear();
-        var sceneList = FindObjectsOfType(typeof(Object));
-        for (int i = 0; i < sceneList.Length; i++)
+#if UNITY_2023_1_OR_NEWER
+		var sceneList = FindObjectsByType<Object>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+#else
+        var sceneList = FindObjectsOfType<Object>();
+#endif
+		for (int i = 0; i < sceneList.Length; i++)
         {
             var obj = sceneList[i];
             if ((obj.hideFlags & HideFlags.DontSaveInEditor) != HideFlags.None)

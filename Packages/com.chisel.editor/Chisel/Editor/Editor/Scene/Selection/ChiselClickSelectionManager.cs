@@ -63,8 +63,12 @@ namespace Chisel.Editors
             {
                 if (_instance)
                     return _instance;
-
+				;
+#if UNITY_2023_1_OR_NEWER
+				var foundInstances = UnityEngine.Object.FindObjectsByType<ChiselClickSelectionManager>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+#else
                 var foundInstances = UnityEngine.Object.FindObjectsOfType<ChiselClickSelectionManager>();
+#endif
                 if (foundInstances == null ||
                     foundInstances.Length == 0)
                 {
@@ -77,7 +81,7 @@ namespace Chisel.Editors
                 return _instance;
             }
         }
-        #endregion
+#endregion
 
 
 

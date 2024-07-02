@@ -13,8 +13,12 @@ namespace Chisel.Editors
                 if (_instance)
                     return _instance;
 
-                var foundInstances = UnityEngine.Object.FindObjectsOfType<ChiselDragAndDropManager>();
-                if (foundInstances == null ||
+#if UNITY_2023_1_OR_NEWER
+                var foundInstances = UnityEngine.Object.FindObjectsByType<ChiselDragAndDropManager>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+#else
+				var foundInstances = UnityEngine.Object.FindObjectsOfType<ChiselDragAndDropManager>();
+#endif
+				if (foundInstances == null ||
                     foundInstances.Length == 0)
                 {
                     _instance = ScriptableObject.CreateInstance<ChiselDragAndDropManager>();

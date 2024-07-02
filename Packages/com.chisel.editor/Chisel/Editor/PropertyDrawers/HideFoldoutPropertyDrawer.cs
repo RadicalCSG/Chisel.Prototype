@@ -6,8 +6,10 @@ namespace Chisel.Editors
 {
     [CustomPropertyDrawer(typeof(HideFoldoutAttribute))]
     public sealed class HideFoldoutPropertyDrawer : PropertyDrawer
-    {
+	{
+#if !UNITY_2023_1_OR_NEWER
         public override bool CanCacheInspectorGUI(SerializedProperty property) { return true; }
+#endif
 
         public override float GetPropertyHeight(SerializedProperty iterator, GUIContent label)
         {

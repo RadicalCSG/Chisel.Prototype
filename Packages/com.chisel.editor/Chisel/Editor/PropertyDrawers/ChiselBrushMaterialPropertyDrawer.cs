@@ -79,10 +79,9 @@ namespace Chisel.Editors
             return true;
         }
 
-        public override bool CanCacheInspectorGUI(SerializedProperty property)
-        {
-            return true;
-        }
+#if !UNITY_2023_1_OR_NEWER
+        public override bool CanCacheInspectorGUI(SerializedProperty property) { return true; }
+#endif
 
 
         public static float DefaultMaterialLayerUsageHeight
