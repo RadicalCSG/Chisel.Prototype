@@ -1,6 +1,4 @@
-﻿using UnitySceneExtensions;
-
-namespace Chisel.Core
+﻿namespace Chisel.Core
 {
     [ChiselPlacementTool(name: "Free Draw", group: ChiselToolGroups.kFreeForm)]
     public sealed class ChiselExtrudedShapePlacementTool : ChiselShapePlacementTool<ChiselExtrudedShapeDefinition>

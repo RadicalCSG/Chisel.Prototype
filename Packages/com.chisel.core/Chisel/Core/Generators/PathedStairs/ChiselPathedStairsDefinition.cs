@@ -4,7 +4,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using Unity.Burst;
 using UnityEngine;
-using UnitySceneExtensions;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -25,7 +25,7 @@ namespace Chisel.Core
         // TODO: do not use this data structure, find common stuff and share between the definitions ...
         [HideFoldout] public ChiselLinearStairs stairs;
 
-        [UnityEngine.HideInInspector, NonSerialized] public ChiselBlobAssetReference<ChiselCurve2DBlob> curveBlob;
+        [UnityEngine.HideInInspector, NonSerialized] public BlobAssetReference<ChiselCurve2DBlob> curveBlob;
         [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<SegmentVertex> shapeVertices;
 
         #region Generate
@@ -44,9 +44,9 @@ namespace Chisel.Core
                                                             stairs.sideWidth, stairs.sideHeight, stairs.sideDepth);
         }
 
-        public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
+        public bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
+            var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
             try
             {
                 generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);

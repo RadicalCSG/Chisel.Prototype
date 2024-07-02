@@ -1,0 +1,24 @@
+{
+    "name": "com.chisel.unity.editor",
+    "rootNamespace": "",
+    "references": [
+        "Unity.Entities",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Mathematics.Extensions",
+        "Unity.Mathematics.Editor",
+        "com.chisel.core",
+        "com.chisel.unity.components"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

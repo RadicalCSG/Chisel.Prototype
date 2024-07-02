@@ -2,8 +2,8 @@ using System;
 using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Burst;
-using UnitySceneExtensions;
 using UnityEngine;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -218,7 +218,7 @@ namespace Chisel.Core
         #endregion
 
         #region Generate
-        public ChiselBlobAssetReference<BrushMeshBlob> GenerateMesh(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             var topDiameter     = new float2(topDiameterX, topDiameterZ);
             var bottomDiameter  = new float2(bottomDiameterX, bottomDiameterZ);

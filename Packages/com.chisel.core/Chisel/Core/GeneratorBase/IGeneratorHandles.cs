@@ -1,7 +1,6 @@
 ﻿using System;
 using Unity.Mathematics;
 using UnityEngine;
-using UnitySceneExtensions;
 
 namespace Chisel.Core
 {
@@ -41,31 +40,27 @@ namespace Chisel.Core
     }
 
     public static class IChiselHandleRendererExtensions
-    {
+	{
 
-        public static bool DoBoundsHandle(this IChiselHandles handles, ref ChiselAABB box, Vector3? snappingSteps = null, string undoMessage = null)
-        {
-            var bounds = new Bounds();
-            bounds.SetMinMax(box.Min, box.Max);
-            var result = handles.DoBoundsHandle(ref bounds, snappingSteps, undoMessage);
-            box.Min = bounds.min;
-            box.Max = bounds.max;
-            return result;
-        }
+		public static bool DoBoundsHandle(this IChiselHandles handles, ref MinMaxAABB box, Vector3? snappingSteps = null, string undoMessage = null)
+		{
+			var bounds = box.ToBounds();
+			var result = handles.DoBoundsHandle(ref bounds, snappingSteps, undoMessage);
+			box = bounds.ToMinMaxAABB();
+			return result;
+		}
 
-        public static bool DoTurnHandle(this IChiselHandles handles, ref ChiselAABB box, string undoMessage = null)
-        {
-            var bounds = new Bounds();
-            bounds.SetMinMax(box.Min, box.Max);
-            var result = handles.DoTurnHandle(ref bounds, undoMessage);
-            box.Min = bounds.min;
-            box.Max = bounds.max;
-            return result;
-        }
+		public static bool DoTurnHandle(this IChiselHandles handles, ref MinMaxAABB box, string undoMessage = null)
+		{
+			var bounds = box.ToBounds();
+			var result = handles.DoTurnHandle(ref bounds, undoMessage);
+			box = bounds.ToMinMaxAABB();
+			return result;
+		}
 
-        public static void RenderBox(this IChiselHandleRenderer renderer, ChiselAABB bounds)               { renderer.RenderBox(new Bounds((bounds.Max + bounds.Min) * 0.5f, bounds.Max - bounds.Min)); }
-        public static void RenderBoxMeasurements(this IChiselHandleRenderer renderer, ChiselAABB bounds)   { renderer.RenderBoxMeasurements(new Bounds((bounds.Max + bounds.Min) * 0.5f, bounds.Max - bounds.Min)); }
-        public static void RenderCylinder(this IChiselHandleRenderer renderer, ChiselAABB bounds, int segments) { renderer.RenderCylinder(new Bounds((bounds.Max + bounds.Min) * 0.5f, bounds.Max - bounds.Min), segments); }
+        public static void RenderBox(this IChiselHandleRenderer renderer, MinMaxAABB bounds)               { renderer.RenderBox(bounds.ToBounds()); }
+        public static void RenderBoxMeasurements(this IChiselHandleRenderer renderer, MinMaxAABB bounds)   { renderer.RenderBoxMeasurements(bounds.ToBounds()); }
+        public static void RenderCylinder(this IChiselHandleRenderer renderer, MinMaxAABB bounds, int segments) { renderer.RenderCylinder(bounds.ToBounds(), segments); }
         
         public static void RenderDistanceMeasurement(this IChiselHandleRenderer renderer, float3 from, float3 to) { renderer.RenderDistanceMeasurement((Vector3)from, (Vector3)to); }
         public static void RenderDistanceMeasurement(this IChiselHandleRenderer renderer, float3 from, float3 to, float forceValue) { renderer.RenderDistanceMeasurement((Vector3)from, (Vector3)to, forceValue); }

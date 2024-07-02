@@ -1,7 +1,7 @@
 ﻿using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Collections.LowLevel.Unsafe;
-using UnitySceneExtensions;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -24,7 +24,7 @@ namespace Chisel.Core
         }
 
         public bool closed;
-        public ChiselBlobArray<Point> controlPoints;
+        public BlobArray<Point> controlPoints;
 
         static Point Convert(CurveControlPoint2D srcPoint)
         {
@@ -261,9 +261,9 @@ namespace Chisel.Core
             }
         }
 
-        public static ChiselBlobAssetReference<ChiselCurve2DBlob> Convert(Curve2D curve, Allocator allocator)
+        public static BlobAssetReference<ChiselCurve2DBlob> Convert(Curve2D curve, Allocator allocator)
         {
-            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
+            using (var builder = new BlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<ChiselCurve2DBlob>();
                 root.closed = curve.closed;

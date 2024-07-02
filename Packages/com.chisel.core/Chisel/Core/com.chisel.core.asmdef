@@ -3,10 +3,11 @@
     "rootNamespace": "Chisel.Core",
     "references": [
         "Unity.Burst",
+        "Unity.Entities",
         "Unity.Collections",
         "Unity.Mathematics",
         "Unity.Mathematics.Extensions",
-        "com.scene.handle.extensions.runtime"
+        "Unity.Mathematics.Extensions.Hybrid"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
