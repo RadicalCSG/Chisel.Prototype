@@ -10,27 +10,27 @@ namespace Chisel.Core
     [Serializable]
     public struct ChiselBox : IBrushGenerator
     {
-        public readonly static ChiselBox DefaultValues = new ChiselBox
+        public readonly static ChiselBox DefaultValues = new()
         {
-            bounds = new AABB { Center = float3.zero, Extents = new float3(0.5f) }
+            bounds = new MinMaxAABB { Min = float3.zero, Max = float3.zero }
         };
 
-        public AABB bounds;
+        public MinMaxAABB bounds;
 
 
         #region Properties
-        public float3 Min { get { return bounds.Min; } set { bounds = MathExtensions.CreateAABB(min: Min, max: Max); } }
-        public float3 Max { get { return bounds.Max; } set { bounds = MathExtensions.CreateAABB(min: Min, max: Max); } }
+        public float3 Min { readonly get { return bounds.Min; } set { bounds.SetMin(value); } }
+        public float3 Max { readonly get { return bounds.Max; } set { bounds.SetMax(value); } }
         public float3 Size
         {
-            get { return bounds.Max - bounds.Min; }
-            set { bounds.Extents = math.abs(value) * 0.5f; }
+			readonly get { return bounds.Max - bounds.Min; }
+            set { bounds.SetExtents(math.abs(value) * 0.5f); }
         }
 
         public float3 Center
         {
-            get { return (bounds.Max + bounds.Min) * 0.5f; }
-            set { bounds.Center = value; }
+			readonly get { return (bounds.Max + bounds.Min) * 0.5f; }
+            set { bounds.SetCenter(value); }
         }
         #endregion
 
@@ -60,7 +60,7 @@ namespace Chisel.Core
             var originalBox = bounds;
             var min = math.min(originalBox.Min, originalBox.Max);
             var max = math.max(originalBox.Min, originalBox.Max);
-			bounds = MathExtensions.CreateAABB(min: min, max: max);
+            bounds = new MinMaxAABB { Min = min, Max = max };
         }
 
         const string kDimensionCannotBeZero = "One or more dimensions of the box is zero, which is not allowed";

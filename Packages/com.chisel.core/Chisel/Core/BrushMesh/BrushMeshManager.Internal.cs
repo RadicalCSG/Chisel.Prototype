@@ -159,14 +159,14 @@ namespace Chisel.Core
             brushMesh.CalculatePlanes();
             brushMesh.UpdateHalfEdgePolygonIndices();
 
-            var srcVertices             = brushMesh.vertices;
-            
+            var srcVertices = brushMesh.vertices;
+
             var totalPolygonIndicesSize = 16 + (brushMesh.halfEdgePolygonIndices.Length * UnsafeUtility.SizeOf<int>());
-            var totalHalfEdgeSize       = 16 + (brushMesh.halfEdges.Length * UnsafeUtility.SizeOf<BrushMesh.HalfEdge>());
-            var totalPolygonSize        = 16 + (brushMesh.polygons.Length  * UnsafeUtility.SizeOf<BrushMeshBlob.Polygon>());
-            var totalPlaneSize          = 16 + (brushMesh.planes.Length    * UnsafeUtility.SizeOf<float4>());
-            var totalVertexSize         = 16 + (srcVertices.Length         * UnsafeUtility.SizeOf<float3>());
-            var totalSize               = totalPlaneSize + totalPolygonSize + totalPolygonIndicesSize + totalHalfEdgeSize + totalVertexSize;
+            var totalHalfEdgeSize = 16 + (brushMesh.halfEdges.Length * UnsafeUtility.SizeOf<BrushMesh.HalfEdge>());
+            var totalPolygonSize = 16 + (brushMesh.polygons.Length * UnsafeUtility.SizeOf<BrushMeshBlob.Polygon>());
+            var totalPlaneSize = 16 + (brushMesh.planes.Length * UnsafeUtility.SizeOf<float4>());
+            var totalVertexSize = 16 + (srcVertices.Length * UnsafeUtility.SizeOf<float3>());
+            var totalSize = totalPlaneSize + totalPolygonSize + totalPolygonIndicesSize + totalHalfEdgeSize + totalVertexSize;
 
             var min = srcVertices[0];
             var max = srcVertices[0];
@@ -175,7 +175,7 @@ namespace Chisel.Core
                 min = math.min(min, srcVertices[i]);
                 max = math.max(max, srcVertices[i]);
             }
-            var localBounds = MathExtensions.CreateAABB(min: min, max: max);
+            var localBounds = new MinMaxAABB { Min = min, Max = max };
 
             var builder = new BlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
@@ -507,11 +507,11 @@ namespace Chisel.Core
                         max = math.max(max, vertex);
                         dstVertices[i] = vertex;
                     }
-                    var localBounds = MathExtensions.CreateAABB(min: min, max: max);
+                    var localBounds = new MinMaxAABB { Min = min, Max = max };
                     root.localBounds = localBounds;
                 } else
                 {
-                    var localBounds = new AABB { Center = float3.zero, Extents = float3.zero };
+                    var localBounds = new MinMaxAABB { Min = float3.zero, Max = float3.zero };
                     root.localBounds = localBounds;
                 }
                 hashedVertices.Dispose();
@@ -658,7 +658,7 @@ namespace Chisel.Core
             return true;
         }
 
-        public static AABB CalculateBounds(Int32 brushMeshHash, in float4x4 transformation)
+        public static MinMaxAABB CalculateBounds(Int32 brushMeshHash, in float4x4 transformation)
         {
             if (!IsBrushMeshIDValid(brushMeshHash))
                 return default;

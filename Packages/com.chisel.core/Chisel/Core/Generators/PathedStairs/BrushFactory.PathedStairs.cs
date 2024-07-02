@@ -12,7 +12,7 @@ namespace Chisel.Core
         public static int CountPathedStairBrushes(UnsafeList<SegmentVertex> shapeVertices,
                                                   bool              closedLoop,
 
-												  AABB              bounds,
+												  MinMaxAABB        bounds,
 
                                                   float	            stepHeight,
                                                   float	            stepDepth,
@@ -56,7 +56,7 @@ namespace Chisel.Core
         public static bool GeneratePathedStairs(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes,
                                                 UnsafeList<SegmentVertex> shapeVertices,
                                                 bool                closedLoop,
-												AABB                bounds,
+												MinMaxAABB          bounds,
 
                                                 float	            stepHeight,
                                                 float	            stepDepth,

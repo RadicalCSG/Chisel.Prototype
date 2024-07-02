@@ -52,7 +52,7 @@ namespace Chisel.Core
         }
 
 
-        public AABB                 localBounds;
+        public MinMaxAABB           localBounds;
 
         public BlobArray<float3>    localVertices;
         public BlobArray<HalfEdge>	halfEdges;

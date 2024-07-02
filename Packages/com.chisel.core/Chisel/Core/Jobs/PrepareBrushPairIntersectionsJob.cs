@@ -62,7 +62,7 @@ namespace Chisel.Core
                                           [NoAlias] ref BlobArray<float4>   localPlanes,
                                           int                               localPlaneCount,
                                           [NoAlias] ref BlobArray<float3>   vertices,
-										  AABB                              selfBounds, 
+										  MinMaxAABB                        selfBounds, 
                                           float4x4                          treeToNodeSpaceInverseTransposed, 
                                           [NoAlias] ref NativeArray<int>    intersectingPlaneIndices, 
                                           [NoAlias] out int                 intersectingPlaneLength,

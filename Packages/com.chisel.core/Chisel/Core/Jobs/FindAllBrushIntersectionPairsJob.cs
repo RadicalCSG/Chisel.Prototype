@@ -19,7 +19,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeList<IndexOrder>                       allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeList<NodeTransformations>              transformationCache;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshLookup;
-        [NoAlias, ReadOnly] public NativeList<AABB>                             brushTreeSpaceBounds;
+        [NoAlias, ReadOnly] public NativeList<MinMaxAABB>                       brushTreeSpaceBounds;
         [NoAlias, ReadOnly] public NativeList<IndexOrder>                       rebuildTreeBrushIndexOrders;
 
         // Read (Re-alloc) / Write
@@ -185,7 +185,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeList<IndexOrder>                   allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeList<NodeTransformations>          transformationCache;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshLookup;
-        [NoAlias, ReadOnly] public NativeList<AABB>                         brushTreeSpaceBounds;
+        [NoAlias, ReadOnly] public NativeList<MinMaxAABB>                   brushTreeSpaceBounds;
         [NoAlias, ReadOnly] public NativeList<IndexOrder>                   brushesThatNeedIndirectUpdate;
 
         // Read (Re-alloc) / Write
@@ -584,7 +584,7 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntersectionType FindIntersection(int brush0NodeOrder, int brush1NodeOrder,
                                                         [NoAlias, ReadOnly] ref NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshLookup,
-                                                        [NoAlias, ReadOnly] ref NativeList<AABB>                brushTreeSpaceBounds,
+                                                        [NoAlias, ReadOnly] ref NativeList<MinMaxAABB>          brushTreeSpaceBounds,
                                                         [NoAlias, ReadOnly] ref NativeList<NodeTransformations> transformations,
                                                         [NoAlias, ReadOnly] ref NativeArray<float4>             transformedPlanes0,
                                                         [NoAlias, ReadOnly] ref NativeArray<float4>             transformedPlanes1)

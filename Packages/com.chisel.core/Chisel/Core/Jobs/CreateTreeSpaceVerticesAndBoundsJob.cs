@@ -30,7 +30,7 @@ namespace Chisel.Core
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeList<AABB>                                brushTreeSpaceBounds;
+        [NoAlias, WriteOnly] public NativeList<MinMaxAABB> brushTreeSpaceBounds;
         [NativeDisableParallelForRestriction]
         [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesCache;
 

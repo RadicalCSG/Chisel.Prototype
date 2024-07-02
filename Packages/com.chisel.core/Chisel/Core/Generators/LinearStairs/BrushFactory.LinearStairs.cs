@@ -1019,7 +1019,7 @@ namespace Chisel.Core
                                         float treadHeight,
                                         float absDepth,
                                         float stepDepthOffset,
-                                        int stepCount, float sideDepth, AABB bounds, StairsRiserType riserType, float riserDepth, StairsSideType sideType)
+                                        int stepCount, float sideDepth, MinMaxAABB bounds, StairsRiserType riserType, float riserDepth, StairsSideType sideType)
             {
                 this.enabled = sideType != StairsSideType.None;
 
@@ -1078,7 +1078,7 @@ namespace Chisel.Core
             public StairsSideType leftSideType;
             public StairsSideType rightSideType;
 
-            public AABB bounds;
+            public MinMaxAABB bounds;
 
             public bool haveRiser;
 
@@ -1121,7 +1121,7 @@ namespace Chisel.Core
             public LinearStairsSideData leftSideDescription;
             public LinearStairsSideData rightSideDescription;
 
-            public LineairStairsData(AABB            bounds,
+            public LineairStairsData(MinMaxAABB      bounds,
                                      float           stepHeight,
                                      float           stepDepth,
                                      float           treadHeight,

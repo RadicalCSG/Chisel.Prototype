@@ -53,7 +53,7 @@ namespace Chisel.Core
         [NoAlias] public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>    brushRenderBufferCache;
         [NoAlias] public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesCache;
         [NoAlias] public NativeList<BlobAssetReference<BrushTreeSpacePlanes>>       brushTreeSpacePlaneCache;
-        [NoAlias] public NativeList<AABB>                                           brushTreeSpaceBoundCache;
+        [NoAlias] public NativeList<MinMaxAABB>                                     brushTreeSpaceBoundCache;
         [NoAlias] public NativeList<BlobAssetReference<BrushesTouchedByBrush>>      brushesTouchedByBrushCache;
 
         // Write

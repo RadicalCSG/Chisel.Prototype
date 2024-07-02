@@ -444,20 +444,38 @@ namespace Chisel.Core
         }
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static bool IsEmpty(this AABB self)
+		public static bool IsEmpty(this MinMaxAABB self)
 		{
 			return self.Equals(Empty);
 		}
 
-		public readonly static AABB Empty = new() { Center = math.float3(float.NaN), Extents = math.float3(float.PositiveInfinity) };
+		public readonly static MinMaxAABB Empty = new() { Min = math.float3(float.NegativeInfinity), Max = math.float3(float.PositiveInfinity) };
 	
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void Encapsulate(this AABB self, AABB other)
+		public static void Encapsulate(this MinMaxAABB self, MinMaxAABB other)
 		{
             var min = math.min(self.Min, other.Min);
 			var max = math.max(self.Max, other.Max);
-            self.Center = (min + max) * 0.5f;
-            self.Extents = (max - min) * 0.5f;
+            self.Min = min;
+            self.Max = max;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void Encapsulate(this MinMaxAABB self, float3 point)
+		{
+			var min = math.min(self.Min, point);
+			var max = math.max(self.Max, point);
+			self.Min = min;
+			self.Max = max;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void Encapsulate(this AABB self, AABB other)
+		{
+			var min = math.min(self.Min, other.Min);
+			var max = math.max(self.Max, other.Max);
+			self.Center = (min + max) * 0.5f;
+			self.Extents = (max - min) * 0.5f;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -470,7 +488,7 @@ namespace Chisel.Core
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static AABB CreateAABB(float3 min, float3 max) { return new AABB { Center = (max + min) * 0.5f, Extents = (max - min) * 0.5f }; }
+		public static MinMaxAABB CreateAABB(float3 min, float3 max) { return new AABB { Center = (max + min) * 0.5f, Extents = (max - min) * 0.5f }; }
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static MinMaxAABB ToMinMaxAABB(this AABB bounds) { return new MinMaxAABB { Min = bounds.Min, Max = bounds.Max }; }
@@ -483,5 +501,96 @@ namespace Chisel.Core
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static AABB ToAABB(this MinMaxAABB aabb) { return new AABB { Center = (aabb.Max + aabb.Min) * 0.5f, Extents = (aabb.Max - aabb.Min) * 0.5f }; }
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void SetCenter(this MinMaxAABB aabb, float3 center) 
+        {
+            var min = aabb.Min;
+			var max = aabb.Max;
+            var extents = math.abs(max - min) * 0.5f;
+			aabb.Min = center - extents;
+			aabb.Max = center + extents;
+        }
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void SetExtents(this MinMaxAABB aabb, float3 extents)
+		{
+			var min = aabb.Min;
+			var max = aabb.Max;
+			var center = math.abs(max + min) * 0.5f;
+			aabb.Min = center - extents;
+			aabb.Max = center + extents;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void SetMin(this MinMaxAABB aabb, float3 min)
+		{
+			aabb.Min = min;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void SetMax(this MinMaxAABB aabb, float3 max)
+		{
+			aabb.Max = max;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void SetMinMax(this MinMaxAABB aabb, float3 min, float3 max)
+		{
+			aabb.Min = min;
+			aabb.Max = max;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)] public static void SetCenter(this AABB aabb, float3 center) { aabb.Center = center; }
+		[MethodImpl(MethodImplOptions.AggressiveInlining)] public static void SetExtents(this AABB aabb, float3 extents) { aabb.Extents = extents; }
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void SetMin(this AABB aabb, float3 min)
+		{
+			var max = aabb.Max;
+			aabb.Extents = math.abs(max + min) * 0.5f;
+			aabb.Center = math.abs(max - min) * 0.5f;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void SetMax(this AABB aabb, float3 max)
+		{
+			var min = aabb.Min;
+			aabb.Extents = math.abs(max + min) * 0.5f;
+			aabb.Center = math.abs(max - min) * 0.5f;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void SetMinMax(this AABB aabb, float3 min, float3 max)
+		{
+			aabb.Extents = math.abs(max + min) * 0.5f;
+			aabb.Center = math.abs(max - min) * 0.5f;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)] public static void SetCenter(this Bounds aabb, float3 center) { aabb.center = center; }
+		[MethodImpl(MethodImplOptions.AggressiveInlining)] public static void SetExtents(this Bounds aabb, float3 extents) { aabb.extents = extents; }
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void SetMin(this Bounds aabb, float3 min)
+		{
+			var max = (float3)aabb.max;
+			aabb.extents = math.abs(max + min) * 0.5f;
+			aabb.center = math.abs(max - min) * 0.5f;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void SetMax(this Bounds aabb, float3 max)
+		{
+			var min = (float3)aabb.min;
+			aabb.extents = math.abs(max + min) * 0.5f;
+			aabb.center = math.abs(max - min) * 0.5f;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void SetMinMax(this Bounds aabb, float3 min, float3 max)
+		{
+			aabb.extents = math.abs(max + min) * 0.5f;
+			aabb.center = math.abs(max - min) * 0.5f;
+		}
 	}
 }

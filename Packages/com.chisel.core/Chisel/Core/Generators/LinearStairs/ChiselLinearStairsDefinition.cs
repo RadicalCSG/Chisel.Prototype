@@ -57,7 +57,7 @@ namespace Chisel.Core
 
         // TODO: add all spiral stairs improvements to linear stairs
 
-        public AABB bounds;
+        public MinMaxAABB bounds;
 
         [DistanceValue] public float	stepHeight;
         [DistanceValue] public float	stepDepth;
@@ -94,13 +94,13 @@ namespace Chisel.Core
 		public float3 BoundsSize
 		{
 			get { return bounds.Max - bounds.Min; }
-			set { bounds.Extents = math.abs(value) * 0.5f; }
+			set { bounds.SetExtents(math.abs(value) * 0.5f); }
 		}
 
 		public float3 Center
         {
             get { return (bounds.Max + bounds.Min) * 0.5f; }
-            set { bounds.Center = value; }
+            set { bounds.SetCenter(value); }
         }
         
         public float3   BoundsMin   { get { return math.min(bounds.Min, bounds.Max); } }

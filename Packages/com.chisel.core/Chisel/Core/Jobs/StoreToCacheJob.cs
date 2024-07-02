@@ -17,11 +17,11 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeList<IndexOrder>   allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeList<AABB>         brushTreeSpaceBoundCache;
+        [NoAlias, ReadOnly] public NativeList<MinMaxAABB>   brushTreeSpaceBoundCache;
         [NoAlias, ReadOnly] public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferCache;
 
         // Read, Write
-        [NoAlias] public NativeParallelHashMap<CompactNodeID, AABB> brushTreeSpaceBoundLookup;
+        [NoAlias] public NativeParallelHashMap<CompactNodeID, MinMaxAABB> brushTreeSpaceBoundLookup;
         [NoAlias] public NativeParallelHashMap<CompactNodeID, BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferLookup;
 
         public void Execute()

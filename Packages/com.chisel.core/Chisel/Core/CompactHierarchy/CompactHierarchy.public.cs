@@ -135,7 +135,7 @@ namespace Chisel.Core
         public NodeStatusFlags      flags;          // TODO: replace with using hashes to compare changes        
         
         public Int32                brushMeshHash;  // TODO: use hash of mesh as "ID"
-        public AABB                 bounds;         // TODO: move this somewhere else, 1:1 relationship with brushMeshID
+        public MinMaxAABB           bounds;         // TODO: move this somewhere else, 1:1 relationship with brushMeshID
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetHashcode() { unchecked { return (int)MathExtensions.Hash(ref this); } }

@@ -55,7 +55,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static AABB CalculateBounds(in BlobBuilderArray<float3> vertices)
+        public static MinMaxAABB CalculateBounds(in BlobBuilderArray<float3> vertices)
         {
             var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
             var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
@@ -64,7 +64,7 @@ namespace Chisel.Core
                 min = math.min(min, vertices[i]);
                 max = math.max(max, vertices[i]);
             }
-            return MathExtensions.CreateAABB(min: min, max: max);
+            return new MinMaxAABB { Min = min, Max = max };
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
