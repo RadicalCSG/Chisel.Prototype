@@ -470,12 +470,18 @@ namespace Chisel.Core
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static AABB CreateAABB(float3 min, float3 max) { return new AABB { Center = (min + max) * 0.5f, Extents = (max - min) * 0.5f }; }
+		public static AABB CreateAABB(float3 min, float3 max) { return new AABB { Center = (max + min) * 0.5f, Extents = (max - min) * 0.5f }; }
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static AABB ToAABB(this Bounds bounds) { return new AABB { Center = bounds.center, Extents = bounds.extents }; }
+		public static MinMaxAABB ToMinMaxAABB(this AABB bounds) { return new MinMaxAABB { Min = bounds.Min, Max = bounds.Max }; }
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static Bounds ToBounds(this AABB aabb) { return new Bounds { center = aabb.Center, extents = aabb.Extents }; }
+		public static MinMaxAABB ToMinMaxAABB(this Bounds bounds) { return new MinMaxAABB { Min = bounds.min, Max = bounds.max }; }
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Bounds ToBounds(this MinMaxAABB aabb) { return new Bounds { center = (aabb.Max + aabb.Min) * 0.5f, extents = (aabb.Max - aabb.Min) * 0.5f }; }
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static AABB ToAABB(this MinMaxAABB aabb) { return new AABB { Center = (aabb.Max + aabb.Min) * 0.5f, Extents = (aabb.Max - aabb.Min) * 0.5f }; }
 	}
 }

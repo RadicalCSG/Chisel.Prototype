@@ -25,7 +25,7 @@ namespace Chisel.Editors
     {
         const string kCompositeHasNoChildren = "This operation has no chisel nodes as children and will not create any geometry.\nAdd some chisel nodes to see something.";
 
-        [MenuItem("GameObject/Chisel/Create/" + ChiselComposite.kNodeTypeName, false, 0)]
+        [MenuItem(kGameObjectMenuCompositePath + ChiselComposite.kNodeTypeName + " Composite", false, kGameObjectMenuCompositePriority)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselComposite.kNodeTypeName); }
 
         SerializedProperty operationProp;

@@ -18,8 +18,20 @@ using ToolManager = UnityEditor.EditorTools;
 namespace Chisel.Editors
 {
     public abstract class ChiselNodeEditorBase : Editor
-    {
-        const string kDefaultCompositeName = "Composite";
+	{
+		protected const string kGameObjectMenuPath = "GameObject/Chisel/";
+		protected const int kGameObjectMenuPriority = 1;
+
+		protected const string kGameObjectMenuModelPath = kGameObjectMenuPath + "Create ";
+		protected const int kGameObjectMenuModelPriority = -5;
+		protected const string kGameObjectMenuCompositePath = kGameObjectMenuPath + "Create Composites/";
+		protected const int kGameObjectMenuCompositePriority = -4;
+		protected const string kGameObjectMenuNodePath = kGameObjectMenuPath + "Create Generators/";
+		protected const int kGameObjectMenuNodePriority = -3;
+		protected const string kGameObjectMenuOperationPath = kGameObjectMenuPath + "Set Operation To/";
+		protected const int kGameObjectMenuOperationPriority = -1;
+
+		const string kDefaultCompositeName = "Composite";
 
         // Ugly hack around stupid Unity issue
         static bool delayedUndoAllChanges = false;
@@ -38,7 +50,7 @@ namespace Chisel.Editors
         }
 
 
-        static void SetMenuOperation(MenuCommand menuCommand, CSGOperationType operationType)
+        static void MenuSetOperationTo(MenuCommand menuCommand, CSGOperationType operationType)
         {
             var context     = (menuCommand.context as GameObject);
             var gameObject  = (context == null) ? Selection.activeGameObject : context;
@@ -59,7 +71,7 @@ namespace Chisel.Editors
             }
         }
 
-        static bool MenuValidateOperation(MenuCommand menuCommand)
+        static bool MenuValidateSetOperationTo(MenuCommand menuCommand)
         {
             var context     = (menuCommand.context as GameObject);
             var gameObject  = (context == null) ? Selection.activeGameObject : context;
@@ -70,15 +82,41 @@ namespace Chisel.Editors
                    gameObject.GetComponent<ChiselComposite>();
         }
 
-        [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Additive), false, -1)] protected static void SetAdditiveOperation(MenuCommand menuCommand) { SetMenuOperation(menuCommand, CSGOperationType.Additive); }
-        [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Additive), true)] protected static bool ValidateAdditiveOperation(MenuCommand menuCommand) { return MenuValidateOperation(menuCommand); }
-        [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Subtractive), false, -1)] protected static void SetSubtractiveOperation(MenuCommand menuCommand) { SetMenuOperation(menuCommand, CSGOperationType.Subtractive); }
-        [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Subtractive), true)] protected static bool ValidateSubtractiveOperation(MenuCommand menuCommand) { return MenuValidateOperation(menuCommand); }
-        [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Intersecting), false, -1)] protected static void SetIntersectingOperation(MenuCommand menuCommand) { SetMenuOperation(menuCommand, CSGOperationType.Intersecting); }
-        [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Intersecting), true)] protected static bool ValidateIntersectingOperation(MenuCommand menuCommand) { return MenuValidateOperation(menuCommand); }
+
+		[MenuItem(kGameObjectMenuOperationPath + nameof(CSGOperationType.Additive), false, kGameObjectMenuOperationPriority)] protected static void SetAdditiveOperation(MenuCommand menuCommand) { MenuSetOperationTo(menuCommand, CSGOperationType.Additive); }
+		[MenuItem(kGameObjectMenuOperationPath + nameof(CSGOperationType.Additive), true)] protected static bool ValidateAdditiveOperation(MenuCommand menuCommand) { return MenuValidateSetOperationTo(menuCommand); }
+		[MenuItem(kGameObjectMenuOperationPath + nameof(CSGOperationType.Subtractive), false, kGameObjectMenuOperationPriority)] protected static void SetSubtractiveOperation(MenuCommand menuCommand) { MenuSetOperationTo(menuCommand, CSGOperationType.Subtractive); }
+		[MenuItem(kGameObjectMenuOperationPath + nameof(CSGOperationType.Subtractive), true)] protected static bool ValidateSubtractiveOperation(MenuCommand menuCommand) { return MenuValidateSetOperationTo(menuCommand); }
+		[MenuItem(kGameObjectMenuOperationPath + nameof(CSGOperationType.Intersecting), false, kGameObjectMenuOperationPriority)] protected static void SetIntersectingOperation(MenuCommand menuCommand) { MenuSetOperationTo(menuCommand, CSGOperationType.Intersecting); }
+		[MenuItem(kGameObjectMenuOperationPath + nameof(CSGOperationType.Intersecting), true)] protected static bool ValidateIntersectingOperation(MenuCommand menuCommand) { return MenuValidateSetOperationTo(menuCommand); }
+
+		[MenuItem("CONTEXT/" + kGameObjectMenuOperationPath + nameof(CSGOperationType.Additive), false, kGameObjectMenuOperationPriority)] protected static void SetAdditiveOperationContext(MenuCommand menuCommand) { MenuSetOperationTo(menuCommand, CSGOperationType.Additive); }
+		[MenuItem("CONTEXT/" + kGameObjectMenuOperationPath + nameof(CSGOperationType.Additive), true)] protected static bool ValidateAdditiveOperationContext(MenuCommand menuCommand) { return MenuValidateSetOperationTo(menuCommand); }
+		[MenuItem("CONTEXT/" + kGameObjectMenuOperationPath + nameof(CSGOperationType.Subtractive), false, kGameObjectMenuOperationPriority)] protected static void SetSubtractiveOperationContext(MenuCommand menuCommand) { MenuSetOperationTo(menuCommand, CSGOperationType.Subtractive); }
+		[MenuItem("CONTEXT/" + kGameObjectMenuOperationPath + nameof(CSGOperationType.Subtractive), true)] protected static bool ValidateSubtractiveOperationContext(MenuCommand menuCommand) { return MenuValidateSetOperationTo(menuCommand); }
+		[MenuItem("CONTEXT/" + kGameObjectMenuOperationPath + nameof(CSGOperationType.Intersecting), false, kGameObjectMenuOperationPriority)] protected static void SetIntersectingOperationContext(MenuCommand menuCommand) { MenuSetOperationTo(menuCommand, CSGOperationType.Intersecting); }
+		[MenuItem("CONTEXT/" + kGameObjectMenuOperationPath + nameof(CSGOperationType.Intersecting), true)] protected static bool ValidateIntersectingOperationContext(MenuCommand menuCommand) { return MenuValidateSetOperationTo(menuCommand); }
 
 
-        protected static bool ValidateEncapsulateInCompositeInternal(GameObject[] gameObjects)
+
+		static void MenuCreateComposite(MenuCommand menuCommand, CSGOperationType operationType)
+		{
+            // TODO: if we have multiple selected gameobjects, then those as children
+
+			GameObject go = new($"{operationType} Composite");
+			GameObjectUtility.SetParentAndAlign(go, menuCommand.context as GameObject);
+			var generator = go.GetComponent<ChiselGeneratorComponent>();
+			generator.Operation = operationType;
+			Undo.RegisterCreatedObjectUndo(go, "Create " + go.name);
+			Selection.activeObject = go;
+		}
+
+		[MenuItem(kGameObjectMenuCompositePath + nameof(CSGOperationType.Additive), false, kGameObjectMenuCompositePriority)] protected static void CreateAdditiveComposite(MenuCommand menuCommand) { MenuCreateComposite(menuCommand, CSGOperationType.Additive); }
+        [MenuItem(kGameObjectMenuCompositePath + nameof(CSGOperationType.Subtractive), false, kGameObjectMenuCompositePriority)] protected static void CreatSubtractiveComposite(MenuCommand menuCommand) { MenuCreateComposite(menuCommand, CSGOperationType.Subtractive); }
+        [MenuItem(kGameObjectMenuCompositePath + nameof(CSGOperationType.Intersecting), false, kGameObjectMenuCompositePriority)] protected static void CreateIntersectingComposite(MenuCommand menuCommand) { MenuCreateComposite(menuCommand, CSGOperationType.Intersecting); }
+
+
+		protected static bool ValidateEncapsulateInCompositeInternal(GameObject[] gameObjects)
         {
             for (int i = 0; i < gameObjects.Length; i++)
             {
@@ -92,7 +130,7 @@ namespace Chisel.Editors
 
 
 
-        [MenuItem("GameObject/Group in Composite", false, -1)]
+        [MenuItem(ChiselNodeEditorBase.kGameObjectMenuPath + "Encapsulate selection in Composite", false, kGameObjectMenuPriority)]
         protected static void EncapsulateInComposite(MenuCommand menuCommand)
         {
             var gameObjects = Selection.gameObjects;
@@ -128,7 +166,7 @@ namespace Chisel.Editors
                 EditorGUIUtility.PingObject(gameObjects[i]);
         }
 
-        [MenuItem("GameObject/Group in Composite", true)]
+        [MenuItem(ChiselNodeEditorBase.kGameObjectMenuPath + "Encapsulate selection in Composite", true)]
         protected static bool ValidateEncapsulateInComposite(MenuCommand menuCommand)
         {
             var gameObjects = Selection.gameObjects;

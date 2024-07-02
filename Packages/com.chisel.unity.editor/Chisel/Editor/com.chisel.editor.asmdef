@@ -6,10 +6,9 @@
         "Unity.Collections",
         "Unity.Mathematics",
         "Unity.Mathematics.Extensions",
+        "Unity.Mathematics.Editor",
         "com.chisel.core",
-        "com.chisel.unity.components",
-        "com.scene.handle.extensions.editor",
-        "com.scene.handle.extensions.runtime"
+        "com.chisel.unity.components"
     ],
     "includePlatforms": [
         "Editor"

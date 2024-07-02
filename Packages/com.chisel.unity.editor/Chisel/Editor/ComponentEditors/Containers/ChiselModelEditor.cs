@@ -26,7 +26,7 @@ namespace Chisel.Editors
     {
         const string kModelHasNoChildren = "This model has no chisel nodes as children and will not generate any geometry.\nAdd some chisel nodes to see something.";
 
-        [MenuItem("GameObject/Chisel/Create/" + ChiselModel.kNodeTypeName, false, 0)]
+        [MenuItem(kGameObjectMenuModelPath + ChiselModel.kNodeTypeName, false, kGameObjectMenuModelPriority)]
         internal static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselModel.kNodeTypeName); }
 
 
