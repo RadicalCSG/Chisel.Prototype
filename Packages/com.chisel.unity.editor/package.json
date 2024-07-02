@@ -1,0 +1,25 @@
+{
+  "description": "The Chisel Editor",
+  "displayName": "Chisel Unity Level Editor",
+  "name": "com.chisel.unity.editor",
+  "keywords": [
+    "level design",
+    "world building",
+    "CSG",
+    "BSP",
+    "Boolean"
+  ],
+  "unity": "2020.2",
+  "version": "0.1.0-preview",
+  "dependencies": {       
+	"com.unity.burst": "1.8.16",
+        "com.unity.entities": "1.2.3",
+        "com.unity.collections": "2.4.2",
+        "com.unity.mathematics": "1.3.1",
+        "com.unity.profiling.core": "1.0.2",
+    	"com.chisel.core": "0.1.0-preview",
+    	"com.chisel.unity.components": "0.1.0-preview"
+  },
+  "type": "tool",
+  "hideInEditor": false
+}

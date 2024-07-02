@@ -3,7 +3,6 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using Unity.Burst;
-using UnitySceneExtensions;
 using UnityEngine;
 using Unity.Entities;
 

@@ -1,7 +1,6 @@
 ﻿using System;
 using Unity.Mathematics;
 using UnityEngine;
-using UnitySceneExtensions;
 
 namespace Chisel.Core
 {

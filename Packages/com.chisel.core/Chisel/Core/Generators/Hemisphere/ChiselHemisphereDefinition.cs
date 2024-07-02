@@ -1,7 +1,6 @@
 using System;
 using Unity.Collections;
 using Unity.Mathematics;
-using UnitySceneExtensions;
 using UnityEngine;
 using Unity.Entities;
 

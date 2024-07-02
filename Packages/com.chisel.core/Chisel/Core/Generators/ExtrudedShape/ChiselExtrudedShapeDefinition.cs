@@ -3,7 +3,6 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
 using UnityEngine;
-using UnitySceneExtensions;
 using Unity.Entities;
 
 namespace Chisel.Core

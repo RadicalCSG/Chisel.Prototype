@@ -1,7 +1,6 @@
 ﻿using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Collections.LowLevel.Unsafe;
-using UnitySceneExtensions;
 using Unity.Entities;
 
 namespace Chisel.Core

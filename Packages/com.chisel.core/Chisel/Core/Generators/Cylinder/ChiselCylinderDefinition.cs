@@ -2,7 +2,6 @@ using System;
 using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Burst;
-using UnitySceneExtensions;
 using UnityEngine;
 using Unity.Entities;
 

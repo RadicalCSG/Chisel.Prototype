@@ -60,7 +60,7 @@ namespace Chisel.Core
             var originalBox = bounds;
             var min = math.min(originalBox.Min, originalBox.Max);
             var max = math.max(originalBox.Min, originalBox.Max);
-            originalBox = MathExtensions.CreateAABB(min: min, max: max);
+			bounds = MathExtensions.CreateAABB(min: min, max: max);
         }
 
         const string kDimensionCannotBeZero = "One or more dimensions of the box is zero, which is not allowed";

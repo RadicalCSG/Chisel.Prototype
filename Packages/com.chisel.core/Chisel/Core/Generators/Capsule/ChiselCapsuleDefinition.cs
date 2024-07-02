@@ -245,7 +245,7 @@ namespace Chisel.Core
                         var from = vertices[j + settings.TopVertexOffset];
                         var to = vertices[i + settings.TopVertexOffset];
 
-                        if (handles.DoEdgeHandle1DOffset(out var edgeOffset, UnitySceneExtensions.Axis.Y, from, to, renderLine: false))
+                        if (handles.DoEdgeHandle1DOffset(out var edgeOffset, Chisel.Core.Axis.Y, from, to, renderLine: false))
                             topHeight = math.clamp(topHeight - edgeOffset, 0, maxTopHeight);
                         topLoopHasFocus = topLoopHasFocus || handles.lastHandleHadFocus;
                     }
@@ -276,7 +276,7 @@ namespace Chisel.Core
                         var from    = vertices[j + settings.BottomVertexOffset];
                         var to      = vertices[i + settings.BottomVertexOffset];
 
-                        if (handles.DoEdgeHandle1DOffset(out var edgeOffset, UnitySceneExtensions.Axis.Y, from, to, renderLine: false))
+                        if (handles.DoEdgeHandle1DOffset(out var edgeOffset, Chisel.Core.Axis.Y, from, to, renderLine: false))
                             bottomHeight = math.clamp(bottomHeight + edgeOffset, 0, maxBottomHeight);
                         bottomLoopHasFocus = bottomLoopHasFocus || handles.lastHandleHadFocus;
                     }
