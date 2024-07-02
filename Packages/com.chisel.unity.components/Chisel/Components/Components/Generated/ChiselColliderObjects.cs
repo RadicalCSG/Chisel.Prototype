@@ -110,7 +110,7 @@ namespace Chisel.Components
         }
 
         //*/
-        public static void UpdateProperties(ChiselModel model, ChiselColliderObjects[] colliders)
+        public static void UpdateProperties(ChiselModelComponent model, ChiselColliderObjects[] colliders)
         {
             var colliderSettings = model.ColliderSettings;
             for (int i = 0; i < colliders.Length; i++)
@@ -138,7 +138,7 @@ namespace Chisel.Components
 
         const Allocator defaultAllocator = Allocator.TempJob;
 
-        public static void ScheduleColliderBake(ChiselModel model, ChiselColliderObjects[] colliders)
+        public static void ScheduleColliderBake(ChiselModelComponent model, ChiselColliderObjects[] colliders)
         {
             var colliderSettings = model.ColliderSettings;
             //*

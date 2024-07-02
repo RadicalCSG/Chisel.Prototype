@@ -17,7 +17,7 @@ namespace Chisel.Components
         public const string kGeneratedDefaultModelName  = "‹[default-model]›";
         public const string kGeneratedContainerName     = "‹[generated]›";
 
-        static readonly HashSet<ChiselModel> s_Models = new();
+        static readonly HashSet<ChiselModelComponent> s_Models = new();
 
 #if UNITY_EDITOR
         const float kGenerateUVDelayTime = 1.0f;
@@ -25,12 +25,12 @@ namespace Chisel.Components
         static bool haveUVsToUpdate = false;
 #endif
 
-        public void Register(ChiselModel model)
+        public void Register(ChiselModelComponent model)
         {
             s_Models.Add(model);
         }
 
-        public void Unregister(ChiselModel model)
+        public void Unregister(ChiselModelComponent model)
         {
             // If we removed our model component, we should remove the containers
             if (!model && model.hierarchyItem.GameObject)
@@ -46,7 +46,7 @@ namespace Chisel.Components
 #endif
         }
 
-        public static bool NeedUVGeneration(ChiselModel model)
+        public static bool NeedUVGeneration(ChiselModelComponent model)
         {
 #if UNITY_EDITOR
             haveUVsToUpdate = false;
@@ -107,7 +107,7 @@ namespace Chisel.Components
 #endif
         }
 
-        public void Rebuild(ChiselModel model)
+        public void Rebuild(ChiselModelComponent model)
         {
             if (!model.IsInitialized)
             {
@@ -196,7 +196,7 @@ namespace Chisel.Components
         {
             foreach (var go in scene.GetRootGameObjects())
             {
-                foreach (var model in go.GetComponentsInChildren<ChiselModel>())
+                foreach (var model in go.GetComponentsInChildren<ChiselModelComponent>())
                 {
                     if (!model || !model.isActiveAndEnabled || model.generated == null)
                         continue;
@@ -210,7 +210,7 @@ namespace Chisel.Components
             var scene = SceneManager.GetActiveScene();
             foreach(var go in scene.GetRootGameObjects())
             {
-                foreach (var model in go.GetComponentsInChildren<ChiselModel>())
+                foreach (var model in go.GetComponentsInChildren<ChiselModelComponent>())
                 {
                     if (!model || !model.isActiveAndEnabled || model.generated == null)
                         continue;
@@ -360,7 +360,7 @@ namespace Chisel.Components
         {
             if (!gameObject)
                 return false;
-            var model = gameObject.GetComponent<ChiselModel>();
+            var model = gameObject.GetComponent<ChiselModelComponent>();
             if (!model)
                 return false;
             return (model.IsDefaultModel);
@@ -370,24 +370,24 @@ namespace Chisel.Components
         {
             if (!component)
                 return false;
-            ChiselModel model = component as ChiselModel;
+            ChiselModelComponent model = component as ChiselModelComponent;
             if (!model)
             {
-                model = component.GetComponent<ChiselModel>();
+                model = component.GetComponent<ChiselModelComponent>();
                 if (!model)
                     return false;
             }
             return (model.IsDefaultModel);
         }
 
-        internal static bool IsDefaultModel(ChiselModel model)
+        internal static bool IsDefaultModel(ChiselModelComponent model)
         {
             if (!model)
                 return false;
             return (model.IsDefaultModel);
         }
 
-        internal static ChiselModel CreateDefaultModel(ChiselSceneHierarchy sceneHierarchy)
+        internal static ChiselModelComponent CreateDefaultModel(ChiselSceneHierarchy sceneHierarchy)
         {
             var currentScene = sceneHierarchy.Scene;
             var rootGameObjects = ListPool<GameObject>.Get();
@@ -398,14 +398,14 @@ namespace Chisel.Components
                     continue;
                 
                 var gameObject = rootGameObjects[i];
-                var model = gameObject.GetComponent<ChiselModel>();
+                var model = gameObject.GetComponent<ChiselModelComponent>();
                 if (model)
                     return model;
 
                 var transform = gameObject.GetComponent<Transform>();
                 ChiselObjectUtility.ResetTransform(transform);
 
-                model = gameObject.AddComponent<ChiselModel>();
+                model = gameObject.AddComponent<ChiselModelComponent>();
                 UpdateModelFlags(model);
                 return model;
             }
@@ -418,7 +418,7 @@ namespace Chisel.Components
             
             try
             {
-                var model = ChiselComponentFactory.Create<ChiselModel>(kGeneratedDefaultModelName);
+                var model = ChiselComponentFactory.Create<ChiselModelComponent>(kGeneratedDefaultModelName);
                 model.IsDefaultModel = true;
                 UpdateModelFlags(model);
                 return model;
@@ -430,7 +430,7 @@ namespace Chisel.Components
             }
         }
 
-        private static void UpdateModelFlags(ChiselModel model)
+        private static void UpdateModelFlags(ChiselModelComponent model)
         {
             if (!IsDefaultModel(model))
                 return;
@@ -450,13 +450,13 @@ namespace Chisel.Components
             }
         }
 
-        private void RemoveContainerGameObjectWithUndo(ChiselModel model)
+        private void RemoveContainerGameObjectWithUndo(ChiselModelComponent model)
         {
             if (model.generated != null)
                 model.generated.DestroyWithUndo();
         }
 
-        private void RemoveContainerGameObject(ChiselModel model)
+        private void RemoveContainerGameObject(ChiselModelComponent model)
         {
             if (model.generated != null)
             {
@@ -465,7 +465,7 @@ namespace Chisel.Components
             }
         }
 
-        public static void RemoveContainerFlags(ChiselModel model)
+        public static void RemoveContainerFlags(ChiselModelComponent model)
         {
             model.generated.RemoveContainerFlags();
         }
@@ -496,7 +496,7 @@ namespace Chisel.Components
         }
 #if UNITY_EDITOR
 
-        public static void CheckIfFullMeshNeedsToBeHidden(ChiselModel model, ChiselRenderObjects renderable)
+        public static void CheckIfFullMeshNeedsToBeHidden(ChiselModelComponent model, ChiselRenderObjects renderable)
         {
             var shouldHideMesh = (model.generated.visibilityState != VisibilityState.AllVisible && model.generated.visibilityState != VisibilityState.Unknown);
             if (renderable.meshRenderer.forceRenderingOff != shouldHideMesh)
@@ -542,7 +542,7 @@ namespace Chisel.Components
             sharedMesh.hideFlags = newHideFlags;
         }
 
-        private static void GenerateLightmapUVsForInstance(ChiselModel model, ChiselRenderObjects renderable, bool force = false)
+        private static void GenerateLightmapUVsForInstance(ChiselModelComponent model, ChiselRenderObjects renderable, bool force = false)
         {
             // Avoid light mapping multiple times, when the same mesh is used on multiple MeshRenderers
             if (!force && renderable.HasLightmapUVs)
@@ -610,7 +610,7 @@ namespace Chisel.Components
 
         public class HideFlagsState
         {
-            public Dictionary<UnityEngine.GameObject, ChiselModel>	generatedComponents;
+            public Dictionary<UnityEngine.GameObject, ChiselModelComponent>	generatedComponents;
             public Dictionary<UnityEngine.Object, HideFlags>	    hideFlags;
 #if UNITY_EDITOR
             public Dictionary<Renderer, bool>	                    rendererOff;
@@ -621,7 +621,7 @@ namespace Chisel.Components
         }
 
         // TODO: find a better place for this
-        public static bool IsValidModelToBeSelected(ChiselModel model)
+        public static bool IsValidModelToBeSelected(ChiselModelComponent model)
         {
             if (!model || !model.isActiveAndEnabled || model.generated == null)
                 return false;
@@ -639,7 +639,7 @@ namespace Chisel.Components
         {
             var state = new HideFlagsState()
             {
-                generatedComponents = new Dictionary<UnityEngine.GameObject, ChiselModel>(),
+                generatedComponents = new Dictionary<UnityEngine.GameObject, ChiselModelComponent>(),
                 hideFlags           = new Dictionary<UnityEngine.Object, HideFlags>(),
 #if UNITY_EDITOR
                 rendererOff         = new Dictionary<Renderer, bool>(),
@@ -723,7 +723,7 @@ namespace Chisel.Components
             return state;
         }
         
-        public static bool EndPicking(HideFlagsState state, UnityEngine.Object pickedObject, out ChiselModel model)
+        public static bool EndPicking(HideFlagsState state, UnityEngine.Object pickedObject, out ChiselModelComponent model)
         {
             model = null;
             if (state == null || state.hideFlags == null)

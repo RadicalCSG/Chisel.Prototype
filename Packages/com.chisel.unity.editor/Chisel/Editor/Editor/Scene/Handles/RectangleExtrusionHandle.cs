@@ -9,7 +9,7 @@ namespace Chisel.Editors
     public static class RectangleExtrusionHandle
     {
         static Matrix4x4		s_Transformation = Matrix4x4.identity;
-        static ChiselModel		s_ModelBeneathCursor;
+        static ChiselModelComponent		s_ModelBeneathCursor;
         static List<Vector3>	s_Points = new();
         static bool             s_ModifyMode = false;
         static float            s_LastHeight = 1.0f;
@@ -123,7 +123,7 @@ namespace Chisel.Editors
             return s_DefaultHeight;
         }
 
-        public static GeneratorModeState Do(Rect dragArea, out Bounds bounds, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, PlacementFlags flags, Axis upAxis, float? snappingSteps = null)
+        public static GeneratorModeState Do(Rect dragArea, out Bounds bounds, out float height, out ChiselModelComponent modelBeneathCursor, out Matrix4x4 transformation, PlacementFlags flags, Axis upAxis, float? snappingSteps = null)
         {
             // TODO: shift should do SameLengthXZ, shift control includes Y
             // TODO: fixed height should be possible to change sign

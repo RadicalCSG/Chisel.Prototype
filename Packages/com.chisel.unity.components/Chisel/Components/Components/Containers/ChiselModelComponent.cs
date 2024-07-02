@@ -162,7 +162,7 @@ namespace Chisel.Components
 
     [ExecuteInEditMode, HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [DisallowMultipleComponent, AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselModel : ChiselNode
+    public sealed class ChiselModelComponent : ChiselNode
     {
         public const string kRenderSettingsName             = nameof(renderSettings);
         public const string kColliderSettingsName           = nameof(colliderSettings);
@@ -255,13 +255,13 @@ namespace Chisel.Components
             initialized = true;
         }
 
-        public ChiselModel() : base() { }
+        public ChiselModelComponent() : base() { }
 
 
         internal override CSGTreeNode RebuildTreeNodes()
         {
             if (Node.Valid)
-                Debug.LogWarning($"{nameof(ChiselModel)} already has a treeNode, but trying to create a new one?", this);
+                Debug.LogWarning($"{nameof(ChiselModelComponent)} already has a treeNode, but trying to create a new one?", this);
             var userID = GetInstanceID();
             Node = CSGTree.Create(userID: userID);
             return Node;

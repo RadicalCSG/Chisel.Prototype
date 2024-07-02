@@ -434,8 +434,8 @@ namespace Chisel.Editors
                         if (obj)
                         {
                             var brush = obj as ChiselBrushComponent;
-                            var composite = obj as ChiselComposite;
-                            var model = obj as ChiselModel;
+                            var composite = obj as ChiselCompositeComponent;
+                            var model = obj as ChiselModelComponent;
                             CSGTreeNode node = CSGTreeNode.Invalid;
                             if (brush) node = brush.TopTreeNode;
                             else if (composite) node = composite.Node;

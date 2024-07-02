@@ -292,7 +292,7 @@ namespace Chisel.Components
                     // If we find a ChiselNode we continue, unless it's a Composite set to passthrough
                     if (transform.TryGetComponent<ChiselNode>(out var component))
                     {
-                        var composite = component as ChiselComposite;
+                        var composite = component as ChiselCompositeComponent;
                         if (composite == null || !composite.PassThrough)
                             break;
                     }
@@ -329,7 +329,7 @@ namespace Chisel.Components
 
         // TODO: improve warning messages
         const string kFailedToGenerateNodeMessage = "Failed to generate internal representation of generator (this should never happen)";
-        const string kGeneratorIsPartOfDefaultModel = "This generator is part of the default model, please place it underneath a GameObject with a " + ChiselModel.kNodeTypeName + " component";
+        const string kGeneratorIsPartOfDefaultModel = "This generator is part of the default model, please place it underneath a GameObject with a " + ChiselModelComponent.kNodeTypeName + " component";
 
         // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
         public override void GetWarningMessages(IChiselMessageHandler messages)

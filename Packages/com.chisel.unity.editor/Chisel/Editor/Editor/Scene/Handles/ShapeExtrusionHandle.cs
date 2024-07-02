@@ -19,7 +19,7 @@ namespace Chisel.Editors
     public static class ShapeExtrusionHandle
     {
         static Matrix4x4		s_Transformation = Matrix4x4.identity;
-        static ChiselModel		s_ModelBeneathCursor;
+        static ChiselModelComponent		s_ModelBeneathCursor;
         static List<Vector3>	s_Points = new();
         static Curve2D          s_Curve2D = null;
         static bool             s_ExtrusionMode = false;
@@ -68,7 +68,7 @@ namespace Chisel.Editors
         }
 
 
-        public static ShapeExtrusionState Do(Rect dragArea, out Curve2D shape, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, Axis axis)
+        public static ShapeExtrusionState Do(Rect dragArea, out Curve2D shape, out float height, out ChiselModelComponent modelBeneathCursor, out Matrix4x4 transformation, Axis axis)
         {
             try
             { 

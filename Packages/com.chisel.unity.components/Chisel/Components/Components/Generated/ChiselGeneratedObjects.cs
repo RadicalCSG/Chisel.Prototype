@@ -359,7 +359,7 @@ namespace Chisel.Components
         }
 
 
-        static readonly Dictionary<ChiselModel, GameObjectState>   gameObjectStates        = new Dictionary<ChiselModel, GameObjectState>();
+        static readonly Dictionary<ChiselModelComponent, GameObjectState>   gameObjectStates        = new Dictionary<ChiselModelComponent, GameObjectState>();
         static readonly List<ChiselColliderObjectUpdate>           colliderObjectUpdates   = new List<ChiselColliderObjectUpdate>();
         static readonly List<ChiselMeshUpdate>                     renderMeshUpdates       = new List<ChiselMeshUpdate>();
         static readonly List<ChiselRenderObjectUpdate>             renderObjectUpdates     = new List<ChiselRenderObjectUpdate>();
@@ -371,7 +371,7 @@ namespace Chisel.Components
 
         // in between UpdateMeshes and FinishMeshUpdates our jobs should be force completed, so we can now upload our meshes to unity Meshes
 
-        public int FinishMeshUpdates(ChiselModel model, GameObject  parentGameObject, 
+        public int FinishMeshUpdates(ChiselModelComponent model, GameObject  parentGameObject, 
                                      ref Mesh.MeshDataArray         meshDataArray, 
                                      ref VertexBufferContents       vertexBufferContents, 
                                      NativeList<ChiselMeshUpdate>   colliderMeshUpdates,

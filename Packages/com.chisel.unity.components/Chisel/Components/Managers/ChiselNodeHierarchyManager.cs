@@ -304,7 +304,7 @@ namespace Chisel.Components
                 return;
             }
 
-            if (!(node is ChiselModel) &&
+            if (!(node is ChiselModelComponent) &&
                 // If our parent is not a ChiselNode, add it to the nonNodeChildren.
                 // Regulare ChiselNode parents capture an event that significies that the order
                 // of child nodes may have changed. But for parent gameobjects that are not 
@@ -454,13 +454,13 @@ namespace Chisel.Components
                     // If we haven't found a node before and our node is not a Composite PassthTough node, store it
                     if (firstParentComponent == null)
                     {
-                        var composite = parentComponent as ChiselComposite;
+                        var composite = parentComponent as ChiselCompositeComponent;
                         if (composite == null || !composite.PassThrough)
                             firstParentComponent = parentComponent;
                     }
 
                     // If we found the model, quit
-                    if (parentComponent is ChiselModel)
+                    if (parentComponent is ChiselModelComponent)
                         break;
                 }
                 // Find the parent of our last parent
@@ -494,7 +494,7 @@ namespace Chisel.Components
                     var childNode = childTransform.GetComponentInChildren<ChiselNode>();
                     if (!childNode)
                         continue;
-                    if (childNode is ChiselModel)
+                    if (childNode is ChiselModelComponent)
                         continue;
                     __transforms.Enqueue(childTransform);
                     hierarchyUpdateQueue.Add(childNode);
@@ -1290,7 +1290,7 @@ ForceRerun:
                         hierarchyItem.parentComponent = UpdateSiblingIndices(hierarchyItem);
                         if (ReferenceEquals(hierarchyItem.parentComponent, null))
                         {
-                            if (!(hierarchyItem.Component is ChiselModel))
+                            if (!(hierarchyItem.Component is ChiselModelComponent))
                             {
                                 hierarchyItem.parentComponent = hierarchyItem.sceneHierarchy.GetOrCreateDefaultModel(out var created);
                                 if (created) forceRerun = true;
@@ -1320,7 +1320,7 @@ ForceRerun:
                     hierarchyItem.parentComponent = UpdateSiblingIndices(hierarchyItem);
                     if (ReferenceEquals(hierarchyItem.parentComponent, null))
                     {
-                        if (!(hierarchyItem.Component is ChiselModel))
+                        if (!(hierarchyItem.Component is ChiselModelComponent))
                         {
                             hierarchyItem.parentComponent = sceneHierarchy.GetOrCreateDefaultModel(out var created);
                             if (created) forceRerun = true;
@@ -1415,7 +1415,7 @@ ForceRerun:
                         if (item.Children.Count == 0 &&
                             ChiselGeneratedComponentManager.IsDefaultModel(item.Component))
                         {
-                            var itemModel = item.Component as ChiselModel;
+                            var itemModel = item.Component as ChiselModelComponent;
 
                             // If the default model is empty, we'll destroy it to remove clutter
                             var sceneHandle = item.Scene.handle;
@@ -1703,7 +1703,7 @@ ForceRerun:
             {
                 if (!transform)
                     return null;
-                var model = transform.GetComponentInParent<ChiselModel>();
+                var model = transform.GetComponentInParent<ChiselModelComponent>();
                 if (!model)
                     return null;
                 transform = model.hierarchyItem.Transform;
@@ -1722,7 +1722,7 @@ ForceRerun:
             {
                 if (!transform)
                     return Matrix4x4.identity;
-                var model = transform.GetComponentInParent<ChiselModel>();
+                var model = transform.GetComponentInParent<ChiselModelComponent>();
                 if (!model)
                     return Matrix4x4.identity;
                 transform = model.hierarchyItem.Transform;

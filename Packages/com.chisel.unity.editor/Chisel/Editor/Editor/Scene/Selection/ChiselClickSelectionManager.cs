@@ -32,7 +32,7 @@ namespace Chisel.Editors
         public Vector3 normal { get { return plane.normal; } }
         public Quaternion orientation { get { return Quaternion.LookRotation(plane.normal); } }
         public ChiselNode node;
-        public ChiselModel model;
+        public ChiselModelComponent model;
     }
 
     public sealed class GUIClip
@@ -88,7 +88,7 @@ namespace Chisel.Editors
             if (!gameObject || !gameObject.activeInHierarchy)
                 return false;
 
-            if (gameObject.TryGetComponent<ChiselModel>(out var model) ||
+            if (gameObject.TryGetComponent<ChiselModelComponent>(out var model) ||
                 // TODO: use a component on the generated MeshRenderer/Container instead
                 gameObject.name.StartsWith("‹[generated"))
                 return false;
@@ -383,7 +383,7 @@ namespace Chisel.Editors
             return intersection.brushIntersection.surfaceIndex != -1;
         }
 
-        public static GameObject PickModelOrGameObject(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModel model, out Material material)
+        public static GameObject PickModelOrGameObject(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModelComponent model, out Material material)
         {
             Profiler.BeginSample("PickNodeOrGameObject");
             try
@@ -598,7 +598,7 @@ namespace Chisel.Editors
             return FindSurfaceReferences(position, selectAllSurfaces, foundSurfaces, out _, out _);
         }
 
-        public static GameObject PickNodeOrGameObject(Camera camera, Vector2 pickposition, int layers, LayerUsageFlags visibleLayerFlags, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModel model, out ChiselNode node, out ChiselIntersection intersection)
+        public static GameObject PickNodeOrGameObject(Camera camera, Vector2 pickposition, int layers, LayerUsageFlags visibleLayerFlags, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModelComponent model, out ChiselNode node, out ChiselIntersection intersection)
         {
             Profiler.BeginSample("PickNodeOrGameObject");
             try

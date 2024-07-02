@@ -8,9 +8,9 @@ namespace Chisel.Components
     public sealed class ChiselSceneHierarchy
     {
         public Scene                                Scene;
-        public ChiselModel                          DefaultModel;
+        public ChiselModelComponent                          DefaultModel;
 
-        public ChiselModel GetOrCreateDefaultModel(out bool created)
+        public ChiselModelComponent GetOrCreateDefaultModel(out bool created)
         {
             created = false;
             if (!DefaultModel)
@@ -52,14 +52,14 @@ namespace Chisel.Components
         public readonly ChiselNode  Component;
 
         // TODO: should cache this instead
-        public ChiselModel Model
+        public ChiselModelComponent Model
         {
             get
             {
                 var iterator = this;
                 do
                 {
-                    var model = iterator.Component as ChiselModel;
+                    var model = iterator.Component as ChiselModelComponent;
                     if (!Equals(model, null))
                         return model;
                     iterator = iterator.Parent;

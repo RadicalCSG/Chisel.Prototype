@@ -63,7 +63,7 @@ namespace Chisel.Editors
                 Undo.RecordObject(generator, "Modified Operation");
                 generator.Operation = operationType;
             }
-            var composite = gameObject.GetComponent<ChiselComposite>();
+            var composite = gameObject.GetComponent<ChiselCompositeComponent>();
             if (composite && composite.Operation != operationType)
             {
                 Undo.RecordObject(generator, "Modified Operation");
@@ -79,7 +79,7 @@ namespace Chisel.Editors
                 return false;
 
             return gameObject.GetComponent<ChiselGeneratorComponent>() ||
-                   gameObject.GetComponent<ChiselComposite>();
+                   gameObject.GetComponent<ChiselCompositeComponent>();
         }
 
 
@@ -121,7 +121,7 @@ namespace Chisel.Editors
             for (int i = 0; i < gameObjects.Length; i++)
             {
                 if (gameObjects[i].GetComponent<ChiselGeneratorComponent>() ||
-                    gameObjects[i].GetComponent<ChiselComposite>())
+                    gameObjects[i].GetComponent<ChiselCompositeComponent>())
                     continue;
                 return false;
             }
@@ -149,7 +149,7 @@ namespace Chisel.Editors
             var childSiblingIndex   = childTransform.GetSiblingIndex();
             var childParent         = childTransform.parent;
 
-            var composite           = ChiselComponentFactory.Create<ChiselComposite>(kDefaultCompositeName, childParent);
+            var composite           = ChiselComponentFactory.Create<ChiselCompositeComponent>(kDefaultCompositeName, childParent);
             var compositeGameObject = composite.gameObject;
             var compositeTransform  = composite.transform;
             compositeTransform.SetSiblingIndex(childSiblingIndex);
@@ -265,7 +265,7 @@ namespace Chisel.Editors
             serializedObject.ApplyModifiedProperties();
             foreach (var target in serializedObject.targetObjects)
             {
-                var node = target as ChiselModel;
+                var node = target as ChiselModelComponent;
                 if (!node)
                     continue;
 #if UNITY_EDITOR
@@ -310,10 +310,10 @@ namespace Chisel.Editors
 
 
             // Find the appropriate model to make active after we created the generator
-            ChiselModel model;
-            if (typeof(T) != typeof(ChiselModel))
+            ChiselModelComponent model;
+            if (typeof(T) != typeof(ChiselModelComponent))
             {
-                model = gameObject.GetComponentInParent<ChiselModel>();
+                model = gameObject.GetComponentInParent<ChiselModelComponent>();
                 // If we don't have a parent model, create one and put the generator underneath it
                 if (!model)
                 {
@@ -329,7 +329,7 @@ namespace Chisel.Editors
                     MoveTargetsUnderModel(new[] { component }, model);
                 }
             } else
-                model = component as ChiselModel;
+                model = component as ChiselModelComponent;
 
             // Set the active model before we select the gameobject, otherwise we'll be selecting the model instead
             ChiselModelManager.ActiveModel = model;
@@ -365,7 +365,7 @@ namespace Chisel.Editors
         static readonly GUIContent kCreateAndAddToModel  = new GUIContent("Insert into new model");
         static readonly GUIContent kAddToActiveModel     = new GUIContent("Move to active model");
 
-        static void MoveTargetsUnderModel(UnityEngine.Object[] targetObjects, ChiselModel model)
+        static void MoveTargetsUnderModel(UnityEngine.Object[] targetObjects, ChiselModelComponent model)
         {
             var modelTransform  = model.transform;
             var modelGameObject = model.gameObject;

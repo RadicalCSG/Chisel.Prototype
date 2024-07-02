@@ -233,7 +233,7 @@ namespace Chisel.Editors
             if (node.Count == 1)
                 return ConvertTreeNodeToBrushes(parent, in surfaceDefinition, node[0], pivotOffset);
             
-            var compositeComponent = ChiselComponentFactory.AddComponent<ChiselComposite>(parent);
+            var compositeComponent = ChiselComponentFactory.AddComponent<ChiselCompositeComponent>(parent);
             //compositeComponent.transform.SetLocal(node.LocalTransformation);
             compositeComponent.Operation = node.Operation;
             var parentTransform = compositeComponent.transform;
@@ -275,7 +275,7 @@ namespace Chisel.Editors
                 return brushComponent;
             } 
             
-            var compositeComponent = ChiselComponentFactory.Create<ChiselComposite>("Composite", parent);
+            var compositeComponent = ChiselComponentFactory.Create<ChiselCompositeComponent>("Composite", parent);
             //compositeComponent.transform.SetLocal(node.LocalTransformation);
             //compositeComponent.LocalTransformation = Matrix4x4.identity;
             compositeComponent.Operation = node.Operation;

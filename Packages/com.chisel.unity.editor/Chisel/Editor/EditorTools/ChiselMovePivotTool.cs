@@ -242,7 +242,7 @@ namespace Chisel.Editors
                 ref var vertices                = ref brushMesh.localVertices;
                 ref var halfEdgePolygonIndices  = ref brushMesh.halfEdgePolygonIndices;
 
-                var model           = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(csgTree.UserID) as ChiselModel;
+                var model           = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(csgTree.UserID) as ChiselModelComponent;
                 var worldToNode     = (Matrix4x4)csgBrush.TreeToNodeSpaceMatrix * model.hierarchyItem.WorldToLocalMatrix;
                 var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * (Matrix4x4)csgBrush.NodeToTreeSpaceMatrix;
                 
@@ -405,7 +405,7 @@ namespace Chisel.Editors
                     ref var halfEdgePolygonIndices = ref brushMesh.halfEdgePolygonIndices;
 
                     // TODO: store this information with brush 
-                    var model = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(csgTree.UserID) as ChiselModel;
+                    var model = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(csgTree.UserID) as ChiselModelComponent;
                     var worldToNode = (Matrix4x4)csgBrush.TreeToNodeSpaceMatrix * model.hierarchyItem.WorldToLocalMatrix;
                     var nodeToWorld = model.hierarchyItem.LocalToWorldMatrix * (Matrix4x4)csgBrush.NodeToTreeSpaceMatrix;
 
@@ -811,7 +811,7 @@ namespace Chisel.Editors
                     s_PolygonVertices.Add(vertex);
                 }
                 
-                var model           = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(brush.Tree.UserID) as ChiselModel;
+                var model           = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(brush.Tree.UserID) as ChiselModelComponent;
                 var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * (Matrix4x4)brush.NodeToTreeSpaceMatrix;
                 ChiselOutlineRenderer.DrawLineLoop(nodeToWorld, s_PolygonVertices, Handles.color, thickness: 2);
             }

@@ -13,7 +13,7 @@ namespace Chisel.Editors
         public const float kDistanceEpsilon = 0.001f;
 
         internal static int s_PointDrawingHash = "PointDrawingHash".GetHashCode();
-        public static void PointDrawHandle(Rect dragArea, ref List<Vector3> points, out Matrix4x4 transformation, out ChiselModel modelBeneathCursor, bool releaseOnMouseUp = true, Chisel.Editors.SceneHandles.CapFunction capFunction = null)
+        public static void PointDrawHandle(Rect dragArea, ref List<Vector3> points, out Matrix4x4 transformation, out ChiselModelComponent modelBeneathCursor, bool releaseOnMouseUp = true, Chisel.Editors.SceneHandles.CapFunction capFunction = null)
         {
             var id = GUIUtility.GetControlID(s_PointDrawingHash, FocusType.Keyboard);
             PointDrawing.Do(id, dragArea, ref points, out transformation, out modelBeneathCursor, releaseOnMouseUp, capFunction);
@@ -179,7 +179,7 @@ namespace Chisel.Editors
             points.Clear();
         }
 
-        public static void Do(int id, Rect dragArea, ref List<Vector3> points, out Matrix4x4 transformation, out ChiselModel modelBeneathCursor, bool releaseOnMouseUp = true, Chisel.Editors.SceneHandles.CapFunction capFunction = null)
+        public static void Do(int id, Rect dragArea, ref List<Vector3> points, out Matrix4x4 transformation, out ChiselModelComponent modelBeneathCursor, bool releaseOnMouseUp = true, Chisel.Editors.SceneHandles.CapFunction capFunction = null)
         {
             modelBeneathCursor = null;
             var evt = Event.current;

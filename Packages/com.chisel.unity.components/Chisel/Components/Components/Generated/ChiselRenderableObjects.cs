@@ -14,7 +14,7 @@ namespace Chisel.Components
         public ChiselRenderObjects  instance;
         public Material             materialOverride;
         public bool                 meshIsModified;
-        public ChiselModel          model;
+        public ChiselModelComponent          model;
     }
 
     [Serializable]
@@ -179,7 +179,7 @@ namespace Chisel.Components
             }
         }
 
-        void UpdateSettings(ChiselModel model, GameObjectState state, bool meshIsModified)
+        void UpdateSettings(ChiselModelComponent model, GameObjectState state, bool meshIsModified)
         {
 #if UNITY_EDITOR
             Profiler.BeginSample("CheckIfFullMeshNeedsToBeHidden");
@@ -206,7 +206,7 @@ namespace Chisel.Components
 #endif 
         }
 
-        public static void UpdateProperties(ChiselModel model, MeshRenderer[] meshRenderers)
+        public static void UpdateProperties(ChiselModelComponent model, MeshRenderer[] meshRenderers)
         {
             if (meshRenderers == null || meshRenderers.Length == 0)
                 return;
@@ -256,7 +256,7 @@ namespace Chisel.Components
             Profiler.EndSample();
         }
 
-        public void Clear(ChiselModel model, GameObjectState gameObjectState)
+        public void Clear(ChiselModelComponent model, GameObjectState gameObjectState)
         {
             bool meshIsModified = false;
             {
@@ -343,7 +343,7 @@ namespace Chisel.Components
         }
 
 
-        public static void UpdateSettings(List<ChiselMeshUpdate> meshUpdates, List<ChiselRenderObjectUpdate> objectUpdates, Dictionary<ChiselModel, GameObjectState> gameObjectStates, ref VertexBufferContents vertexBufferContents)
+        public static void UpdateSettings(List<ChiselMeshUpdate> meshUpdates, List<ChiselRenderObjectUpdate> objectUpdates, Dictionary<ChiselModelComponent, GameObjectState> gameObjectStates, ref VertexBufferContents vertexBufferContents)
         {
             Profiler.BeginSample("UpdateSettings");
             for (int u = 0; u < objectUpdates.Count; u++)

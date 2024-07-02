@@ -28,7 +28,7 @@ namespace Chisel.Components
         }
 
         // TODO: consider grouping functionality
-        internal static ChiselComposite GetGroupCompositeForNode(ChiselNode node)
+        internal static ChiselCompositeComponent GetGroupCompositeForNode(ChiselNode node)
         {
             /*
             if (!node)
@@ -102,7 +102,7 @@ namespace Chisel.Components
         static ChiselIntersection Convert(CSGTreeBrushIntersection intersection)
         {
             var node                    = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(intersection.brush.UserID);
-            var model                   = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(intersection.tree.UserID) as ChiselModel;
+            var model                   = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(intersection.tree.UserID) as ChiselModelComponent;
 
             var treeLocalToWorldMatrix  = model.transform.localToWorldMatrix;            
             
@@ -163,7 +163,7 @@ namespace Chisel.Components
                     for (var t = 0; t < allTrees.Length; t++)
                     {
                         var tree	= allTrees[t];
-                        var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModel;
+                        var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModelComponent;
                         if (!ChiselModelManager.IsSelectable(model))
                             continue;
 
@@ -234,7 +234,7 @@ namespace Chisel.Components
             return FindFirstWorldIntersection(model, worldRayStart, worldRayEnd, visibleLayers, null, null, out foundIntersection);
         }
         */
-        public static bool FindFirstWorldIntersection(ChiselModel model, Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers, LayerUsageFlags visibleLayerFlags, GameObject[] ignore, GameObject[] filter, out ChiselIntersection foundIntersection)
+        public static bool FindFirstWorldIntersection(ChiselModelComponent model, Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers, LayerUsageFlags visibleLayerFlags, GameObject[] ignore, GameObject[] filter, out ChiselIntersection foundIntersection)
         {
             foundIntersection = ChiselIntersection.None;
 
@@ -350,7 +350,7 @@ namespace Chisel.Components
                 for (var t = 0; t < allTrees.Length; t++)
                 {
                     var tree	= allTrees[t];
-                    var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModel;
+                    var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModelComponent;
                     if (!ChiselModelManager.IsSelectable(model))
                         continue;
 

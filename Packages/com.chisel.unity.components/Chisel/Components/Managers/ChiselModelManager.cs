@@ -45,10 +45,10 @@ namespace Chisel.Components
 #endregion
 
         // TODO: potentially have a history per scene, so when one model turns out to be invalid, go back to the previously selected model
-        readonly Dictionary<Scene, ChiselModel> activeModels = new Dictionary<Scene, ChiselModel>();
+        readonly Dictionary<Scene, ChiselModelComponent> activeModels = new Dictionary<Scene, ChiselModelComponent>();
 
         #region ActiveModel Serialization
-        [Serializable] public struct SceneModelPair { public Scene Key; public ChiselModel Value; }
+        [Serializable] public struct SceneModelPair { public Scene Key; public ChiselModelComponent Value; }
         [SerializeField] SceneModelPair[] activeModelsArray;
 
         public void OnBeforeSerialize()
@@ -82,7 +82,7 @@ namespace Chisel.Components
 
 
 
-        public static bool IsSelectable(ChiselModel model)
+        public static bool IsSelectable(ChiselModelComponent model)
         {
             if (!model || !model.isActiveAndEnabled)
                 return false;
@@ -94,7 +94,7 @@ namespace Chisel.Components
         }
 
 
-        public static ChiselModel ActiveModel
+        public static ChiselModelComponent ActiveModel
         { 
             get
             {
@@ -130,7 +130,7 @@ namespace Chisel.Components
             }
         }
 
-        public static ChiselModel GetActiveModelOrCreate(ChiselModel overrideModel = null)
+        public static ChiselModelComponent GetActiveModelOrCreate(ChiselModelComponent overrideModel = null)
         {
             if (overrideModel)
             {
@@ -148,19 +148,19 @@ namespace Chisel.Components
             return activeModel;
         }
 
-        public static ChiselModel CreateNewModel(Transform parent = null)
+        public static ChiselModelComponent CreateNewModel(Transform parent = null)
         {
-            return ChiselComponentFactory.Create<ChiselModel>(kDefaultModelName, parent);
+            return ChiselComponentFactory.Create<ChiselModelComponent>(kDefaultModelName, parent);
         }
 
 
-        public static ChiselModel FindModelInScene()
+        public static ChiselModelComponent FindModelInScene()
         {
             var activeScene = SceneManager.GetActiveScene();
             return FindModelInScene(activeScene);
         }
 
-        public static ChiselModel FindModelInScene(Scene scene)
+        public static ChiselModelComponent FindModelInScene(Scene scene)
         {
             if (!scene.isLoaded ||
                 !scene.IsValid())
@@ -179,7 +179,7 @@ namespace Chisel.Components
                     continue;
 
                 // Go through all it's models, this method returns the top most models first
-                var models = rootGameObject.GetComponentsInChildren<ChiselModel>(includeInactive: false);
+                var models = rootGameObject.GetComponentsInChildren<ChiselModelComponent>(includeInactive: false);
                 foreach (var model in models)
                 {
                     // Skip all inactive models
@@ -197,7 +197,7 @@ namespace Chisel.Components
             // Go through all activeModels, which we store per scene, and make sure they still make sense
 
             var removeScenes = ListPool<Scene>.Get();
-            var setSceneModels = DictionaryPool<Scene, ChiselModel>.Get();
+            var setSceneModels = DictionaryPool<Scene, ChiselModelComponent>.Get();
             try
             {
                 foreach (var pair in Instance.activeModels)
@@ -237,7 +237,7 @@ namespace Chisel.Components
             finally
             {
                 ListPool<Scene>.Release(removeScenes);
-                DictionaryPool<Scene, ChiselModel>.Release(setSceneModels);
+                DictionaryPool<Scene, ChiselModelComponent>.Release(setSceneModels);
             }
         }
 
@@ -257,14 +257,14 @@ namespace Chisel.Components
             CheckActiveModels();
         }
 
-        static ChiselModel GetSelectedModel()
+        static ChiselModelComponent GetSelectedModel()
         {
             var selectedGameObjects = UnityEditor.Selection.gameObjects;
             if (selectedGameObjects == null ||
                 selectedGameObjects.Length == 1)
             { 
                 var selection = selectedGameObjects[0];
-                return selection.GetComponent<ChiselModel>();
+                return selection.GetComponent<ChiselModelComponent>();
             }
             return null;
         }

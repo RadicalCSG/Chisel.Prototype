@@ -48,7 +48,7 @@ namespace Chisel.Editors
         {
             if (!ChiselSceneGUIStyle.isInitialized)
                 return;
-            var model = node as ChiselModel;
+            var model = node as ChiselModelComponent;
             if (!ReferenceEquals(model, null))
             {
                 if (model == ChiselModelManager.ActiveModel)

@@ -40,7 +40,7 @@ namespace Chisel.Editors
         {
             // TODO: handle snapping against own points
             // TODO: handle ability to 'commit' last point
-            switch (ShapeExtrusionHandle.Do(dragArea, out Curve2D shape, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, Axis.Y))
+            switch (ShapeExtrusionHandle.Do(dragArea, out Curve2D shape, out float height, out ChiselModelComponent modelBeneathCursor, out Matrix4x4 transformation, Axis.Y))
             {
                 case ShapeExtrusionState.Modified:
                 case ShapeExtrusionState.Create:
@@ -131,7 +131,7 @@ namespace Chisel.Editors
             if (Event.current.shift)
                 generatoreModeFlags |= PlacementFlags.UseLastHeight;
 
-            switch (RectangleExtrusionHandle.Do(dragArea, out Bounds bounds, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, generatoreModeFlags, Axis.Y))
+            switch (RectangleExtrusionHandle.Do(dragArea, out Bounds bounds, out float height, out ChiselModelComponent modelBeneathCursor, out Matrix4x4 transformation, generatoreModeFlags, Axis.Y))
             {
                 case GeneratorModeState.Update:
                 {

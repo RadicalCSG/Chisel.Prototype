@@ -343,7 +343,7 @@ namespace Chisel.Editors
                 transform.GetComponentsInChildren<ChiselNode>(false, s_ChildNodes);
                 if (s_ChildNodes.Count == 0)
                     continue;
-                if (s_ChildNodes[0] is ChiselModel)
+                if (s_ChildNodes[0] is ChiselModelComponent)
                     continue;
                 for (int n = 0; n < s_ChildNodes.Count; n++)
                     modifiedNodes.Add(s_ChildNodes[n]);

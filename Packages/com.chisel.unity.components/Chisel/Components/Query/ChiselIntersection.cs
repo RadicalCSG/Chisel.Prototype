@@ -12,7 +12,7 @@ namespace Chisel.Components
     [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
     public struct ChiselIntersection
     {
-        public ChiselModel	model;
+        public ChiselModelComponent	model;
         public ChiselNode	treeNode;
 
         public Plane        worldPlane;

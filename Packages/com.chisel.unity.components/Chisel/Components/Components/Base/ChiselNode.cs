@@ -96,7 +96,7 @@ namespace Chisel.Components
                 // If we find a ChiselNode we continue, unless it's a Composite set to passthrough
                 if (transform.TryGetComponent<ChiselNode>(out var component))
                 {
-                    var composite = component as ChiselComposite;
+                    var composite = component as ChiselCompositeComponent;
                     if (composite == null || !composite.PassThrough)
                         break;
                 }

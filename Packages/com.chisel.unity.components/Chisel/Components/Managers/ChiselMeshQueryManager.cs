@@ -5,7 +5,7 @@ namespace Chisel.Components
 {
     public static class ChiselMeshQueryManager
     {
-        public static MeshQuery[] GetMeshQuery(ChiselModel model)
+        public static MeshQuery[] GetMeshQuery(ChiselModelComponent model)
         {
             // TODO: make this depended on the model settings / helper surface view settings
             if (model.CreateRenderComponents &&

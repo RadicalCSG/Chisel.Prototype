@@ -11,22 +11,22 @@ using UnityEngine.Profiling;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselCompositeDetails : ChiselNodeDetails<ChiselComposite>
+    public sealed class ChiselCompositeDetails : ChiselNodeDetails<ChiselCompositeComponent>
     {
-        public override GUIContent GetHierarchyIcon(ChiselComposite node)
+        public override GUIContent GetHierarchyIcon(ChiselCompositeComponent node)
         {
             return ChiselDefaultGeneratorDetails.GetHierarchyIcon(node.Operation, node.ChiselNodeTypeName);
         }
     }
 
-    [CustomEditor(typeof(ChiselComposite))]
+    [CustomEditor(typeof(ChiselCompositeComponent))]
     [CanEditMultipleObjects]
-    public sealed class ChiselCompositeEditor : ChiselNodeEditor<ChiselComposite>
+    public sealed class ChiselCompositeEditor : ChiselNodeEditor<ChiselCompositeComponent>
     {
         const string kCompositeHasNoChildren = "This operation has no chisel nodes as children and will not create any geometry.\nAdd some chisel nodes to see something.";
 
-        [MenuItem(kGameObjectMenuCompositePath + ChiselComposite.kNodeTypeName + " Composite", false, kGameObjectMenuCompositePriority)]
-        static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselComposite.kNodeTypeName); }
+        [MenuItem(kGameObjectMenuCompositePath + ChiselCompositeComponent.kNodeTypeName + " Composite", false, kGameObjectMenuCompositePriority)]
+        static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselCompositeComponent.kNodeTypeName); }
 
         SerializedProperty operationProp;
         SerializedProperty passThroughProp;
@@ -41,8 +41,8 @@ namespace Chisel.Editors
             }
 
             // Fetch the objects from the GameObject script to display in the inspector
-            operationProp   = serializedObject.FindProperty(ChiselComposite.kOperationFieldName);
-            passThroughProp = serializedObject.FindProperty(ChiselComposite.kPassThroughFieldName);
+            operationProp   = serializedObject.FindProperty(ChiselCompositeComponent.kOperationFieldName);
+            passThroughProp = serializedObject.FindProperty(ChiselCompositeComponent.kPassThroughFieldName);
         }
 
         internal void OnDisable()
@@ -86,19 +86,19 @@ namespace Chisel.Editors
                     {
                         foreach (var target in serializedObject.targetObjects)
                         {
-                            var composite = target as ChiselComposite;
+                            var composite = target as ChiselCompositeComponent;
                             if (!composite)
                                 continue;
 
                             ChiselNodeHierarchyManager.UpdateAvailability(composite);
                         }
                     }
-                    OnShapeChanged(target as ChiselComposite);
+                    OnShapeChanged(target as ChiselCompositeComponent);
                 }
                 bool hasNoChildren = false;
                 foreach (var target in serializedObject.targetObjects)
                 {
-                    var composite = target as ChiselComposite;
+                    var composite = target as ChiselCompositeComponent;
                     if (!composite)
                         continue;
                     if (composite.transform.childCount == 0)

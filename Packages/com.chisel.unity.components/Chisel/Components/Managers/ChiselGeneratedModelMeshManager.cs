@@ -12,11 +12,11 @@ namespace Chisel.Components
     {
         public static event Action              PreReset;
         public static event Action              PostReset;
-        public static event Action<ChiselModel> PostUpdateModel;
+        public static event Action<ChiselModelComponent> PostUpdateModel;
         public static event Action              PostUpdateModels;
         
         internal static HashSet<ChiselNode>     s_RegisteredNodeLookup = new();
-        internal static List<ChiselModel>       s_RegisteredModels = new();
+        internal static List<ChiselModelComponent>       s_RegisteredModels = new();
 
         static readonly ChiselGeneratedComponentManager componentGenerator = new();
         
@@ -36,7 +36,7 @@ namespace Chisel.Components
             if (!s_RegisteredNodeLookup.Remove(node))
                 return;
 
-            var model = node as ChiselModel;
+            var model = node as ChiselModelComponent;
             if (!ReferenceEquals(model, null))
             {
                 componentGenerator.Unregister(model);
@@ -49,7 +49,7 @@ namespace Chisel.Components
             if (!s_RegisteredNodeLookup.Add(node))
                 return;
 
-            var model = node as ChiselModel;
+            var model = node as ChiselModelComponent;
             if (ReferenceEquals(model, null))
                 return;
             
@@ -65,7 +65,7 @@ namespace Chisel.Components
                                      NativeList<ChiselMeshUpdate>   renderMeshes,
                                      JobHandle                      dependencies)
         {
-            ChiselModel model = null;
+            ChiselModelComponent model = null;
             for (int m = 0; m < s_RegisteredModels.Count; m++)
             {
                 if (!s_RegisteredModels[m])

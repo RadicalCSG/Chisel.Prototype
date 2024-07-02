@@ -11,29 +11,29 @@ using UnityEngine.Profiling;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselModelDetails : ChiselNodeDetails<ChiselModel>
+    public sealed class ChiselModelDetails : ChiselNodeDetails<ChiselModelComponent>
     {
         const string kModelIconName = "csg_model";
 
-        public override GUIContent GetHierarchyIcon(ChiselModel node)
+        public override GUIContent GetHierarchyIcon(ChiselModelComponent node)
         {
             return ChiselEditorResources.GetIconContent(kModelIconName, node.ChiselNodeTypeName)[0];
         }
     }
 
-    [CustomEditor(typeof(ChiselModel))]
-    public sealed class ChiselModelEditor : ChiselNodeEditor<ChiselModel>
+    [CustomEditor(typeof(ChiselModelComponent))]
+    public sealed class ChiselModelEditor : ChiselNodeEditor<ChiselModelComponent>
     {
         const string kModelHasNoChildren = "This model has no chisel nodes as children and will not generate any geometry.\nAdd some chisel nodes to see something.";
 
-        [MenuItem(kGameObjectMenuModelPath + ChiselModel.kNodeTypeName, false, kGameObjectMenuModelPriority)]
-        internal static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselModel.kNodeTypeName); }
+        [MenuItem(kGameObjectMenuModelPath + ChiselModelComponent.kNodeTypeName, false, kGameObjectMenuModelPriority)]
+        internal static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselModelComponent.kNodeTypeName); }
 
 
         [ContextMenu("Set Active Model", false)]
         internal static void SetActiveModel(MenuCommand menuCommand)
         {
-            var model = (menuCommand.context as GameObject).GetComponent<ChiselModel>();
+            var model = (menuCommand.context as GameObject).GetComponent<ChiselModelComponent>();
             if (model)
                 ChiselModelManager.ActiveModel = model;
         }
@@ -41,7 +41,7 @@ namespace Chisel.Editors
         [ContextMenu("Set Active Model", true)]
         internal static bool ValidateActiveModel(MenuCommand menuCommand)
         {
-            var model = (menuCommand.context as GameObject).GetComponent<ChiselModel>();
+            var model = (menuCommand.context as GameObject).GetComponent<ChiselModelComponent>();
             return model;
         }
 
@@ -217,37 +217,37 @@ namespace Chisel.Editors
             if (!target)
                 return;
 
-            vertexChannelMaskProp        = serializedObject.FindProperty($"{ChiselModel.kVertexChannelMaskName}");
-            createRenderComponentsProp   = serializedObject.FindProperty($"{ChiselModel.kCreateRenderComponentsName}");
-            createColliderComponentsProp = serializedObject.FindProperty($"{ChiselModel.kCreateColliderComponentsName}");
-            autoRebuildUVsProp           = serializedObject.FindProperty($"{ChiselModel.kAutoRebuildUVsName}");
-            angleErrorProp               = serializedObject.FindProperty($"{ChiselModel.kUVGenerationSettingsName}.{SerializableUnwrapParam.kAngleErrorName}");
-            areaErrorProp                = serializedObject.FindProperty($"{ChiselModel.kUVGenerationSettingsName}.{SerializableUnwrapParam.kAreaErrorName}");
-            hardAngleProp                = serializedObject.FindProperty($"{ChiselModel.kUVGenerationSettingsName}.{SerializableUnwrapParam.kHardAngleName}");
-            packMarginPixelsProp         = serializedObject.FindProperty($"{ChiselModel.kUVGenerationSettingsName}.{SerializableUnwrapParam.kPackMarginPixelsName}");
+            vertexChannelMaskProp        = serializedObject.FindProperty($"{ChiselModelComponent.kVertexChannelMaskName}");
+            createRenderComponentsProp   = serializedObject.FindProperty($"{ChiselModelComponent.kCreateRenderComponentsName}");
+            createColliderComponentsProp = serializedObject.FindProperty($"{ChiselModelComponent.kCreateColliderComponentsName}");
+            autoRebuildUVsProp           = serializedObject.FindProperty($"{ChiselModelComponent.kAutoRebuildUVsName}");
+            angleErrorProp               = serializedObject.FindProperty($"{ChiselModelComponent.kUVGenerationSettingsName}.{SerializableUnwrapParam.kAngleErrorName}");
+            areaErrorProp                = serializedObject.FindProperty($"{ChiselModelComponent.kUVGenerationSettingsName}.{SerializableUnwrapParam.kAreaErrorName}");
+            hardAngleProp                = serializedObject.FindProperty($"{ChiselModelComponent.kUVGenerationSettingsName}.{SerializableUnwrapParam.kHardAngleName}");
+            packMarginPixelsProp         = serializedObject.FindProperty($"{ChiselModelComponent.kUVGenerationSettingsName}.{SerializableUnwrapParam.kPackMarginPixelsName}");
 
 
-            motionVectorsProp                   = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kMotionVectorGenerationModeName}");
-            importantGIProp                     = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kImportantGIName}");
-            receiveGIProp                       = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kReceiveGIName}");
-            lightmapScaleProp                   = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kScaleInLightmapName}");
-            preserveUVsProp                     = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kOptimizeUVsName}");
-            autoUVMaxDistanceProp               = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kAutoUVMaxDistanceName}");
-            autoUVMaxAngleProp                  = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kAutoUVMaxAngleName}");
-            ignoreNormalsForChartDetectionProp  = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kIgnoreNormalsForChartDetectionName}");
-            minimumChartSizeProp                = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kMinimumChartSizeName}");
-            lightmapParametersProp              = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kLightmapParametersName}");
-            allowOcclusionWhenDynamicProp       = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kAllowOcclusionWhenDynamicName}");
-            renderingLayerMaskProp              = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kRenderingLayerMaskName}");
-            reflectionProbeUsageProp            = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kReflectionProbeUsageName}");
-            lightProbeUsageProp                 = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kLightProbeUsageName}");
-            lightProbeVolumeOverrideProp        = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kLightProbeVolumeOverrideName}");
-            probeAnchorProp                     = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kProbeAnchorName}");
-            stitchLightmapSeamsProp             = serializedObject.FindProperty($"{ChiselModel.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kStitchLightmapSeamsName}");
+            motionVectorsProp                   = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kMotionVectorGenerationModeName}");
+            importantGIProp                     = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kImportantGIName}");
+            receiveGIProp                       = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kReceiveGIName}");
+            lightmapScaleProp                   = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kScaleInLightmapName}");
+            preserveUVsProp                     = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kOptimizeUVsName}");
+            autoUVMaxDistanceProp               = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kAutoUVMaxDistanceName}");
+            autoUVMaxAngleProp                  = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kAutoUVMaxAngleName}");
+            ignoreNormalsForChartDetectionProp  = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kIgnoreNormalsForChartDetectionName}");
+            minimumChartSizeProp                = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kMinimumChartSizeName}");
+            lightmapParametersProp              = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kLightmapParametersName}");
+            allowOcclusionWhenDynamicProp       = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kAllowOcclusionWhenDynamicName}");
+            renderingLayerMaskProp              = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kRenderingLayerMaskName}");
+            reflectionProbeUsageProp            = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kReflectionProbeUsageName}");
+            lightProbeUsageProp                 = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kLightProbeUsageName}");
+            lightProbeVolumeOverrideProp        = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kLightProbeVolumeOverrideName}");
+            probeAnchorProp                     = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kProbeAnchorName}");
+            stitchLightmapSeamsProp             = serializedObject.FindProperty($"{ChiselModelComponent.kRenderSettingsName}.{ChiselGeneratedRenderSettings.kStitchLightmapSeamsName}");
 
-            convexProp              = serializedObject.FindProperty($"{ChiselModel.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kConvexName}");
-            isTriggerProp           = serializedObject.FindProperty($"{ChiselModel.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kIsTriggerName}");
-            cookingOptionsProp      = serializedObject.FindProperty($"{ChiselModel.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kCookingOptionsName}");
+            convexProp              = serializedObject.FindProperty($"{ChiselModelComponent.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kConvexName}");
+            isTriggerProp           = serializedObject.FindProperty($"{ChiselModelComponent.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kIsTriggerName}");
+            cookingOptionsProp      = serializedObject.FindProperty($"{ChiselModelComponent.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kCookingOptionsName}");
             //skinWidthProp         = serializedObject.FindProperty($"{ChiselModel.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kSkinWidthName}");
 
             gameObjectsSerializedObject = new SerializedObject(serializedObject.targetObjects.Select(t => ((Component)t).gameObject).ToArray());
@@ -256,7 +256,7 @@ namespace Chisel.Editors
 
             for (int t = 0; t < targets.Length; t++)
             {
-                var modelTarget = targets[t] as ChiselModel;
+                var modelTarget = targets[t] as ChiselModelComponent;
                 if (!modelTarget)
                     continue;
 
@@ -379,7 +379,7 @@ namespace Chisel.Editors
             float largestSurfaceArea = -1;
             foreach(var target in targets)
             {
-                var model = target as ChiselModel;
+                var model = target as ChiselModelComponent;
                 if (!model)
                     continue;
                 var renderables = model.generated?.renderables;
@@ -407,7 +407,7 @@ namespace Chisel.Editors
                 return false;
             foreach (var target in targets)
             {
-                var model = target as ChiselModel;
+                var model = target as ChiselModelComponent;
                 if (!model)
                     continue;
                 var renderables = model.generated?.renderables;
@@ -434,7 +434,7 @@ namespace Chisel.Editors
                 return false;
             foreach (var target in targets)
             {
-                var model = target as ChiselModel;
+                var model = target as ChiselModelComponent;
                 if (!model)
                     continue;
                 var renderables = model.generated?.renderables;
@@ -461,7 +461,7 @@ namespace Chisel.Editors
                 return false;
             foreach (var target in targets)
             {
-                var model = target as ChiselModel;
+                var model = target as ChiselModelComponent;
                 if (!model)
                     continue;
                 var renderables = model.generated?.renderables;
@@ -489,7 +489,7 @@ namespace Chisel.Editors
 
             foreach(var target in targets)
             {
-                var model = target as ChiselModel;
+                var model = target as ChiselModelComponent;
                 if (!model)
                     continue;
 
@@ -524,7 +524,7 @@ namespace Chisel.Editors
             */
         }
 
-        static internal bool AreLightProbesAllowed(ChiselModel model)
+        static internal bool AreLightProbesAllowed(ChiselModelComponent model)
         {
             // TODO: return false if lightmapped or dynamic lightmapped
 
@@ -548,7 +548,7 @@ namespace Chisel.Editors
             if (targets == null)
                 return false;
             foreach (UnityEngine.Object obj in targets)
-                if (AreLightProbesAllowed((ChiselModel)obj) == false)
+                if (AreLightProbesAllowed((ChiselModelComponent)obj) == false)
                     return false;
             return true;
         }
@@ -865,7 +865,7 @@ namespace Chisel.Editors
 
             EditorGUI.showMixedValue = renderingLayerMaskProp.hasMultipleDifferentValues;
 
-            var model		= (ChiselModel)target;
+            var model		= (ChiselModelComponent)target;
             var mask		= (int)model.RenderSettings.renderingLayerMask;
 
             EditorGUI.BeginChangeCheck();
@@ -880,7 +880,7 @@ namespace Chisel.Editors
                 Undo.RecordObjects(targets, "Set rendering layer mask");
                 foreach (var t in targets)
                 {
-                    var m = t as ChiselModel;
+                    var m = t as ChiselModelComponent;
                     if (m != null)
                     {
                         m.RenderSettings.renderingLayerMask = (uint)mask;
@@ -1085,7 +1085,7 @@ namespace Chisel.Editors
                 bool hasNoChildren = false;
                 foreach (var target in serializedObject.targetObjects)
                 {
-                    var model = target as ChiselModel;
+                    var model = target as ChiselModelComponent;
                     if (!model)
                         continue;
                     if (model.transform.childCount == 0)
