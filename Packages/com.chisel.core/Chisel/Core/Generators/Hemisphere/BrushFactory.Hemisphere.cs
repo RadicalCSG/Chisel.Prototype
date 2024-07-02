@@ -1,6 +1,7 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
 using UnityEngine;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -8,15 +9,15 @@ namespace Chisel.Core
     public sealed partial class BrushMeshFactory
     {
         public static bool GenerateHemisphere(float3 diameterXYZ, float rotation, int horzSegments, int vertSegments, 
-                                              in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
-                                              out ChiselBlobAssetReference<BrushMeshBlob> brushMesh,
+                                              in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                              out BlobAssetReference<BrushMeshBlob> brushMesh,
                                               Allocator allocator)
         {
-            brushMesh = ChiselBlobAssetReference<BrushMeshBlob>.Null;
+            brushMesh = BlobAssetReference<BrushMeshBlob>.Null;
             if (math.any(diameterXYZ == float3.zero))
                 return false;
 
-            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
+            using (var builder = new BlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
                 var transform       = float4x4.TRS(float3.zero, quaternion.AxisAngle(new float3(0, 1, 0), math.radians(rotation)), new float3(1));

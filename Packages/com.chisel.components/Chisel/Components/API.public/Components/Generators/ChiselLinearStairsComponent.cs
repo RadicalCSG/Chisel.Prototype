@@ -108,7 +108,7 @@ namespace Chisel.Components
             set { if (definition.settings.plateauHeight == value) return; definition.settings.plateauHeight = value; OnValidateState(); }
         }
 
-        public ChiselAABB Bounds
+        public AABB Bounds
         {
             get { return definition.settings.bounds; }
             set

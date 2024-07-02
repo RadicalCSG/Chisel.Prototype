@@ -2,6 +2,8 @@
 using Unity.Mathematics;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Entities;
+using System.Runtime.CompilerServices;
 
 namespace Chisel.Core
 {
@@ -25,14 +27,16 @@ namespace Chisel.Core
         private static readonly Vector3 PositiveZ = new Vector3(0, 0, 1);
 
 
-        public static bool Equals(this Vector3 self, Vector3 other, double epsilon)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool Equals(this Vector3 self, Vector3 other, double epsilon)
         {
             return System.Math.Abs(self.x - other.x) <= epsilon &&
                    System.Math.Abs(self.y - other.y) <= epsilon &&
                    System.Math.Abs(self.z - other.z) <= epsilon;
         }
 
-        public static bool Equals(this Vector3 self, Vector3 other, float epsilon)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool Equals(this Vector3 self, Vector3 other, float epsilon)
         {
             return System.Math.Abs(self.x - other.x) <= epsilon &&
                    System.Math.Abs(self.y - other.y) <= epsilon &&
@@ -65,7 +69,8 @@ namespace Chisel.Core
                    Matrix4x4.TRS(-center, Quaternion.identity, Vector3.one);
         }
 
-        public static float3 ClosestTangentAxis(float3 vector)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static float3 ClosestTangentAxis(float3 vector)
         {
             var abs = math.abs(vector);
             if (abs.z > abs.x && abs.z > abs.y)
@@ -163,7 +168,8 @@ namespace Chisel.Core
             return signedAngle;
         }
 
-        public static Vector2 Lerp(Vector2 A, Vector2 B, float t)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector2 Lerp(Vector2 A, Vector2 B, float t)
         {
             return new Vector2(
                     Mathf.Lerp(A.x, B.x, t),
@@ -171,7 +177,8 @@ namespace Chisel.Core
                 );
         }
 
-        public static Vector3 Lerp(Vector3 A, Vector3 B, float t)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector3 Lerp(Vector3 A, Vector3 B, float t)
         {
             return new Vector3(
                     Mathf.Lerp(A.x, B.x, t),
@@ -180,7 +187,8 @@ namespace Chisel.Core
                 );
         }
 
-        public static Quaternion Lerp(Quaternion A, Quaternion B, float t)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Quaternion Lerp(Quaternion A, Quaternion B, float t)
         {
             return Quaternion.Slerp(A, B, t);
         }
@@ -399,7 +407,8 @@ namespace Chisel.Core
             return new double3(rx, ry, rz);
         }
 
-        public static unsafe uint Hash<T>(T[] array) where T : unmanaged
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static unsafe uint Hash<T>(T[] array) where T : unmanaged
         {
             if (array == null)
                 return 0;
@@ -414,7 +423,8 @@ namespace Chisel.Core
             }
         }
 
-        public static unsafe uint Hash<T>([NoAlias, ReadOnly] ref T input) where T : unmanaged
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static unsafe uint Hash<T>([NoAlias, ReadOnly] ref T input) where T : unmanaged
         {
             fixed (void* ptr = &input)
             {
@@ -422,7 +432,8 @@ namespace Chisel.Core
             }
         }
 
-        public static unsafe uint Hash<T>([NoAlias, ReadOnly] ref ChiselBlobArray<T> input) where T : unmanaged
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static unsafe uint Hash<T>([NoAlias, ReadOnly] ref BlobArray<T> input) where T : unmanaged
         {
             var ptr = input.GetUnsafePtr();
             if (ptr == null)
@@ -431,5 +442,40 @@ namespace Chisel.Core
             }
             return math.hash((byte*)ptr, input.Length * sizeof(T));
         }
-    }
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsEmpty(this AABB self)
+		{
+			return self.Equals(Empty);
+		}
+
+		public readonly static AABB Empty = new() { Center = math.float3(float.NaN), Extents = math.float3(float.PositiveInfinity) };
+	
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void Encapsulate(this AABB self, AABB other)
+		{
+            var min = math.min(self.Min, other.Min);
+			var max = math.max(self.Max, other.Max);
+            self.Center = (min + max) * 0.5f;
+            self.Extents = (max - min) * 0.5f;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void Encapsulate(this AABB self, float3 point)
+		{
+			var min = math.min(self.Min, point);
+			var max = math.max(self.Max, point);
+			self.Center = (min + max) * 0.5f;
+			self.Extents = (max - min) * 0.5f;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static AABB CreateAABB(float3 min, float3 max) { return new AABB { Center = (min + max) * 0.5f, Extents = (max - min) * 0.5f }; }
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static AABB ToAABB(this Bounds bounds) { return new AABB { Center = bounds.center, Extents = bounds.extents }; }
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Bounds ToBounds(this AABB aabb) { return new Bounds { center = aabb.Center, extents = aabb.Extents }; }
+	}
 }

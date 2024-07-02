@@ -1,8 +1,10 @@
 ﻿using System;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+
 using Debug = UnityEngine.Debug;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
@@ -15,12 +17,12 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeList<IndexOrder>   allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeList<ChiselAABB>   brushTreeSpaceBoundCache;
-        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferCache;
+        [NoAlias, ReadOnly] public NativeList<AABB>         brushTreeSpaceBoundCache;
+        [NoAlias, ReadOnly] public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferCache;
 
         // Read, Write
-        [NoAlias] public NativeParallelHashMap<CompactNodeID, ChiselAABB> brushTreeSpaceBoundLookup;
-        [NoAlias] public NativeParallelHashMap<CompactNodeID, ChiselBlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferLookup;
+        [NoAlias] public NativeParallelHashMap<CompactNodeID, AABB> brushTreeSpaceBoundLookup;
+        [NoAlias] public NativeParallelHashMap<CompactNodeID, BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferLookup;
 
         public void Execute()
         {

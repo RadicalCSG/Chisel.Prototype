@@ -7,6 +7,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Debug = UnityEngine.Debug;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -15,12 +16,12 @@ namespace Chisel.Core
     {
         // Read
         // 'Required' for scheduling with index count
-        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                       allUpdateBrushIndexOrders;        
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                allUpdateBrushIndexOrders;        
 
-        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<RoutingTable>>           routingTableCache;
-        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>   brushTreeSpacePlaneCache;
-        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>  brushesTouchedByBrushCache;
-        [NoAlias, ReadOnly] public NativeArray<UnsafeList<float3>>                              loopVerticesLookup;
+        [NoAlias, ReadOnly] public NativeList<BlobAssetReference<RoutingTable>>          routingTableCache;
+        [NoAlias, ReadOnly] public NativeList<BlobAssetReference<BrushTreeSpacePlanes>>  brushTreeSpacePlaneCache;
+        [NoAlias, ReadOnly] public NativeList<BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushCache;
+        [NoAlias, ReadOnly] public NativeArray<UnsafeList<float3>>                       loopVerticesLookup;
 
         [NoAlias, ReadOnly] public NativeStream.Reader      input;
         
@@ -240,7 +241,7 @@ namespace Chisel.Core
             var brushesTouchedByBrush = brushesTouchedByBrushCache[currentBrushOrder];
             if (currentHoleIndices.Length > 0 &&
                 // TODO: fix touching not being updated properly
-                brushesTouchedByBrush != ChiselBlobAssetReference<BrushesTouchedByBrush>.Null)
+                brushesTouchedByBrush != BlobAssetReference<BrushesTouchedByBrush>.Null)
             {
                 NativeCollectionHelpers.EnsureMinimumSize(ref intersectedHoleIndices, currentHoleIndices.Length);
                 var intersectedHoleIndicesLength = 0;
@@ -828,8 +829,8 @@ namespace Chisel.Core
             }
 
 
-            ChiselBlobAssetReference<RoutingTable> routingTableRef = routingTableCache[brushNodeOrder];
-            if (routingTableRef == ChiselBlobAssetReference<RoutingTable>.Null)
+			BlobAssetReference<RoutingTable> routingTableRef = routingTableCache[brushNodeOrder];
+            if (routingTableRef == BlobAssetReference<RoutingTable>.Null)
             {
                 //Debug.LogError("No routing table found");
                 output.BeginForEachIndex(index);

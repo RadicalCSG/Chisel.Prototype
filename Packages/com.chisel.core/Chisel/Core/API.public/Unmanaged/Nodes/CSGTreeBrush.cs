@@ -163,9 +163,9 @@ namespace Chisel.Core
 
         #region TreeBrush specific
         /// <value>Gets the bounds of this <see cref="Chisel.Core.CSGTreeBrush"/>.</value>
-        public ChiselAABB           Bounds          { get { return Hierarchy.GetBrushBounds(CompactNodeID); } }
+        public AABB Bounds { get { return Hierarchy.GetBrushBounds(CompactNodeID); } }
 
-        public ChiselAABB           GetBounds(float4x4 transformation) { return Hierarchy.GetBrushBounds(CompactNodeID, transformation); }
+        public AABB GetBounds(float4x4 transformation) { return Hierarchy.GetBrushBounds(CompactNodeID, transformation); }
         #endregion
 
 #if UNITY_EDITOR

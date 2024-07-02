@@ -2,6 +2,7 @@
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -10,8 +11,8 @@ namespace Chisel.Core
     {
         public static int CountPathedStairBrushes(UnsafeList<SegmentVertex> shapeVertices,
                                                   bool              closedLoop,
-                                                  
-                                                  ChiselAABB        bounds,
+
+												  AABB              bounds,
 
                                                   float	            stepHeight,
                                                   float	            stepDepth,
@@ -52,10 +53,10 @@ namespace Chisel.Core
         }
         
         // TODO: kind of broken, needs fixing
-        public static bool GeneratePathedStairs(NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes,
+        public static bool GeneratePathedStairs(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes,
                                                 UnsafeList<SegmentVertex> shapeVertices,
                                                 bool                closedLoop,
-                                                ChiselAABB          bounds,
+												AABB                bounds,
 
                                                 float	            stepHeight,
                                                 float	            stepDepth,
@@ -75,7 +76,7 @@ namespace Chisel.Core
                                                 float	            sideWidth,
                                                 float	            sideHeight,
                                                 float	            sideDepth,
-                                                in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
                                                 Allocator allocator)
         {
             var absDepth    = math.abs(bounds.Max.z - bounds.Min.z);
@@ -129,9 +130,8 @@ namespace Chisel.Core
                 m1 -= depthVector1;
                 m2 -= depthVector2;
 
-                float2 output;
-                var leftShear	= Intersect(m1, d1, m0, d0, out output) ?  math.dot(d1, (output - (m1 - halfWidth1))) : 0;
-                var rightShear	= Intersect(m1, d1, m2, d2, out output) ? -math.dot(d1, (output - (m1 + halfWidth1))) : 0;
+				var leftShear = Intersect(m1, d1, m0, d0, out float2 output) ? math.dot(d1, (output - (m1 - halfWidth1))) : 0;
+				var rightShear	= Intersect(m1, d1, m2, d2, out output) ? -math.dot(d1, (output - (m1 + halfWidth1))) : 0;
 
                 var transform = float4x4.TRS(lineCenter, // move to center of line
                                               quaternion.LookRotationSafe(depthVector, Vector3.up),	// rotate to align with line
@@ -144,8 +144,7 @@ namespace Chisel.Core
                 var max = bounds.Max;
                 min.x = centerX - halfWidth;
                 max.x = centerX + halfWidth;
-                bounds.Min = min;
-                bounds.Max = max;
+                bounds = MathExtensions.CreateAABB(min: min, max: max);
 
                 var segmentLeftSide  = (!closedLoop && vi2 ==                        1) ? leftSide  : StairsSideType.None;
                 var segmentRightSide = (!closedLoop && vi2 == shapeVertices.Length - 1) ? rightSide : StairsSideType.None;

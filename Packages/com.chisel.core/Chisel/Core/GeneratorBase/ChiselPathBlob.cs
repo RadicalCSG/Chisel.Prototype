@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using Unity.Mathematics;
 
 namespace Chisel.Core
@@ -166,7 +167,7 @@ namespace Chisel.Core
         }
 
 
-        public ChiselBlobArray<Point> segments;
+        public BlobArray<Point> segments;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Point Convert(ChiselPathPoint srcPoint)
@@ -179,10 +180,10 @@ namespace Chisel.Core
             };
         }
 
-        public static ChiselBlobAssetReference<ChiselPathBlob> Convert(ChiselPath path, Allocator allocator)
+        public static BlobAssetReference<ChiselPathBlob> Convert(ChiselPath path, Allocator allocator)
         {
             path.UpgradeIfNecessary();
-            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
+            using (var builder = new BlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<ChiselPathBlob>();
                 var srcControlPoints = path.segments;

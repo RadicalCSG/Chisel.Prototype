@@ -6,6 +6,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Debug = UnityEngine.Debug;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -15,7 +16,7 @@ namespace Chisel.Core
         // Read
         [NoAlias, ReadOnly] public int maxOrder;
         [NoAlias, ReadOnly] public NativeList<IndexOrder>                                  allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
+        [NoAlias, ReadOnly] public NativeList<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
 
         // Read (Re-allocate) / Write
         [NoAlias] public NativeList<BrushPair2> uniqueBrushPairs;
@@ -38,7 +39,7 @@ namespace Chisel.Core
                 int brushNodeOrder0 = brushIndexOrder0.nodeOrder;
 
                 var brushesTouchedByBrush = brushesTouchedByBrushes[brushNodeOrder0];
-                if (brushesTouchedByBrush == ChiselBlobAssetReference<BrushesTouchedByBrush>.Null)
+                if (brushesTouchedByBrush == BlobAssetReference<BrushesTouchedByBrush>.Null)
                     continue;
 
                 ref var intersections = ref brushesTouchedByBrush.Value.brushIntersections;
@@ -59,7 +60,7 @@ namespace Chisel.Core
                 int brushNodeOrder0         = brushIndexOrder0.nodeOrder;
 
                 var brushesTouchedByBrush   = brushesTouchedByBrushes[brushNodeOrder0];
-                if (brushesTouchedByBrush == ChiselBlobAssetReference<BrushesTouchedByBrush>.Null)
+                if (brushesTouchedByBrush == BlobAssetReference<BrushesTouchedByBrush>.Null)
                     continue;
                     
                 ref var intersections = ref brushesTouchedByBrush.Value.brushIntersections;

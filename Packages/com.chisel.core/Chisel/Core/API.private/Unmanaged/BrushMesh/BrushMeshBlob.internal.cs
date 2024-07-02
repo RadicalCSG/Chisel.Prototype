@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
+using Unity.Entities;
 using Unity.Mathematics;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
@@ -51,14 +52,14 @@ namespace Chisel.Core
         }
 
 
-        public ChiselAABB		            localBounds;
+        public AABB                 localBounds;
 
-        public ChiselBlobArray<float3>	    localVertices;
-        public ChiselBlobArray<HalfEdge>	halfEdges;
-        public ChiselBlobArray<int>         halfEdgePolygonIndices;
-        public ChiselBlobArray<Polygon>	    polygons;
-        public ChiselBlobArray<float4>      localPlanes;        // surface planes + edge planes (to reject vertices at sharp plane intersections)
-        public int                          localPlaneCount;    // number of surface planes
+        public BlobArray<float3>    localVertices;
+        public BlobArray<HalfEdge>	halfEdges;
+        public BlobArray<int>       halfEdgePolygonIndices;
+        public BlobArray<Polygon>   polygons;
+        public BlobArray<float4>    localPlanes;        // surface planes + edge planes (to reject vertices at sharp plane intersections)
+        public int                  localPlaneCount;    // number of surface planes
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CalculateHashCode([NoAlias, ReadOnly] ref BrushMeshBlob blob)

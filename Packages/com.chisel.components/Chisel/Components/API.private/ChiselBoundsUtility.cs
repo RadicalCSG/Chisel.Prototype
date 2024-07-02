@@ -13,7 +13,7 @@ namespace Chisel.Components
                 return ChiselHierarchyItem.EmptyBounds;
 
             var modelMatrix		= ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
-            var minMax			= new ChiselAABB { };
+            var minMax			= new AABB { };
             var boundsCount     = 0;
 
             var s_FoundBrushes = HashSetPool<CSGTreeBrush>.Get();
@@ -31,8 +31,8 @@ namespace Chisel.Components
                     float.IsNaN(magnitude))
                 {
                     var center = ((float4)transformation.GetColumn(3)).xyz;
-                    var halfSize = size * 0.5f;
-                    childBounds = new ChiselAABB { Min = center - halfSize, Max = center + halfSize };
+                    var extents = size * 0.5f;
+                    childBounds = new AABB { Center = center, Extents = extents };
                 }
                 if (magnitude != 0)
                 {
@@ -57,7 +57,7 @@ namespace Chisel.Components
                 return ChiselHierarchyItem.EmptyBounds;
 
             var modelMatrix		= ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
-            var minMax			= new ChiselAABB { };
+            var minMax			= new AABB { };
             var boundsCount     = 0;
 
             var s_FoundBrushes = HashSetPool<CSGTreeBrush>.Get();
@@ -74,8 +74,8 @@ namespace Chisel.Components
                     float.IsNaN(magnitude))
                 {
                     var center = ((float4)transformation.GetColumn(3)).xyz;
-                    var halfSize = size * 0.5f;
-                    childBounds = new ChiselAABB { Min = center - halfSize, Max = center + halfSize };
+                    var extents = size * 0.5f;
+                    childBounds = new AABB { Center = center, Extents = extents };
                 }
                 if (magnitude != 0)
                 {

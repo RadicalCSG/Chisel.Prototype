@@ -1,6 +1,7 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
 using UnityEngine;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -8,12 +9,12 @@ namespace Chisel.Core
     public sealed partial class BrushMeshFactory
     {
         public static bool GenerateCapsule(in ChiselCapsule                                   settings,
-                                           in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition,
-                                           out ChiselBlobAssetReference<BrushMeshBlob>                brushMesh,
+                                           in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition,
+                                           out BlobAssetReference<BrushMeshBlob>                brushMesh,
                                            Allocator                                            allocator)
         {
-            brushMesh = ChiselBlobAssetReference<BrushMeshBlob>.Null;
-            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
+            brushMesh = BlobAssetReference<BrushMeshBlob>.Null;
+            using (var builder = new BlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
                 if (!GenerateCapsuleVertices(in settings, in builder, ref root, out var localVertices))
@@ -48,10 +49,10 @@ namespace Chisel.Core
             }
         }
 
-        public static bool GenerateCapsuleVertices(in ChiselCapsule             settings,
-                                                   in ChiselBlobBuilder               builder, 
-                                                   ref BrushMeshBlob            root,
-                                                   out ChiselBlobBuilderArray<float3> localVertices)
+        public static bool GenerateCapsuleVertices(in ChiselCapsule     settings,
+                                                   in BlobBuilder       builder, 
+                                                   ref BrushMeshBlob    root,
+                                                   out BlobBuilderArray<float3> localVertices)
         {
             var haveTopHemisphere		= settings.HaveRoundedTop;
             var haveBottomHemisphere	= settings.HaveRoundedBottom;

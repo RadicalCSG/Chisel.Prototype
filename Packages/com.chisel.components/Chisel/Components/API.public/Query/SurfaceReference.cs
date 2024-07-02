@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using Chisel.Core;
+
+using Unity.Entities;
+
 using UnityEngine;
 
 namespace Chisel.Components
@@ -103,7 +106,7 @@ namespace Chisel.Components
             }
         }
 
-        public ChiselBlobAssetReference<BrushMeshBlob> BrushMesh
+        public BlobAssetReference<BrushMeshBlob> BrushMesh
         {
             get
             {

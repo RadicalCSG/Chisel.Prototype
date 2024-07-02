@@ -1,5 +1,6 @@
 using Unity.Mathematics;
 using Unity.Collections;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -72,9 +73,9 @@ namespace Chisel.Core
         }
 
               
-        public static bool GenerateTorus(NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes, 
+        public static bool GenerateTorus(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, 
                                                 in NativeArray<float3> vertices, int verticalSegments, int horizontalSegments,
-                                                in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
                                                 Allocator allocator)
         {
             var segmentIndices = new NativeArray<int>(2 + verticalSegments, Allocator.Temp);
@@ -89,9 +90,9 @@ namespace Chisel.Core
                 for (int n1 = 1, n0 = 0; n1 < horizontalSegments + 1; n0 = n1, n1++)
                 {
 
-                    brushMeshes[n0] = ChiselBlobAssetReference<BrushMeshBlob>.Null;
+                    brushMeshes[n0] = BlobAssetReference<BrushMeshBlob>.Null;
 
-                    using (var builder = new ChiselBlobBuilder(Allocator.Temp))
+                    using (var builder = new BlobBuilder(Allocator.Temp))
                     {
                         ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
 

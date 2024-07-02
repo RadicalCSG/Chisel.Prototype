@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using Unity.Mathematics;
+
+using UnityEngine;
 
 namespace Chisel.Core
 {
@@ -16,7 +18,7 @@ namespace Chisel.Core
 
         public override void OnUpdate(ref ChiselBoxDefinition definition, Bounds bounds) 
         {
-            definition.settings.bounds = new ChiselAABB { Min = bounds.min, Max = bounds.max }; 
+            definition.settings.bounds = bounds.ToAABB(); 
         }
          
         public override void OnPaint(IChiselHandleRenderer renderer, Bounds bounds)

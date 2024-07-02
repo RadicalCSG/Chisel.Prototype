@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
@@ -46,17 +47,17 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeList<CompactNodeID>    brushIDValues;
 
         // Read/Write
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
-        [NoAlias] public NativeList<ChiselBlobAssetReference<RoutingTable>>                 routingTableCache;
-        [NoAlias] public NativeList<NodeTransformations>                                    transformationCache;
-        [NoAlias] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
-        [NoAlias] public NativeList<ChiselAABB>                                             brushTreeSpaceBoundCache;
-        [NoAlias] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
+        [NoAlias] public NativeList<BlobAssetReference<BasePolygonsBlob>>           basePolygonCache;
+        [NoAlias] public NativeList<BlobAssetReference<RoutingTable>>               routingTableCache;
+        [NoAlias] public NativeList<NodeTransformations>                            transformationCache;
+        [NoAlias] public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>    brushRenderBufferCache;
+        [NoAlias] public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesCache;
+        [NoAlias] public NativeList<BlobAssetReference<BrushTreeSpacePlanes>>       brushTreeSpacePlaneCache;
+        [NoAlias] public NativeList<AABB>                                           brushTreeSpaceBoundCache;
+        [NoAlias] public NativeList<BlobAssetReference<BrushesTouchedByBrush>>      brushesTouchedByBrushCache;
 
         // Write
-        [NoAlias, WriteOnly] public NativeParallelHashSet<IndexOrder>           brushesThatNeedIndirectUpdateHashMap;
+        [NoAlias, WriteOnly] public NativeParallelHashSet<IndexOrder>   brushesThatNeedIndirectUpdateHashMap;
         [NoAlias, WriteOnly] public NativeReference<bool>               needRemappingRef;
 
         public void Execute()
@@ -111,7 +112,7 @@ namespace Chisel.Core
 
                                 var brushTouchedByBrush = brushesTouchedByBrushCache[nodeOrder];
                                 if (!brushTouchedByBrush.IsCreated ||
-                                    brushTouchedByBrush == ChiselBlobAssetReference<BrushesTouchedByBrush>.Null)
+                                    brushTouchedByBrush == BlobAssetReference<BrushesTouchedByBrush>.Null)
                                     continue;
 
                                 ref var brushIntersections = ref brushTouchedByBrush.Value.brushIntersections;

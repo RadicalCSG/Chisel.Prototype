@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Unity.Mathematics;
 using Unity.Collections;
 using UnityEngine;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -24,8 +25,8 @@ namespace Chisel.Core
                                                    float    rotation, 
                                                    int      sides, 
                                                    bool     fitToBounds, 
-                                                   in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
-                                                   out ChiselBlobAssetReference<BrushMeshBlob> brushMesh,
+                                                   in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                   out BlobAssetReference<BrushMeshBlob> brushMesh,
                                                    Allocator allocator)
         {
             return GenerateConicalFrustumSubMesh(new float2(diameter, diameter), topHeight, 
@@ -39,11 +40,11 @@ namespace Chisel.Core
                                                          float                  rotation, 
                                                          int                    segments, 
                                                          bool                   fitToBounds, 
-                                                         in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
-                                                         out ChiselBlobAssetReference<BrushMeshBlob>                brushMesh,
+                                                         in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                         out BlobAssetReference<BrushMeshBlob>                brushMesh,
                                                          Allocator                                            allocator)
         {
-            brushMesh = ChiselBlobAssetReference<BrushMeshBlob>.Null;
+            brushMesh = BlobAssetReference<BrushMeshBlob>.Null;
             if (topHeight > bottomHeight) 
             {
                 { var temp = topHeight; topHeight = bottomHeight; bottomHeight = temp; }
@@ -56,12 +57,12 @@ namespace Chisel.Core
             if (surfaceDefinition.surfaces.Length < segments + 2)
                 return false;
 
-            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
+            using (var builder = new BlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
-                ChiselBlobBuilderArray<float3>                    localVertices;
-                ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge>    halfEdges;
-                ChiselBlobBuilderArray<BrushMeshBlob.Polygon>     polygons;
+				BlobBuilderArray<float3>                    localVertices;
+				BlobBuilderArray<BrushMeshBlob.HalfEdge>    halfEdges;
+				BlobBuilderArray<BrushMeshBlob.Polygon>     polygons;
 
                 // TODO: handle situation where ellipsoid is a line
 
@@ -112,7 +113,7 @@ namespace Chisel.Core
         
         // TODO: could probably figure out "inverse" from direction of topY compared to bottomY
         public static void GetConeFrustumVertices(float topHeight, float2 bottomDiameter, float bottomHeight, float rotation, int segments, 
-                                                  in ChiselBlobBuilder builder, ref BrushMeshBlob root, out ChiselBlobBuilderArray<float3> localVertices, 
+                                                  in BlobBuilder builder, ref BrushMeshBlob root, out BlobBuilderArray<float3> localVertices, 
                                                   bool inverse = false, bool fitToBounds = false)
         {
             var rotate			= quaternion.AxisAngle(new float3(0, 1, 0), math.radians(rotation));
@@ -147,7 +148,7 @@ namespace Chisel.Core
         public static void GetConicalFrustumVertices(float2 topDiameter, float topHeight,
                                                      float2 bottomDiameter, float bottomHeight, 
                                                      float rotation, int segments, 
-                                                     in ChiselBlobBuilder builder, ref BrushMeshBlob root, out ChiselBlobBuilderArray<float3> localVertices, 
+                                                     in BlobBuilder builder, ref BrushMeshBlob root, out BlobBuilderArray<float3> localVertices, 
                                                      bool fitToBounds = false)
         {
             if (topHeight > bottomHeight) 
@@ -193,11 +194,11 @@ namespace Chisel.Core
         }
 
         static void CreateConeSubMesh(int segments, 
-                                      in ChiselBlobBuilderArray<float3>                           localVertices, 
-                                      in ChiselBlobAssetReference<NativeChiselSurfaceDefinition>  surfaceDefinitionBlob, 
-                                      in ChiselBlobBuilder builder, ref BrushMeshBlob root,
-                                      out ChiselBlobBuilderArray<BrushMeshBlob.Polygon>           polygons,
-                                      out ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge>          halfEdges)
+                                      in BlobBuilderArray<float3>                           localVertices, 
+                                      in BlobAssetReference<NativeChiselSurfaceDefinition>  surfaceDefinitionBlob, 
+                                      in BlobBuilder builder, ref BrushMeshBlob root,
+                                      out BlobBuilderArray<BrushMeshBlob.Polygon>           polygons,
+                                      out BlobBuilderArray<BrushMeshBlob.HalfEdge>          halfEdges)
         {
             ref var surfaceDefinition   = ref surfaceDefinitionBlob.Value;
             const int descriptionIndex0 = 0;

@@ -2,6 +2,7 @@ using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
@@ -15,7 +16,7 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public CompactNodeID                                    treeCompactNodeID;
-        [NoAlias, ReadOnly] public NativeReference<ChiselBlobAssetReference<CompactTree>> compactTreeRef;
+        [NoAlias, ReadOnly] public NativeReference<BlobAssetReference<CompactTree>> compactTreeRef;
         [NoAlias, ReadOnly] public NativeList<IndexOrder>                           allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeList<IndexOrder>                           allUpdateBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeList<BrushIntersectWith>                   brushIntersectionsWith;
@@ -23,7 +24,7 @@ namespace Chisel.Core
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushCache;
+        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushCache;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeList<BrushIntersection> scratch_brushIntersection;
@@ -64,11 +65,11 @@ namespace Chisel.Core
             }
         }
 
-        static ChiselBlobAssetReference<BrushesTouchedByBrush> GenerateBrushesTouchedByBrush([NoAlias, ReadOnly] ref CompactTree                 compactTree, 
-                                                                                             [NoAlias, ReadOnly] NativeArray<IndexOrder>         allTreeBrushIndexOrders, 
-                                                                                             IndexOrder brushIndexOrder, CompactNodeID           rootNodeID,
-                                                                                             [NoAlias, ReadOnly] NativeArray<BrushIntersectWith> brushIntersectionsWith, int intersectionOffset, int intersectionCount, 
-                                                                                             [NoAlias] ref NativeList<BrushIntersection>         scratch_brushIntersection)
+        static BlobAssetReference<BrushesTouchedByBrush> GenerateBrushesTouchedByBrush([NoAlias, ReadOnly] ref CompactTree                 compactTree, 
+                                                                                       [NoAlias, ReadOnly] NativeArray<IndexOrder>         allTreeBrushIndexOrders, 
+                                                                                       IndexOrder brushIndexOrder, CompactNodeID           rootNodeID,
+                                                                                       [NoAlias, ReadOnly] NativeArray<BrushIntersectWith> brushIntersectionsWith, int intersectionOffset, int intersectionCount, 
+                                                                                       [NoAlias] ref NativeList<BrushIntersection>         scratch_brushIntersection)
         {
             var brushNodeID     = brushIndexOrder.compactNodeID;            
             var minBrushIDValue = compactTree.minBrushIDValue;
@@ -128,7 +129,7 @@ namespace Chisel.Core
             var totalIntersectionBitsSize   = 16 + (bitset.twoBits.Length * UnsafeUtility.SizeOf<uint>());
             var totalSize                   = totalBrushIntersectionsSize + totalIntersectionBitsSize;
 
-            var builder = new ChiselBlobBuilder(Allocator.Temp, totalSize);
+            var builder = new BlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BrushesTouchedByBrush>();
 
             builder.Construct(ref root.brushIntersections, scratch_brushIntersection);

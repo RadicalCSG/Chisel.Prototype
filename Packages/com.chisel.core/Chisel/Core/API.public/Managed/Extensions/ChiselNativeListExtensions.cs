@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -116,7 +117,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddRange<T>(ref this UnsafeList<T> list, ref ChiselBlobArray<T> elements) where T : unmanaged
+        public static void AddRange<T>(ref this UnsafeList<T> list, ref BlobArray<T> elements) where T : unmanaged
         {
             if (elements.Length == 0)
                 return;
@@ -136,7 +137,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddRange<T>(this NativeList<T> list, ref ChiselBlobArray<T> elements) where T : unmanaged
+        public static void AddRange<T>(this NativeList<T> list, ref BlobArray<T> elements) where T : unmanaged
         {
             if (elements.Length == 0)
                 return;
@@ -146,7 +147,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddRange<T>(this NativeList<T> list, ref ChiselBlobArray<T> elements, int length) where T : unmanaged
+        public static void AddRange<T>(this NativeList<T> list, ref BlobArray<T> elements, int length) where T : unmanaged
         {
             if (length == 0)
                 return;
@@ -186,7 +187,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddRangeNoResize<T>(this NativeList<T> list, ref ChiselBlobArray<T> elements, int length) where T : unmanaged
+        public static void AddRangeNoResize<T>(this NativeList<T> list, ref BlobArray<T> elements, int length) where T : unmanaged
         {
             if (length == 0)
                 return;
@@ -206,7 +207,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddRangeNoResize<T>(this NativeList<T> list, ref ChiselBlobArray<T> elements) where T : unmanaged
+        public static void AddRangeNoResize<T>(this NativeList<T> list, ref BlobArray<T> elements) where T : unmanaged
         {
             if (elements.Length == 0)
                 return;
@@ -355,7 +356,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]//*
-        public static void CopyFrom<T>(this NativeArray<T> dstArray, int dstIndex, ref ChiselBlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
+        public static void CopyFrom<T>(this NativeArray<T> dstArray, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
             if (srcCount <= 0)
                 return;
@@ -375,7 +376,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void CopyFrom<T>(this NativeList<T> dstList, int dstIndex, ref ChiselBlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
+        public static void CopyFrom<T>(this NativeList<T> dstList, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
             if (srcCount == 0)
                 return;
@@ -395,7 +396,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void CopyFrom<T>(this NativeSlice<T> dstSlice, int dstIndex, ref ChiselBlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
+        public static void CopyFrom<T>(this NativeSlice<T> dstSlice, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
             if (srcCount == 0)
                 return;
@@ -634,7 +635,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool Contains<T>(ref this ChiselBlobArray<T> array, T value)
+        public static bool Contains<T>(ref this BlobArray<T> array, T value)
             where T : unmanaged, IEquatable<T>
         {
             for (int i = 0; i < array.Length; i++)

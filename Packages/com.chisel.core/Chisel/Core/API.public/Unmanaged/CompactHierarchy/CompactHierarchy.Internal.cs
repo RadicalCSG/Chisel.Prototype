@@ -1761,7 +1761,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void UpdateBounds(CompactNodeID compactNodeID, ChiselAABB bounds)
+        internal void UpdateBounds(CompactNodeID compactNodeID, AABB bounds)
         {
             ref var nodeRef = ref UnsafeGetChildRefAtInternal(compactNodeID);
             nodeRef.bounds = bounds;
@@ -1795,7 +1795,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ChiselAABB GetBrushBounds(CompactNodeID compactNodeID)
+        internal AABB GetBrushBounds(CompactNodeID compactNodeID)
         {
             if (!IsValidCompactNodeID(compactNodeID))
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
@@ -1808,7 +1808,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ChiselAABB GetBrushBounds(CompactNodeID compactNodeID, float4x4 transformation)
+        internal AABB GetBrushBounds(CompactNodeID compactNodeID, float4x4 transformation)
         {
             if (!IsValidCompactNodeID(compactNodeID))
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));

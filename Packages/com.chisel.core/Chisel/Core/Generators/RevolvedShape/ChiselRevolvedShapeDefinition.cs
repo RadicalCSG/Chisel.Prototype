@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using Unity.Burst;
 using UnitySceneExtensions;
 using UnityEngine;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -24,7 +25,7 @@ namespace Chisel.Core
         public float    startAngle;
         public float    totalAngle;
 
-        [UnityEngine.HideInInspector, NonSerialized] public ChiselBlobAssetReference<ChiselCurve2DBlob>   curveBlob;
+        [UnityEngine.HideInInspector, NonSerialized] public BlobAssetReference<ChiselCurve2DBlob>   curveBlob;
         [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<SegmentVertex>             polygonVerticesList;
         [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<int>                       polygonVerticesSegments;
         [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<float4x4>                  pathMatrices;
@@ -43,9 +44,9 @@ namespace Chisel.Core
             return polygonVerticesSegments.Length * (pathMatrices.Length - 1);
         }
 
-        public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
+        public bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
+            var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
             try
             {
                 generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);

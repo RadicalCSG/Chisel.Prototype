@@ -1,6 +1,7 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
 using UnityEngine;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -8,7 +9,7 @@ namespace Chisel.Core
     public sealed partial class BrushMeshFactory
     {
         // TODO: Fix all overlapping brushes
-        internal static bool GenerateLinearStairsSubMeshes(NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes, int subMeshOffset, in LineairStairsData description, in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        internal static bool GenerateLinearStairsSubMeshes(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, int subMeshOffset, in LineairStairsData description, in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             // TODO: properly assign all materials
 
@@ -151,9 +152,9 @@ namespace Chisel.Core
             return true;
         }
 
-        static ChiselBlobAssetReference<BrushMeshBlob> CreateExtrudedSubMeshBlob([ReadOnly] NativeArray<float3> vertices, float3 extrusion, [ReadOnly] NativeArray<int> indices, ref NativeChiselSurfaceDefinition surfaceDefinition, Allocator allocator)
+        static BlobAssetReference<BrushMeshBlob> CreateExtrudedSubMeshBlob([ReadOnly] NativeArray<float3> vertices, float3 extrusion, [ReadOnly] NativeArray<int> indices, ref NativeChiselSurfaceDefinition surfaceDefinition, Allocator allocator)
         {
-            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
+            using (var builder = new BlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
                 if (BrushMeshFactory.CreateExtrudedSubMesh(vertices, extrusion, indices,
@@ -165,7 +166,7 @@ namespace Chisel.Core
                 {
                     // TODO: eventually remove when it's more battle tested
                     if (!Validate(in localVertices, in halfEdges, in polygons, logErrors: true))
-                        return ChiselBlobAssetReference<BrushMeshBlob>.Null;
+                        return BlobAssetReference<BrushMeshBlob>.Null;
 
                     var localPlanes = builder.Allocate(ref root.localPlanes, polygons.Length);
                     root.localPlaneCount = polygons.Length;
@@ -176,11 +177,11 @@ namespace Chisel.Core
                     root.localBounds = CalculateBounds(in localVertices);
                     return builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
                 } else
-                    return ChiselBlobAssetReference<BrushMeshBlob>.Null;
+                    return BlobAssetReference<BrushMeshBlob>.Null;
             }
         }
 
-        private static void GenerateStairsSide(NativeList<ChiselBlobAssetReference<BrushMeshBlob>> brushMeshes, int startIndex, int stepCount, float minX, float maxX, StairsSideType sideType, in LineairStairsData description, ref NativeChiselSurfaceDefinition surfaceDefinition, in LinearStairsSideData side, Allocator allocator)
+        private static void GenerateStairsSide(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, int startIndex, int stepCount, float minX, float maxX, StairsSideType sideType, in LineairStairsData description, ref NativeChiselSurfaceDefinition surfaceDefinition, in LinearStairsSideData side, Allocator allocator)
         {
             var min = new float3(minX, description.bounds.Max.y - description.treadHeight - description.stepHeight, description.bounds.Min.z + description.stepDepthOffset);
             var max = new float3(maxX, description.bounds.Max.y - description.treadHeight                         , description.bounds.Min.z + description.stepDepthOffset + description.stepDepth);
@@ -1018,7 +1019,7 @@ namespace Chisel.Core
                                         float treadHeight,
                                         float absDepth,
                                         float stepDepthOffset,
-                                        int stepCount, float sideDepth, ChiselAABB bounds, StairsRiserType riserType, float riserDepth, StairsSideType sideType)
+                                        int stepCount, float sideDepth, AABB bounds, StairsRiserType riserType, float riserDepth, StairsSideType sideType)
             {
                 this.enabled = sideType != StairsSideType.None;
 
@@ -1077,7 +1078,7 @@ namespace Chisel.Core
             public StairsSideType leftSideType;
             public StairsSideType rightSideType;
 
-            public ChiselAABB bounds;
+            public AABB bounds;
 
             public bool haveRiser;
 
@@ -1120,7 +1121,7 @@ namespace Chisel.Core
             public LinearStairsSideData leftSideDescription;
             public LinearStairsSideData rightSideDescription;
 
-            public LineairStairsData(ChiselAABB      bounds,
+            public LineairStairsData(AABB            bounds,
                                      float           stepHeight,
                                      float           stepDepth,
                                      float           treadHeight,

@@ -7,6 +7,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Debug = UnityEngine.Debug;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -28,12 +29,12 @@ namespace Chisel.Core
         const float kNormalDotAlignEpsilon      = CSGConstants.kNormalDotAlignEpsilon;
 
         // Read
-        [NoAlias, ReadOnly] public NativeList<BrushPair2>                                  uniqueBrushPairs;
-        [NoAlias, ReadOnly] public NativeList<NodeTransformations>                         transformationCache;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>     brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeList<BrushPair2>                         uniqueBrushPairs;
+        [NoAlias, ReadOnly] public NativeList<NodeTransformations>                transformationCache;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshLookup;
 
         // Write
-        [NoAlias, WriteOnly] public NativeStream.Writer                                     intersectingBrushesStream;
+        [NoAlias, WriteOnly] public NativeStream.Writer                     intersectingBrushesStream;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<int>          intersectingPlaneIndices0;
@@ -58,10 +59,10 @@ namespace Chisel.Core
 
         // TODO: turn into job
         static void GetIntersectingPlanes(IntersectionType                  type,
-                                          [NoAlias] ref ChiselBlobArray<float4>   localPlanes,
+                                          [NoAlias] ref BlobArray<float4>   localPlanes,
                                           int                               localPlaneCount,
-                                          [NoAlias] ref ChiselBlobArray<float3>   vertices, 
-                                          ChiselAABB                        selfBounds, 
+                                          [NoAlias] ref BlobArray<float3>   vertices,
+										  AABB                              selfBounds, 
                                           float4x4                          treeToNodeSpaceInverseTransposed, 
                                           [NoAlias] ref NativeArray<int>    intersectingPlaneIndices, 
                                           [NoAlias] out int                 intersectingPlaneLength,
@@ -302,9 +303,9 @@ namespace Chisel.Core
         }
 
         
-        static void GetLocalAndIndirectPlanes(ref ChiselBlobArray<float4>     inLocalSpacePlanes0,
+        static void GetLocalAndIndirectPlanes(ref BlobArray<float4>     inLocalSpacePlanes0,
                                               ref NativeArray<float4>   outLocalSpacePlanes0, int localSpacePlanes0Length,
-                                              ref ChiselBlobArray<float4>     inLocalSpacePlanes1, float4x4 inversedNode1ToNode0,
+                                              ref BlobArray<float4>     inLocalSpacePlanes1, float4x4 inversedNode1ToNode0,
                                               ref NativeArray<float4>   outLocalSpacePlanes1, int localSpacePlanes1Length,
                                               ref NativeArray<int>      intersectingPlaneIndices0, int intersectingPlanesLength0, 
                                               ref NativeArray<float4>   intersectingLocalSpacePlanes0,
@@ -348,7 +349,7 @@ namespace Chisel.Core
 
         static void FindPlanesIntersectingVertices(ref NativeArray<float3> usedVertices0, int usedVerticesLength0,
                                                    ref NativeArray<int> intersectingPlaneIndices0, int intersectingPlanesLength0,
-                                                   ref ChiselBlobArray<float4> localPlanes,
+                                                   ref BlobArray<float4> localPlanes,
                                                    ref NativeArray<ushort> vertexIntersectionPlanes0, ref NativeArray<int2> vertexIntersectionSegments0, out int vertexIntersectionPlaneCount0)
         {
             vertexIntersectionPlaneCount0 = 0;

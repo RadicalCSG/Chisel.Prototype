@@ -2,6 +2,7 @@ using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
@@ -14,14 +15,14 @@ namespace Chisel.Core
     struct CreateBlobPolygonsBlobsJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                               allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>          brushesTouchedByBrushCache;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>                 brushMeshLookup;
-        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>     treeSpaceVerticesCache;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                         allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<BlobAssetReference<BrushesTouchedByBrush>>          brushesTouchedByBrushCache;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>                 brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>     treeSpaceVerticesCache;
         
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>              basePolygonCache;
+        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BasePolygonsBlob>>              basePolygonCache;
 
 
         // Per thread scratch memory
@@ -82,7 +83,7 @@ namespace Chisel.Core
             }
         }
 
-        bool CopyPolygonToIndices([NoAlias, ReadOnly] ChiselBlobAssetReference<BrushMeshBlob> mesh, [NoAlias, ReadOnly] ref ChiselBlobArray<float3> treeSpaceVertices, int polygonIndex, [NoAlias] HashedVertices hashedTreeSpaceVertices, [NoAlias] NativeArray<Edge> edges, [NoAlias] ref int edgeCount)
+        bool CopyPolygonToIndices([NoAlias, ReadOnly] BlobAssetReference<BrushMeshBlob> mesh, [NoAlias, ReadOnly] ref BlobArray<float3> treeSpaceVertices, int polygonIndex, [NoAlias] HashedVertices hashedTreeSpaceVertices, [NoAlias] NativeArray<Edge> edges, [NoAlias] ref int edgeCount)
         {
             ref var halfEdges   = ref mesh.Value.halfEdges;
             ref var polygon     = ref mesh.Value.polygons[polygonIndex];
@@ -137,7 +138,7 @@ namespace Chisel.Core
             var indexOrder = allUpdateBrushIndexOrders[b];
             int nodeOrder  = indexOrder.nodeOrder;
             
-            if (treeSpaceVerticesCache[nodeOrder] == ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
+            if (treeSpaceVerticesCache[nodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
                 return;
 
             var mesh                    = brushMeshLookup[nodeOrder];
@@ -220,7 +221,7 @@ namespace Chisel.Core
                 if (intersectingNodeOrder < nodeOrder)
                     continue;
 
-                if (treeSpaceVerticesCache[intersectingNodeOrder] == ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
+                if (treeSpaceVerticesCache[intersectingNodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
                     continue;
 
                 // In order, goes through the previous brushes in the tree, 
@@ -244,7 +245,7 @@ namespace Chisel.Core
             var totalVertexSize     = 16 + (hashedTreeSpaceVertices.Length * UnsafeUtility.SizeOf<float3>());
             var totalSize           = totalEdgeSize + totalPolygonSize + totalSurfaceSize + totalVertexSize;
 
-            var builder = new ChiselBlobBuilder(Allocator.Temp, totalSize);
+            var builder = new BlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BasePolygonsBlob>();
             var polygonArray = builder.Allocate(ref root.polygons, totalSurfaceCount);
             builder.Construct(ref root.edges,    edges   , totalEdgeCount);

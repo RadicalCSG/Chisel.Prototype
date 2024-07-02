@@ -1,5 +1,6 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -12,13 +13,13 @@ namespace Chisel.Core
         }
 
 
-        public static ChiselBlobAssetReference<CompactTree> Create(ref CompactHierarchy       compactHierarchy, 
+        public static BlobAssetReference<CompactTree> Create(ref CompactHierarchy       compactHierarchy, 
                                                                    NativeArray<CompactNodeID> nodes, 
                                                                    NativeArray<CompactNodeID> brushes, 
                                                                    CompactNodeID              treeCompactNodeID)
         {
             if (brushes.Length == 0)
-                return ChiselBlobAssetReference<CompactTree>.Null;
+                return BlobAssetReference<CompactTree>.Null;
 
             var minNodeIDValue = int.MaxValue;
             var maxNodeIDValue = 0;
@@ -93,7 +94,7 @@ namespace Chisel.Core
                 using (brushIDValueToOrder)
                 { 
                     if (brushAncestorLegend.Length == 0)
-                        return ChiselBlobAssetReference<CompactTree>.Null;
+                        return BlobAssetReference<CompactTree>.Null;
 
                     // Top-down                    
                     nodeQueue.Add(new CompactTopDownBuilderNode { compactNodeID = treeCompactNodeID, compactHierarchyindex = 0 });
@@ -167,7 +168,7 @@ namespace Chisel.Core
                     using (hierarchyNodes)
                     using (nodeQueue)
                     { 
-                        var builder = new ChiselBlobBuilder(Allocator.Temp);
+                        var builder = new BlobBuilder(Allocator.Temp);
                         ref var root = ref builder.ConstructRoot<CompactTree>();
                         builder.Construct(ref root.compactHierarchy, hierarchyNodes);
                         builder.Construct(ref root.brushAncestorLegend, brushAncestorLegend);

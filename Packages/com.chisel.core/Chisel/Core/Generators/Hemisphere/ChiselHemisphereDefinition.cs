@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Mathematics;
 using UnitySceneExtensions;
 using UnityEngine;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -25,7 +26,7 @@ namespace Chisel.Core
 
 
         #region Generate
-        public ChiselBlobAssetReference<BrushMeshBlob> GenerateMesh(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.GenerateHemisphere(diameterXYZ,
                                                      rotation, // TODO: useless?

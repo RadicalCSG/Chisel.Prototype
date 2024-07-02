@@ -1,6 +1,7 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
 using UnityEngine;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -10,12 +11,12 @@ namespace Chisel.Core
         public static bool GenerateStadium(float width, float height, float length,
                                                   float topLength,     int topSides,
                                                   float bottomLength,  int bottomSides, 
-                                                  in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
-                                                  out ChiselBlobAssetReference<BrushMeshBlob> brushMesh,
+                                                  in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                  out BlobAssetReference<BrushMeshBlob> brushMesh,
                                                   Allocator allocator)
         {
-            brushMesh = ChiselBlobAssetReference<BrushMeshBlob>.Null;
-            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
+            brushMesh = BlobAssetReference<BrushMeshBlob>.Null;
+            using (var builder = new BlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
                 ref var surfaceDefinition = ref surfaceDefinitionBlob.Value;
@@ -52,9 +53,9 @@ namespace Chisel.Core
         public static bool GenerateStadiumVertices(float diameter, float height, float length,
                                                    float topLength, int topSides,
                                                    float bottomLength, int bottomSides, 
-                                                   in ChiselBlobBuilder               builder,
+                                                   in BlobBuilder builder,
                                                    ref BrushMeshBlob            root,
-                                                   out ChiselBlobBuilderArray<float3> vertices)
+                                                   out BlobBuilderArray<float3> vertices)
         {
             var haveRoundedTop      = (topLength    > 0) && (topSides    > 1);
             var haveRoundedBottom   = (bottomLength > 0) && (bottomSides > 1);

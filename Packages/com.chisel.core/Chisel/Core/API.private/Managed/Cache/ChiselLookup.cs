@@ -3,6 +3,8 @@ using System.Runtime.CompilerServices;
 using UnityEngine;
 using Unity.Jobs;
 using Unity.Collections;
+using Unity.Entities;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
@@ -16,17 +18,17 @@ namespace Chisel.Core
             public NativeArray<ChiselLayerParameters>       parameters;
             public NativeParallelHashSet<int>                       allKnownBrushMeshIndices;
 
-            public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
-            public NativeList<ChiselBlobAssetReference<RoutingTable>>                 routingTableCache;
+            public NativeList<BlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
+            public NativeList<BlobAssetReference<RoutingTable>>                 routingTableCache;
             public NativeList<NodeTransformations>                              transformationCache;
-            public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
-            public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
-            public NativeList<ChiselAABB>                                       brushTreeSpaceBoundCache;
-            public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
-            public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
+            public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
+            public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
+            public NativeList<AABB>                                             brushTreeSpaceBoundCache;
+            public NativeList<BlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
+            public NativeList<BlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
             
-            public NativeParallelHashMap<CompactNodeID, ChiselAABB>                                     brushTreeSpaceBoundLookup;
-            public NativeParallelHashMap<CompactNodeID, ChiselBlobAssetReference<ChiselBrushRenderBuffer>>    brushRenderBufferLookup;
+            public NativeParallelHashMap<CompactNodeID, AABB>                   brushTreeSpaceBoundLookup;
+            public NativeParallelHashMap<CompactNodeID, BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferLookup;
 
             internal void Initialize()
             {
@@ -34,18 +36,18 @@ namespace Chisel.Core
                 allKnownBrushMeshIndices    = new NativeParallelHashSet<int>(1000, Allocator.Persistent);
 
                 // TODO: not used??
-                brushTreeSpaceBoundLookup   = new NativeParallelHashMap<CompactNodeID, ChiselAABB>(1000, Allocator.Persistent);
-                brushRenderBufferLookup     = new NativeParallelHashMap<CompactNodeID, ChiselBlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
+                brushTreeSpaceBoundLookup   = new NativeParallelHashMap<CompactNodeID, AABB>(1000, Allocator.Persistent);
+                brushRenderBufferLookup     = new NativeParallelHashMap<CompactNodeID, BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
 
                 // brushIndex
-                basePolygonCache            = new NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>(1000, Allocator.Persistent);
-                brushTreeSpaceBoundCache    = new NativeList<ChiselAABB>(1000, Allocator.Persistent);
-                treeSpaceVerticesCache      = new NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>(1000, Allocator.Persistent);
-                routingTableCache           = new NativeList<ChiselBlobAssetReference<RoutingTable>>(1000, Allocator.Persistent);
-                brushTreeSpacePlaneCache    = new NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>(1000, Allocator.Persistent);
-                brushesTouchedByBrushCache  = new NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>(1000, Allocator.Persistent);
+                basePolygonCache            = new NativeList<BlobAssetReference<BasePolygonsBlob>>(1000, Allocator.Persistent);
+                brushTreeSpaceBoundCache    = new NativeList<AABB>(1000, Allocator.Persistent);
+                treeSpaceVerticesCache      = new NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>(1000, Allocator.Persistent);
+                routingTableCache           = new NativeList<BlobAssetReference<RoutingTable>>(1000, Allocator.Persistent);
+                brushTreeSpacePlaneCache    = new NativeList<BlobAssetReference<BrushTreeSpacePlanes>>(1000, Allocator.Persistent);
+                brushesTouchedByBrushCache  = new NativeList<BlobAssetReference<BrushesTouchedByBrush>>(1000, Allocator.Persistent);
                 transformationCache         = new NativeList<NodeTransformations>(1000, Allocator.Persistent);
-                brushRenderBufferCache      = new NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
+                brushRenderBufferCache      = new NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
 
                 parameters                  = new NativeArray<ChiselLayerParameters>(SurfaceLayers.ParameterCount, Allocator.Persistent);
                 for (int i = 0; i < parameters.Length; i++)
@@ -293,7 +295,7 @@ namespace Chisel.Core
     public struct RefCountedBrushMeshBlob
     {
         public int refCount;
-        public ChiselBlobAssetReference<BrushMeshBlob> brushMeshBlob;
+        public BlobAssetReference<BrushMeshBlob> brushMeshBlob;
     }
 
     internal sealed class ChiselMeshLookup : ScriptableObject

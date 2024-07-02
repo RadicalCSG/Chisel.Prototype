@@ -2,6 +2,7 @@ using System;
 using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Burst;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -11,43 +12,30 @@ namespace Chisel.Core
     {
         public readonly static ChiselBox DefaultValues = new ChiselBox
         {
-            bounds = new ChiselAABB { Min = new float3(-0.5f), Max = new float3(0.5f) }
+            bounds = new AABB { Center = float3.zero, Extents = new float3(0.5f) }
         };
 
-        public ChiselAABB bounds;
+        public AABB bounds;
 
 
         #region Properties
-        public float3 Min { get { return bounds.Min; } set { bounds.Min = value; } }
-        public float3 Max { get { return bounds.Max; } set { bounds.Max = value; } }
+        public float3 Min { get { return bounds.Min; } set { bounds = MathExtensions.CreateAABB(min: Min, max: Max); } }
+        public float3 Max { get { return bounds.Max; } set { bounds = MathExtensions.CreateAABB(min: Min, max: Max); } }
         public float3 Size
         {
             get { return bounds.Max - bounds.Min; }
-            set
-            {
-                var newSize = math.abs(value);
-                var halfSize = newSize * 0.5f;
-                var center = this.Center;
-                bounds.Min = center - halfSize;
-                bounds.Max = center + halfSize;
-            }
+            set { bounds.Extents = math.abs(value) * 0.5f; }
         }
 
         public float3 Center
         {
             get { return (bounds.Max + bounds.Min) * 0.5f; }
-            set
-            {
-                var newSize = math.abs(Size);
-                var halfSize = newSize * 0.5f;
-                bounds.Min = value - halfSize;
-                bounds.Max = value + halfSize;
-            }
+            set { bounds.Center = value; }
         }
         #endregion
 
         #region Generate
-        public ChiselBlobAssetReference<BrushMeshBlob> GenerateMesh(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.CreateBox(bounds.Min, bounds.Max,
                                             in surfaceDefinitionBlob,
@@ -70,8 +58,9 @@ namespace Chisel.Core
         public void Validate()
         {
             var originalBox = bounds;
-            bounds.Min = math.min(originalBox.Min, originalBox.Max);
-            bounds.Max = math.max(originalBox.Min, originalBox.Max);
+            var min = math.min(originalBox.Min, originalBox.Max);
+            var max = math.max(originalBox.Min, originalBox.Max);
+            originalBox = MathExtensions.CreateAABB(min: min, max: max);
         }
 
         const string kDimensionCannotBeZero = "One or more dimensions of the box is zero, which is not allowed";

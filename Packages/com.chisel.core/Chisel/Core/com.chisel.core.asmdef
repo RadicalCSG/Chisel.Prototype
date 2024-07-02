@@ -3,6 +3,7 @@
     "rootNamespace": "Chisel.Core",
     "references": [
         "Unity.Burst",
+        "Unity.Entities",
         "Unity.Collections",
         "Unity.Mathematics",
         "Unity.Mathematics.Extensions",

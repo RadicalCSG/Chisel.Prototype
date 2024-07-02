@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using Unity.Burst;
 using UnitySceneExtensions;
 using UnityEngine;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -57,7 +58,7 @@ namespace Chisel.Core
 
         // TODO: add all spiral stairs improvements to linear stairs
 
-        public ChiselAABB bounds;
+        public AABB bounds;
 
         [DistanceValue] public float	stepHeight;
         [DistanceValue] public float	stepDepth;
@@ -91,29 +92,16 @@ namespace Chisel.Core
         public float	Height { get { return BoundsSize.y; } set { var size = BoundsSize; size.y = value; BoundsSize = size; } }
         public float	Depth  { get { return BoundsSize.z; } set { var size = BoundsSize; size.z = value; BoundsSize = size; } }
 
-        public float3 Center
+		public float3 BoundsSize
+		{
+			get { return bounds.Max - bounds.Min; }
+			set { bounds.Extents = math.abs(value) * 0.5f; }
+		}
+
+		public float3 Center
         {
             get { return (bounds.Max + bounds.Min) * 0.5f; }
-            set
-            {
-                var newSize = math.abs(BoundsSize);
-                var halfSize = newSize * 0.5f;
-                bounds.Min = value - halfSize;
-                bounds.Max = value + halfSize;
-            }
-        }
-
-        public float3 BoundsSize
-        {
-            get { return bounds.Max - bounds.Min; }
-            set
-            {
-                var newSize = math.abs(value);
-                var halfSize = newSize * 0.5f;
-                var center = this.Center;
-                bounds.Min = center - halfSize;
-                bounds.Max = center + halfSize;
-            }
+            set { bounds.Center = value; }
         }
         
         public float3   BoundsMin   { get { return math.min(bounds.Min, bounds.Max); } }
@@ -156,9 +144,9 @@ namespace Chisel.Core
             return description.subMeshCount;
         }
 
-        public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
+        public bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
+            var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
             try
             {
                 generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);

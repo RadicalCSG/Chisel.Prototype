@@ -6,6 +6,7 @@ using Unity.Burst;
 using System.Runtime.CompilerServices;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
+using Unity.Entities;
 
 
 namespace Chisel.Core
@@ -85,7 +86,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static unsafe bool IsOutsidePlanes([NoAlias, ReadOnly] ref ChiselBlobArray<float4> planes, float4 localVertex)
+        static unsafe bool IsOutsidePlanes([NoAlias, ReadOnly] ref BlobArray<float4> planes, float4 localVertex)
         {
             for (int n = 0; n < planes.Length; n++)
             {
@@ -141,7 +142,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static EdgeCategory CategorizeEdge(Edge edge, [NoAlias, ReadOnly] ref ChiselBlobArray<float4> planes, [NoAlias, ReadOnly] in NativeArray<Edge> edges, [NoAlias, ReadOnly] in HashedVertices vertices)
+        internal static EdgeCategory CategorizeEdge(Edge edge, [NoAlias, ReadOnly] ref BlobArray<float4> planes, [NoAlias, ReadOnly] in NativeArray<Edge> edges, [NoAlias, ReadOnly] in HashedVertices vertices)
         {
             // TODO: use something more clever than looping through all edges
             if (IndexOf(in edges, edge, out bool inverted) != -1)
@@ -154,7 +155,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static EdgeCategory CategorizeEdge(Edge edge, [NoAlias, ReadOnly] ref ChiselBlobArray<float4> planes, [NoAlias, ReadOnly] in UnsafeList<Edge> edges, [NoAlias, ReadOnly] in HashedVertices vertices)
+        internal static EdgeCategory CategorizeEdge(Edge edge, [NoAlias, ReadOnly] ref BlobArray<float4> planes, [NoAlias, ReadOnly] in UnsafeList<Edge> edges, [NoAlias, ReadOnly] in HashedVertices vertices)
         {
             // TODO: use something more clever than looping through all edges
             if (IndexOf(in edges, edge, out bool inverted) != -1)

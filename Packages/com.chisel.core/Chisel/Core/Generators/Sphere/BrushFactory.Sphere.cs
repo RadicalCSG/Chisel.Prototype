@@ -1,18 +1,19 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
 using UnityEngine;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
     public sealed partial class BrushMeshFactory
     {
         public static bool GenerateSphere(float3 diameterXYZ, float offsetY, float rotation, bool generateFromCenter, int horzSegments, int vertSegments,
-                                          in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
-                                          out ChiselBlobAssetReference<BrushMeshBlob> brushMesh,
+                                          in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                          out BlobAssetReference<BrushMeshBlob> brushMesh,
                                           Allocator allocator)
         {
-            brushMesh = ChiselBlobAssetReference<BrushMeshBlob>.Null;
-            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
+            brushMesh = BlobAssetReference<BrushMeshBlob>.Null;
+            using (var builder = new BlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
                 ref var surfaceDefinition = ref surfaceDefinitionBlob.Value;
@@ -49,11 +50,11 @@ namespace Chisel.Core
         
         public static bool CreateSphere(float3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, 
                                         ref NativeChiselSurfaceDefinition surfaceDefinition,
-                                        in ChiselBlobBuilder builder,
+                                        in BlobBuilder builder,
                                         ref BrushMeshBlob root,
-                                        out ChiselBlobBuilderArray<float3>                 vertices,
-                                        out ChiselBlobBuilderArray<BrushMeshBlob.Polygon>  polygons,
-                                        out ChiselBlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges)
+                                        out BlobBuilderArray<float3>                 vertices,
+                                        out BlobBuilderArray<BrushMeshBlob.Polygon>  polygons,
+                                        out BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges)
         {
             vertices = default;
             polygons = default;
@@ -158,7 +159,7 @@ namespace Chisel.Core
         }
 
         public static void CreateSphereVertices(float3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, 
-                                                in ChiselBlobBuilder builder, ref BrushMeshBlob root, out ChiselBlobBuilderArray<float3> vertices)
+                                                in BlobBuilder builder, ref BrushMeshBlob root, out BlobBuilderArray<float3> vertices)
         {
             var vertexCount = (horzSegments * (vertSegments - 1)) + 2;
 

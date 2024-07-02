@@ -2,6 +2,7 @@ using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -35,7 +36,7 @@ namespace Chisel.Core
         public IndexOrder                                   brushIndexOrder; //<- TODO: if we use NodeOrder maybe this could be explicit based on the order in array?
         public int                                          brushSurfaceOffset;
         public int                                          brushSurfaceCount;
-        public ChiselBlobAssetReference<ChiselBrushRenderBuffer>  brushRenderBuffer;
+        public BlobAssetReference<ChiselBrushRenderBuffer>  brushRenderBuffer;
     }
 
     [BurstCompile(CompileSynchronously = true)]
@@ -65,8 +66,8 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public int meshQueryLength;
-        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                           allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>    brushRenderBufferCache;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                   allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>  brushRenderBufferCache;
 
         // Write
         [NoAlias, WriteOnly] public NativeList<BrushData>.ParallelWriter brushRenderData;
@@ -109,7 +110,7 @@ namespace Chisel.Core
 
         public uint             surfaceHash;
         public uint             geometryHash;
-        public ChiselBlobAssetReference<ChiselBrushRenderBuffer> brushRenderBuffer;
+        public BlobAssetReference<ChiselBrushRenderBuffer> brushRenderBuffer;
     }
 
     [BurstCompile(CompileSynchronously = true)]
@@ -774,7 +775,7 @@ namespace Chisel.Core
                     indexVertexOffset += sourceVertexCount;
                 }
                 
-                var srcBounds   = new ChiselAABB { Min = min, Max = max };
+                var srcBounds   = MathExtensions.CreateAABB(min: min, max: max);
                 var center      = (Vector3)((srcBounds.Max + srcBounds.Min) * 0.5f);
                 var size        = (Vector3)(srcBounds.Max - srcBounds.Min);
                 var dstBounds   = new Bounds(center, size);
@@ -862,7 +863,7 @@ namespace Chisel.Core
             Debug.Assert(indexOffset == totalIndexCount);
             Debug.Assert(vertexOffset == totalVertexCount);
 
-            var srcBounds   = new ChiselAABB { Min = min, Max = max };
+            var srcBounds   = MathExtensions.CreateAABB(min: min, max: max);
             var center      = (Vector3)((srcBounds.Max + srcBounds.Min) * 0.5f);
             var size        = (Vector3)(srcBounds.Max - srcBounds.Min);
             var dstBounds   = new Bounds(center, size);

@@ -6,6 +6,7 @@ using Unity.Burst;
 using Unity.Mathematics;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -193,9 +194,9 @@ namespace Chisel.Core
             return SafeDispose(runInParallel, ref list, currentHandle);
         }
 
-        public static JobHandle DisposeDeep<T>(ref this NativeList<ChiselBlobAssetReference<T>> list, JobHandle dependencies) where T : unmanaged, IDisposable { return DisposeDeep(true, ref list, dependencies); }
+        public static JobHandle DisposeDeep<T>(ref this NativeList<BlobAssetReference<T>> list, JobHandle dependencies) where T : unmanaged, IDisposable { return DisposeDeep(true, ref list, dependencies); }
 
-        public static JobHandle DisposeDeep<T>(bool runInParallel, ref NativeList<ChiselBlobAssetReference<T>> list, JobHandle dependencies)
+        public static JobHandle DisposeDeep<T>(bool runInParallel, ref NativeList<BlobAssetReference<T>> list, JobHandle dependencies)
             where T : unmanaged, IDisposable
         {
             var disposeListJob = new DisposeListChildrenBlobAssetReferenceJob<T> { list = list };
@@ -229,7 +230,7 @@ namespace Chisel.Core
 
         public static JobHandle DisposeDeep<T>(ref this NativeReference<T> reference, JobHandle dependencies) where T : unmanaged, IDisposable { return DisposeDeep<T>(true, ref reference, dependencies); }
 
-        public static JobHandle DisposeDeep<T>(bool runInParallel, ref NativeReference<ChiselBlobAssetReference<T>> reference, JobHandle dependencies) 
+        public static JobHandle DisposeDeep<T>(bool runInParallel, ref NativeReference<BlobAssetReference<T>> reference, JobHandle dependencies) 
             where T : unmanaged
         {
             var disposeListJob = new DisposeReferenceChildBlobAssetReferenceJob<T> { reference = reference };
@@ -248,7 +249,7 @@ namespace Chisel.Core
             return default;
         }
 
-        public static JobHandle DisposeDeep<T>(ref NativeReference<ChiselBlobAssetReference<T>> reference, JobHandle dependencies) where T : unmanaged { return DisposeDeep(true, ref reference, dependencies); }
+        public static JobHandle DisposeDeep<T>(ref NativeReference<BlobAssetReference<T>> reference, JobHandle dependencies) where T : unmanaged { return DisposeDeep(true, ref reference, dependencies); }
 
     }
 
@@ -336,7 +337,7 @@ namespace Chisel.Core
     {
         // Read / Write
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeList<ChiselBlobAssetReference<T>> list;
+        [NoAlias] public NativeList<BlobAssetReference<T>> list;
 
         public void Execute()
         {
@@ -375,7 +376,7 @@ namespace Chisel.Core
     {
         // Read / Write
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeReference<ChiselBlobAssetReference<T>> reference;
+        [NoAlias] public NativeReference<BlobAssetReference<T>> reference;
 
         public void Execute()
         {

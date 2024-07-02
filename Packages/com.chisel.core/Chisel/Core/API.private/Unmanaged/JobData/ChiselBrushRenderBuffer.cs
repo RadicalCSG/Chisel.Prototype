@@ -1,4 +1,6 @@
 using System;
+
+using Unity.Entities;
 using Unity.Mathematics;
 
 namespace Chisel.Core
@@ -16,9 +18,9 @@ namespace Chisel.Core
 
         public float3           min, max;  
 
-        public ChiselBlobArray<Int32>		    indices;
-        public ChiselBlobArray<RenderVertex>	renderVertices;
-        public ChiselBlobArray<float3>	    colliderVertices;
+        public BlobArray<Int32>		    indices;
+        public BlobArray<RenderVertex>	renderVertices;
+        public BlobArray<float3>	    colliderVertices;
     };
 
     struct ChiselQuerySurface
@@ -35,14 +37,14 @@ namespace Chisel.Core
 
     struct ChiselQuerySurfaces
     {
-        public CompactNodeID                        brushNodeID;
-        public ChiselBlobArray<ChiselQuerySurface>  surfaces;
+        public CompactNodeID                    brushNodeID;
+        public BlobArray<ChiselQuerySurface>    surfaces;
     }
 
     struct ChiselBrushRenderBuffer
     {
-        public ChiselBlobArray<ChiselSurfaceRenderBuffer> surfaces;
-        public ChiselBlobArray<ChiselQuerySurfaces>       querySurfaces;
+        public BlobArray<ChiselSurfaceRenderBuffer> surfaces;
+        public BlobArray<ChiselQuerySurfaces>       querySurfaces;
         public int surfaceOffset;
         public int surfaceCount;
     };

@@ -4,6 +4,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
 using UnityEngine;
 using UnitySceneExtensions;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -17,8 +18,8 @@ namespace Chisel.Core
 
         public int curveSegments;
 
-        [UnityEngine.HideInInspector, NonSerialized] public ChiselBlobAssetReference<ChiselPathBlob>     pathBlob;
-        [UnityEngine.HideInInspector, NonSerialized] public ChiselBlobAssetReference<ChiselCurve2DBlob>  curveBlob;
+        [UnityEngine.HideInInspector, NonSerialized] public BlobAssetReference<ChiselPathBlob>     pathBlob;
+        [UnityEngine.HideInInspector, NonSerialized] public BlobAssetReference<ChiselCurve2DBlob>  curveBlob;
 
         [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<SegmentVertex>            polygonVerticesList;
         [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<int>                      polygonVerticesSegments;
@@ -36,12 +37,12 @@ namespace Chisel.Core
             return polygonVerticesSegments.Length;
         }
 
-        public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
+        public bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
             // TODO: maybe just not bother with pathblob and just convert to path-matrices directly?
             using (var pathMatrices = pathBlob.Value.GetUnsafeMatrices(Allocator.Temp))
             {
-                var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
+                var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
                 try
                 {
                     generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);

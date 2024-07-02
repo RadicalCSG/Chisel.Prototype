@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Burst;
 using UnityEngine;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -48,7 +49,7 @@ namespace Chisel.Core
         #endregion
 
         #region Generate
-        public ChiselBlobAssetReference<BrushMeshBlob> GenerateMesh(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.GenerateStadium(width, height, length,
                                                   topLength, topSides,

@@ -1,44 +1,12 @@
-using System;
-using System.Runtime.CompilerServices;
 using Unity.Jobs;
 using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Collections.LowLevel.Unsafe;
-using UnityEngine.Profiling;
+using Unity.Profiling;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
-    // TODO: put somewhere else
-    struct ProfilerSample : IDisposable
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ProfilerSample(string name) { Profiler.BeginSample(name); }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Dispose() { Profiler.EndSample(); }
-    }
-
-    // TODO: reorder nodes in backend every time a node is added/removed
-    //          this ensures 
-    //              everything is sequential in memory
-    //              we don't have gaps between nodes
-    //              order is always predictable
-
-    // TODO: ensure we only update exactly what we need, and nothing more
-
-    // TODO: figure out exactly what materials/physicMaterials we have per tree
-    //          => give each material a unique index per tree.
-    //          => cache this material index 
-    //          => have a lookup table for material <=> material index
-    //       have array of lists for indices, colliderVertices, renderVertices
-    //       our number of meshes is now 100% predictable
-    //       instead of storing indices, vertices etc. in blobs, store these in these lists, per query
-    //       at beginning of frame remove all invalidated pieces of these lists and pack them
-    //       when adding new geometry, add them at the end
-    //       then figure out if its worth it to keep these lists "in order"
-
-    // TODO: use parameter1Count/parameter2Count for submeshes etc. just pre-allocate blocks for all possible meshes/submeshes
-
     partial class CompactHierarchyManager
     {
         const bool runInParallelDefault = true;
@@ -46,7 +14,7 @@ namespace Chisel.Core
         #region Update / Rebuild
         internal static bool UpdateAllTreeMeshes(FinishMeshUpdate finishMeshUpdates, out JobHandle allTrees)
         {
-            allTrees = default(JobHandle);
+            allTrees = default;
             bool needUpdate = false;
 
             CompactHierarchyManager.GetAllTrees(instance.allTrees);
@@ -67,7 +35,7 @@ namespace Chisel.Core
                 return false;
 
 
-            using (var profilerSample = new ProfilerSample("UpdateTreeMeshes"))
+            using (new ProfilerMarker("UpdateTreeMeshes").Auto())
             {
                 allTrees = TreeUpdate.ScheduleTreeMeshJobs(finishMeshUpdates, instance.updatedTrees);
                 return true;
@@ -120,12 +88,12 @@ namespace Chisel.Core
                 public NativeList<BrushIntersectionLoop>    outputSurfaces;
                 public NativeArray<int2>                    outputSurfacesRange;
 
-                public NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>   brushMeshLookup;
+                public NativeArray<BlobAssetReference<BrushMeshBlob>>   brushMeshLookup;
 
                 public NativeArray<UnsafeList<float3>>      loopVerticesLookup;
 
                 public NativeReference<int>                 surfaceCountRef;
-                public NativeReference<ChiselBlobAssetReference<CompactTree>> compactTreeRef;
+                public NativeReference<BlobAssetReference<CompactTree>> compactTreeRef;
                 public NativeReference<bool>                needRemappingRef;
 
                 public VertexBufferContents                 vertexBufferContents;
@@ -146,12 +114,12 @@ namespace Chisel.Core
                 public NativeList<ChiselMeshUpdate>         debugHelperMeshes;
                 public NativeList<ChiselMeshUpdate>         renderMeshes;
 
-                public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>             basePolygonDisposeList;
-                public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesDisposeList;
-                public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushDisposeList;
-                public NativeList<ChiselBlobAssetReference<RoutingTable>>                 routingTableDisposeList;
-                public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneDisposeList;
-                public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferDisposeList;
+                public NativeList<BlobAssetReference<BasePolygonsBlob>>             basePolygonDisposeList;
+                public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesDisposeList;
+                public NativeList<BlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushDisposeList;
+                public NativeList<BlobAssetReference<RoutingTable>>                 routingTableDisposeList;
+                public NativeList<BlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneDisposeList;
+                public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferDisposeList;
             }
             internal TemporariesStruct Temporaries;
             #endregion
@@ -249,7 +217,7 @@ namespace Chisel.Core
                 //
                 #region Schedule Generator Jobs
                 var generatorPoolJobHandle = default(JobHandle);
-                using (var profilerSample = new ProfilerSample("CSG_ScheduleGeneratorJobPool"))
+                using (new ProfilerMarker("CSG_ScheduleGeneratorJobPool").Auto())
                 { 
                     var runInParallel = runInParallelDefault;
                     generatorPoolJobHandle = GeneratorJobPoolManager.ScheduleJobs(runInParallel);
@@ -267,7 +235,7 @@ namespace Chisel.Core
                 //
                 #region Find all modified, valid trees
                 var treeUpdateLength = 0;
-                using (var profilerSample = new ProfilerSample("CSG_TreeUpdate_Allocate"))
+                using (new ProfilerMarker("CSG_TreeUpdate_Allocate").Auto())
                 {
                     if (s_TreeUpdates == null || s_TreeUpdates.Length < trees.Length)
                         s_TreeUpdates = new TreeUpdate[trees.Length];
@@ -299,7 +267,7 @@ namespace Chisel.Core
                 // Initialize our data structures
                 //
                 #region Find all modified, valid trees
-                using (var profilerSample = new ProfilerSample("CSG_TreeUpdate_Initialize"))
+                using (new ProfilerMarker("CSG_TreeUpdate_Initialize").Auto())
                 {
                     for (int t = 0; t < treeUpdateLength; t++)
                     {
@@ -316,7 +284,7 @@ namespace Chisel.Core
                         // Preprocess the data we need to perform CSG, figure what needs to be updated in the tree (might be nothing)
                         //
                         #region Schedule cache update jobs
-                        using (var profilerSample = new ProfilerSample("CSG_RunMeshInitJobs"))
+                        using (new ProfilerMarker("CSG_RunMeshInitJobs").Auto())
                         {
                             for (int t = 0; t < treeUpdateLength; t++)
                             {
@@ -330,7 +298,7 @@ namespace Chisel.Core
                         // At this point we need previously scheduled jobs to be completed so we know what actually needs to be updated, if anything
                         //
                         #region Schedule CSG jobs
-                        using (var profilerSample = new ProfilerSample("CSG_RunMeshUpdateJobs"))
+                        using (new ProfilerMarker("CSG_RunMeshUpdateJobs").Auto())
                         {
                             // Reverse order since we sorted the trees from big to small & small trees are more likely to have already completed
                             for (int t = treeUpdateLength - 1; t >= 0; t--)
@@ -379,7 +347,7 @@ namespace Chisel.Core
                         // TODO: get rid of these crazy legacy flags
                         #region Clear tree/brush status flags 
                         ref var compactHierarchy = ref CompactHierarchyManager.GetHierarchy(treeUpdate.treeCompactNodeID);
-                        using (var profilerSample = new ProfilerSample("CSG_ClearFlags"))
+                        using (new ProfilerMarker("CSG_ClearFlags").Auto())
                         {
                             compactHierarchy.ClearAllStatusFlags(treeUpdate.treeCompactNodeID);
                             for (int b = 0; b < treeUpdate.brushCount; b++)
@@ -402,7 +370,7 @@ namespace Chisel.Core
                         #region Finish Mesh Updates
                         if (finishMeshUpdates != null)
                         {
-                            using (var profilerSample = new ProfilerSample("CSG_FinishMeshUpdates"))
+                            using (new ProfilerMarker("CSG_FinishMeshUpdates").Auto())
                             {
                                 var usedMeshCount = finishMeshUpdates(treeUpdate.tree, ref treeUpdate.Temporaries.vertexBufferContents,
                                                                       ref treeUpdate.Temporaries.meshDataArray,
@@ -437,7 +405,7 @@ namespace Chisel.Core
                     #region Free temporaries
                     // TODO: most of these disposes can be scheduled before we complete and write to the meshes, 
                     // so that these disposes can happen at the same time as the mesh updates in finishMeshUpdates
-                    using (var profilerSample = new ProfilerSample("CSG_FreeTemporaries"))
+                    using (new ProfilerMarker("CSG_FreeTemporaries").Auto())
                     {
                         for (int t = 0; t < treeUpdateLength; t++)
                         {
@@ -509,7 +477,7 @@ namespace Chisel.Core
 
                 Temporaries.nodeIDValueToNodeOrderOffsetRef = new NativeReference<int>(defaultAllocator);
                 Temporaries.surfaceCountRef                 = new NativeReference<int>(defaultAllocator);
-                Temporaries.compactTreeRef                  = new NativeReference<ChiselBlobAssetReference<CompactTree>>(defaultAllocator);
+                Temporaries.compactTreeRef                  = new NativeReference<BlobAssetReference<CompactTree>>(defaultAllocator);
                 Temporaries.needRemappingRef                = new NativeReference<bool>(defaultAllocator);
 
                 Temporaries.uniqueBrushPairs                = new NativeList<BrushPair2>(brushCount * 256, defaultAllocator);
@@ -525,7 +493,7 @@ namespace Chisel.Core
                 Temporaries.outputSurfacesRange             = new NativeArray<int2>(brushCount, defaultAllocator);
                 Temporaries.brushIntersectionsWithRange     = new NativeArray<int2>(brushCount, defaultAllocator);
                 Temporaries.nodeIDValueToNodeOrder          = new NativeList<int>(brushCount, defaultAllocator);
-                Temporaries.brushMeshLookup                 = new NativeArray<ChiselBlobAssetReference<BrushMeshBlob>>(brushCount, defaultAllocator);
+                Temporaries.brushMeshLookup                 = new NativeArray<BlobAssetReference<BrushMeshBlob>>(brushCount, defaultAllocator);
 
                 Temporaries.brushBrushIntersections         = new NativeArray<UnsafeList<BrushIntersectWith>>(brushCount, defaultAllocator);
 
@@ -585,12 +553,12 @@ namespace Chisel.Core
                 if (chiselLookupValues.brushesTouchedByBrushCache.Length < newBrushCount)
                     chiselLookupValues.brushesTouchedByBrushCache.Resize(newBrushCount, NativeArrayOptions.ClearMemory);
 
-                Temporaries.basePolygonDisposeList             = new NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>(chiselLookupValues.basePolygonCache.Length, defaultAllocator);
-                Temporaries.treeSpaceVerticesDisposeList       = new NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>(chiselLookupValues.treeSpaceVerticesCache.Length, defaultAllocator);
-                Temporaries.brushesTouchedByBrushDisposeList   = new NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>(chiselLookupValues.brushesTouchedByBrushCache.Length, defaultAllocator);
-                Temporaries.routingTableDisposeList            = new NativeList<ChiselBlobAssetReference<RoutingTable>>(chiselLookupValues.routingTableCache.Length, defaultAllocator);
-                Temporaries.brushTreeSpacePlaneDisposeList     = new NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>(chiselLookupValues.brushTreeSpacePlaneCache.Length, defaultAllocator);
-                Temporaries.brushRenderBufferDisposeList       = new NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>(chiselLookupValues.brushRenderBufferCache.Length, defaultAllocator);
+                Temporaries.basePolygonDisposeList             = new NativeList<BlobAssetReference<BasePolygonsBlob>>(chiselLookupValues.basePolygonCache.Length, defaultAllocator);
+                Temporaries.treeSpaceVerticesDisposeList       = new NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>(chiselLookupValues.treeSpaceVerticesCache.Length, defaultAllocator);
+                Temporaries.brushesTouchedByBrushDisposeList   = new NativeList<BlobAssetReference<BrushesTouchedByBrush>>(chiselLookupValues.brushesTouchedByBrushCache.Length, defaultAllocator);
+                Temporaries.routingTableDisposeList            = new NativeList<BlobAssetReference<RoutingTable>>(chiselLookupValues.routingTableCache.Length, defaultAllocator);
+                Temporaries.brushTreeSpacePlaneDisposeList     = new NativeList<BlobAssetReference<BrushTreeSpacePlanes>>(chiselLookupValues.brushTreeSpacePlaneCache.Length, defaultAllocator);
+                Temporaries.brushRenderBufferDisposeList       = new NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>(chiselLookupValues.brushRenderBufferCache.Length, defaultAllocator);
 
                 #endregion
             }
@@ -604,7 +572,7 @@ namespace Chisel.Core
                 ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobCache;
                 {
                     #region Build Lookup Tables
-                    using (var profilerSample = new ProfilerSample("Job_BuildLookupTablesJob"))
+                    using (new ProfilerMarker("Job_BuildLookupTablesJob").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var buildLookupTablesJob = new BuildLookupTablesJob
@@ -631,7 +599,7 @@ namespace Chisel.Core
                     #endregion
 
                     #region CacheRemapping
-                    using (var profilerSample = new ProfilerSample("Job_CacheRemappingJob"))
+                    using (new ProfilerMarker("Job_CacheRemappingJob").Auto())
                     {
                         const bool runInParallel = false;// runInParallelDefault;
                         // TODO: update "previous siblings" when something with an intersection operation has been modified
@@ -684,7 +652,7 @@ namespace Chisel.Core
                     #endregion
 
                     #region Update BrushID Values
-                    using (var profilerSample = new ProfilerSample("Job_UpdateBrushIDValuesJob"))
+                    using (new ProfilerMarker("Job_UpdateBrushIDValuesJob").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var updateBrushIDValuesJob = new UpdateBrushIDValuesJob
@@ -705,7 +673,7 @@ namespace Chisel.Core
                     #endregion
 
                     #region Find Modified Brushes
-                    using (var profilerSample = new ProfilerSample("Job_FindModifiedBrushesJob"))
+                    using (new ProfilerMarker("Job_FindModifiedBrushesJob").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         Temporaries.transformTreeBrushIndicesList.Clear();
@@ -744,7 +712,7 @@ namespace Chisel.Core
                     #endregion
 
                     #region Invalidate Brushes
-                    using (var profilerSample = new ProfilerSample("Job_InvalidateBrushesJob"))
+                    using (new ProfilerMarker("Job_InvalidateBrushesJob").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var invalidateBrushesJob = new InvalidateBrushesJob
@@ -778,7 +746,7 @@ namespace Chisel.Core
                     #endregion
 
                     #region Update BrushMesh IDs
-                    using (var profilerSample = new ProfilerSample("Job_UpdateBrushMeshIDsJob"))
+                    using (new ProfilerMarker("Job_UpdateBrushMeshIDsJob").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var updateBrushMeshIDsJob = new UpdateBrushMeshIDsJob
@@ -824,7 +792,7 @@ namespace Chisel.Core
                     #region Prepare
 
                     #region Update Transformations
-                    using (var profilerSample = new ProfilerSample("Job_UpdateTransformationsJob"))
+                    using (new ProfilerMarker("Job_UpdateTransformationsJob").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var updateTransformationsJob = new UpdateTransformationsJob
@@ -847,7 +815,7 @@ namespace Chisel.Core
                     #endregion
 
                     #region Build CSG Tree
-                    using (var profilerSample = new ProfilerSample("Job_BuildCompactTreeJob"))
+                    using (new ProfilerMarker("Job_BuildCompactTreeJob").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var buildCompactTreeJob = new BuildCompactTreeJob
@@ -874,7 +842,7 @@ namespace Chisel.Core
 
                     #region Update BrushMeshBlob Lookup table
                     // Create lookup table for all brushMeshBlobs, based on the node order in the tree
-                    using (var profilerSample = new ProfilerSample("Job_FillBrushMeshBlobLookupJob"))
+                    using (new ProfilerMarker("Job_FillBrushMeshBlobLookupJob").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var fillBrushMeshBlobLookupJob = new FillBrushMeshBlobLookupJob
@@ -901,7 +869,7 @@ namespace Chisel.Core
 
                     #region Invalidate outdated caches
                     // Invalidate outdated caches for all modified brushes
-                    using (var profilerSample = new ProfilerSample("Job_InvalidateBrushCacheJob"))
+                    using (new ProfilerMarker("Job_InvalidateBrushCacheJob").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var invalidateBrushCacheJob = new InvalidateBrushCacheJob
@@ -940,7 +908,7 @@ namespace Chisel.Core
 
                     #region Fixup brush cache data order
                     // Fix up brush order index in cache data (ordering of brushes may have changed)
-                    using (var profilerSample = new ProfilerSample("Job_FixupBrushCacheIndicesJob"))
+                    using (new ProfilerMarker("Job_FixupBrushCacheIndicesJob").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var fixupBrushCacheIndicesJob = new FixupBrushCacheIndicesJob
@@ -967,7 +935,7 @@ namespace Chisel.Core
 
                     #region Update brush tree space vertices and bounds
                     // Create tree space vertices from local vertices + transformations & an AABB for each brush that has been modified
-                    using (var profilerSample = new ProfilerSample("Job_CreateTreeSpaceVerticesAndBoundsJob"))
+                    using (new ProfilerMarker("Job_CreateTreeSpaceVerticesAndBoundsJob").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         // TODO: should only do this once at creation time, part of brushMeshBlob? store with brush component itself
@@ -1004,7 +972,7 @@ namespace Chisel.Core
 
                     #region Update intersection pairs
                     // Find all pairs of brushes that intersect, for those brushes that have been modified
-                    using (var profilerSample = new ProfilerSample("Job_FindAllBrushIntersectionPairs"))
+                    using (new ProfilerMarker("Job_FindAllBrushIntersectionPairs").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         // TODO: only change when brush or any touching brush has been added/removed or changes operation/order
@@ -1040,7 +1008,7 @@ namespace Chisel.Core
 
                     #region Update list of brushes that touch brushes
                     // Find all brushes that touch the brushes that have been modified
-                    using (var profilerSample = new ProfilerSample("Job_FindUniqueIndirectBrushIntersections"))
+                    using (new ProfilerMarker("Job_FindUniqueIndirectBrushIntersections").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         // TODO: optimize, use hashed grid
@@ -1063,7 +1031,7 @@ namespace Chisel.Core
 
                     #region Invalidate indirectly outdated caches (when brush touches a brush that has changed)
                     // Invalidate the cache for the brushes that have been indirectly modified (touch a brush that has changed)
-                    using (var profilerSample = new ProfilerSample("Job_InvalidateBrushCache_Indirect"))
+                    using (new ProfilerMarker("Job_InvalidateBrushCache_Indirect").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var invalidateIndirectBrushCacheJob = new InvalidateIndirectBrushCacheJob
@@ -1094,7 +1062,7 @@ namespace Chisel.Core
 
                     #region Fixup indirectly brush cache data order (when brush touches a brush that has changed)
                     // Create tree space vertices from local vertices + transformations & an AABB for each brush that has been indirectly modified
-                    using (var profilerSample = new ProfilerSample("Job_CreateTreeSpaceVerticesAndBounds_Indirect"))
+                    using (new ProfilerMarker("Job_CreateTreeSpaceVerticesAndBounds_Indirect").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var createTreeSpaceVerticesAndBoundsJob = new CreateTreeSpaceVerticesAndBoundsJob
@@ -1132,7 +1100,7 @@ namespace Chisel.Core
 
                     #region Update intersection pairs (when brush touches a brush that has changed)
                     // Find all pairs of brushes that intersect, for those brushes that have been indirectly modified
-                    using (var profilerSample = new ProfilerSample("Job_FindAllBrushIntersectionPairs_Indirect"))
+                    using (new ProfilerMarker("Job_FindAllBrushIntersectionPairs_Indirect").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         // TODO: optimize, use hashed grid
@@ -1163,7 +1131,7 @@ namespace Chisel.Core
 
                     #region Update list of brushes that touch brushes (when brush touches a brush that has changed)
                     // Add brushes that need to be indirectly updated to our list of brushes that need updates
-                    using (var profilerSample = new ProfilerSample("Job_AddIndirectUpdatedBrushesToListAndSort"))
+                    using (new ProfilerMarker("Job_AddIndirectUpdatedBrushesToListAndSort").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var addIndirectUpdatedBrushesToListAndSortJob = new AddIndirectUpdatedBrushesToListAndSortJob
@@ -1188,7 +1156,7 @@ namespace Chisel.Core
 
                     #region Gather all brush intersections
                     // Gather all found pairs of brushes that intersect with each other and cache them
-                    using (var profilerSample = new ProfilerSample("Job_GatherAndStoreBrushIntersections"))
+                    using (new ProfilerMarker("Job_GatherAndStoreBrushIntersections").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var gatherBrushIntersectionsJob = new GatherBrushIntersectionPairsJob
@@ -1244,7 +1212,7 @@ namespace Chisel.Core
 
                     #region Determine Intersection Surfaces
                     // Find all pairs of brush intersections for each brush
-                    using (var profilerSample = new ProfilerSample("Job_PrepareBrushPairIntersections"))
+                    using (new ProfilerMarker("Job_PrepareBrushPairIntersections").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var findBrushPairsJob = new FindBrushPairsJob
@@ -1292,7 +1260,7 @@ namespace Chisel.Core
                                 ref JobHandles.intersectingBrushesStreamJobHandle));
                     }
 
-                    using (var profilerSample = new ProfilerSample("Job_GenerateBasePolygonLoops"))
+                    using (new ProfilerMarker("Job_GenerateBasePolygonLoops").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         // TODO: should only do this once at creation time, part of brushMeshBlob? store with brush component itself
@@ -1317,7 +1285,7 @@ namespace Chisel.Core
                                 ref JobHandles.basePolygonCacheJobHandle));
                     }
 
-                    using (var profilerSample = new ProfilerSample("Job_UpdateBrushTreeSpacePlanes"))
+                    using (new ProfilerMarker("Job_UpdateBrushTreeSpacePlanes").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         // TODO: should only do this at creation time + when moved / store with brush component itself
@@ -1340,7 +1308,7 @@ namespace Chisel.Core
                                 ref JobHandles.brushTreeSpacePlaneCacheJobHandle));
                     }
 
-                    using (var profilerSample = new ProfilerSample("Job_CreateIntersectionLoops"))
+                    using (new ProfilerMarker("Job_CreateIntersectionLoops").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         NativeCollection.ScheduleEnsureCapacity(runInParallel, ref Temporaries.outputSurfaces, Temporaries.surfaceCountRef,
@@ -1377,7 +1345,7 @@ namespace Chisel.Core
                         NativeCollection.ScheduleDispose(runInParallel, ref Temporaries.intersectingBrushesStream, currentJobHandle);
                     }
 
-                    using (var profilerSample = new ProfilerSample("Job_GatherOutputSurfaces"))
+                    using (new ProfilerMarker("Job_GatherOutputSurfaces").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var gatherOutputSurfacesJob = new GatherOutputSurfacesJob
@@ -1396,7 +1364,7 @@ namespace Chisel.Core
                                 ref JobHandles.outputSurfacesRangeJobHandle));
                     }
 
-                    using (var profilerSample = new ProfilerSample("Job_FindLoopOverlapIntersections"))
+                    using (new ProfilerMarker("Job_FindLoopOverlapIntersections").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         NativeCollection.ScheduleConstruct(runInParallel, out Temporaries.dataStream1, Temporaries.allUpdateBrushIndexOrders,
@@ -1445,7 +1413,7 @@ namespace Chisel.Core
                     //
 
                     #region Merge vertices
-                    using (var profilerSample = new ProfilerSample("Job_MergeTouchingBrushVerticesIndirect"))
+                    using (new ProfilerMarker("Job_MergeTouchingBrushVerticesIndirect").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         // TODO: should only try to merge the vertices beyond the original mesh vertices (the intersection vertices)
@@ -1475,7 +1443,7 @@ namespace Chisel.Core
                     //
 
                     #region Perform CSG     
-                    using (var profilerSample = new ProfilerSample("Job_UpdateBrushCategorizationTables"))
+                    using (new ProfilerMarker("Job_UpdateBrushCategorizationTables").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         // TODO: only update when brush or any touching brush has been added/removed or changes operation/order                    
@@ -1499,7 +1467,7 @@ namespace Chisel.Core
                                 ref JobHandles.routingTableCacheJobHandle));
                     }
 
-                    using (var profilerSample = new ProfilerSample("Job_PerformCSG"))
+                    using (new ProfilerMarker("Job_PerformCSG").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         NativeCollection.ScheduleConstruct(runInParallel, out Temporaries.dataStream2, Temporaries.allUpdateBrushIndexOrders,
@@ -1545,7 +1513,7 @@ namespace Chisel.Core
                     //
 
                     #region Triangulate Surfaces
-                    using (var profilerSample = new ProfilerSample("Job_GenerateSurfaceTriangles"))
+                    using (new ProfilerMarker("Job_GenerateSurfaceTriangles").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var generateSurfaceTrianglesJob = new GenerateSurfaceTrianglesJob
@@ -1580,7 +1548,7 @@ namespace Chisel.Core
                     //
 
                     #region Find all generated brush specific geometry
-                    using (var profilerSample = new ProfilerSample("Job_FindBrushRenderBuffers"))
+                    using (new ProfilerMarker("Job_FindBrushRenderBuffers").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         NativeCollection.ScheduleEnsureCapacity(runInParallel, ref Temporaries.brushRenderData, Temporaries.allTreeBrushIndexOrders,
@@ -1612,7 +1580,7 @@ namespace Chisel.Core
                     #endregion
 
                     #region Allocate sub meshes
-                    using (var profilerSample = new ProfilerSample("Job_AllocateSubMeshes"))
+                    using (new ProfilerMarker("Job_AllocateSubMeshes").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var allocateSubMeshesJob = new AllocateSubMeshesJob
@@ -1636,7 +1604,7 @@ namespace Chisel.Core
                     #endregion
 
                     #region Prepare sub sections
-                    using (var profilerSample = new ProfilerSample("Job_PrepareSubSections"))
+                    using (new ProfilerMarker("Job_PrepareSubSections").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var prepareSubSectionsJob = new PrepareSubSectionsJob
@@ -1659,7 +1627,7 @@ namespace Chisel.Core
                     #endregion
 
                     #region Sort surfaces
-                    using (var profilerSample = new ProfilerSample("Job_SortSurfaces"))
+                    using (new ProfilerMarker("Job_SortSurfaces").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var sortSurfacesParallelJob = new SortSurfacesParallelJob
@@ -1696,7 +1664,7 @@ namespace Chisel.Core
                     #endregion
 
                     #region Allocate vertex buffers
-                    using (var profilerSample = new ProfilerSample("Job_AllocateVertexBuffers"))
+                    using (new ProfilerMarker("Job_AllocateVertexBuffers").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var allocateVertexBuffersJob = new AllocateVertexBuffersJob
@@ -1717,7 +1685,7 @@ namespace Chisel.Core
                     #endregion
 
                     #region Generate mesh descriptions
-                    using (var profilerSample = new ProfilerSample("Job_GenerateMeshDescription"))
+                    using (new ProfilerMarker("Job_GenerateMeshDescription").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var generateMeshDescriptionJob = new GenerateMeshDescriptionJob
@@ -1743,7 +1711,7 @@ namespace Chisel.Core
                     JobHandles.parameterCountsJobHandle = default;
 
                     #region Create Meshes
-                    using (var profilerSample = new ProfilerSample("Mesh.AllocateWritableMeshData"))
+                    using (new ProfilerMarker("Mesh.AllocateWritableMeshData").Auto())
                     {
                         var meshAllocations = 0;
                         for (int m = 0; m < Temporaries.meshQueries.Length; m++)
@@ -1774,7 +1742,7 @@ namespace Chisel.Core
                             Temporaries.meshDatas.Add(Temporaries.meshDataArray[i]);
                     }
 
-                    using (var profilerSample = new ProfilerSample("Job_CopyToMeshes"))
+                    using (new ProfilerMarker("Job_CopyToMeshes").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var assignMeshesJob = new AssignMeshesJob
@@ -1878,7 +1846,7 @@ namespace Chisel.Core
                     //
 
                     #region Store cached values back into cache (by node Index)
-                    using (var profilerSample = new ProfilerSample("Job_StoreToCache"))
+                    using (new ProfilerMarker("Job_StoreToCache").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var storeToCacheJob = new StoreToCacheJob
@@ -1903,7 +1871,7 @@ namespace Chisel.Core
                     #endregion
 
                     #region Create wireframes for all new/modified brushes
-                    using (var profilerSample = new ProfilerSample("Job_UpdateBrushOutline"))
+                    using (new ProfilerMarker("Job_UpdateBrushOutline").Auto())
                     {
                         const bool runInParallel = runInParallelDefault;
                         var updateBrushOutlineJob = new UpdateBrushOutlineJob

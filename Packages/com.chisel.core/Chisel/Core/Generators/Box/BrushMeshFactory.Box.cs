@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Unity.Mathematics;
 using Unity.Collections;
 using UnityEngine;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -21,12 +22,12 @@ namespace Chisel.Core
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CreateBox(float3 min, float3 max, 
-                                     in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
-                                     out ChiselBlobAssetReference<BrushMeshBlob> brushMesh,
+                                     in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
+                                     out BlobAssetReference<BrushMeshBlob> brushMesh,
                                      Allocator allocator)
         {
-            brushMesh = ChiselBlobAssetReference<BrushMeshBlob>.Null;
-            if (surfaceDefinition == ChiselBlobAssetReference<NativeChiselSurfaceDefinition>.Null)
+            brushMesh = BlobAssetReference<BrushMeshBlob>.Null;
+            if (surfaceDefinition == BlobAssetReference<NativeChiselSurfaceDefinition>.Null)
                 return false;
 
             ref var surfaces = ref surfaceDefinition.Value.surfaces;
@@ -49,7 +50,7 @@ namespace Chisel.Core
             var vertex6 = new float3(max.x, max.y, min.z);
             var vertex7 = new float3(max.x, max.y, max.z);
 
-            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
+            using (var builder = new BlobBuilder(Allocator.Temp))
             {
                 const int kTotalVertices    = 8;
                 const int kTotalHalfEdges   = 24;
@@ -211,7 +212,7 @@ namespace Chisel.Core
                 localPlanes[polygon4] = new float4( 0f,  1f,  0f, -max.y);
                 localPlanes[polygon5] = new float4( 0f,  0f,  1f, -max.z);
                 
-                root.localBounds = new ChiselAABB { Min = min, Max = max };
+                root.localBounds = MathExtensions.CreateAABB(min: min, max: max);
                 brushMesh = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
                 return true;
             }
@@ -219,7 +220,7 @@ namespace Chisel.Core
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ChiselBlobAssetReference<BrushMeshBlob> CreateBox(float3 vertex0,
+        public static BlobAssetReference<BrushMeshBlob> CreateBox(float3 vertex0,
                                                                   float3 vertex1,
                                                                   float3 vertex2,
                                                                   float3 vertex3,
@@ -227,17 +228,17 @@ namespace Chisel.Core
                                                                   float3 vertex5,
                                                                   float3 vertex6,
                                                                   float3 vertex7,
-                                                                  in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
+                                                                  in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
                                                                   Allocator allocator)
         {
-            if (surfaceDefinition == ChiselBlobAssetReference<NativeChiselSurfaceDefinition>.Null)
-                return ChiselBlobAssetReference<BrushMeshBlob>.Null;
+            if (surfaceDefinition == BlobAssetReference<NativeChiselSurfaceDefinition>.Null)
+                return BlobAssetReference<BrushMeshBlob>.Null;
 
             ref var surfaces = ref surfaceDefinition.Value.surfaces;
             if (surfaces.Length < 6)
-                return ChiselBlobAssetReference<BrushMeshBlob>.Null;
+                return BlobAssetReference<BrushMeshBlob>.Null;
 
-            using (var builder = new ChiselBlobBuilder(Allocator.Temp))
+            using (var builder = new BlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
                 var localVertices           = builder.Allocate(ref root.localVertices,           8);

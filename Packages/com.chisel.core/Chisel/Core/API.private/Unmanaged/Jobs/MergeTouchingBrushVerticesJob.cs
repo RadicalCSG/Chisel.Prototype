@@ -2,6 +2,7 @@ using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
@@ -15,11 +16,11 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<ChiselBlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
 
         // Read/Write
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>>        treeSpaceVerticesArray;
+        [NoAlias] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>        treeSpaceVerticesArray;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] HashedVertices mergeVertices;
@@ -30,10 +31,10 @@ namespace Chisel.Core
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
 
             var brushIntersectionsBlob = brushesTouchedByBrushes[brushNodeOrder];
-            if (brushIntersectionsBlob == ChiselBlobAssetReference<BrushesTouchedByBrush>.Null)
+            if (brushIntersectionsBlob == BlobAssetReference<BrushesTouchedByBrush>.Null)
                 return;
             var treeSpaceVerticesBlob = treeSpaceVerticesArray[brushIndexOrder.nodeOrder];
-            if (treeSpaceVerticesBlob == ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
+            if (treeSpaceVerticesBlob == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
                 return;
             ref var vertices  = ref treeSpaceVerticesBlob.Value.treeSpaceVertices;
 
@@ -68,9 +69,9 @@ namespace Chisel.Core
     struct MergeTouchingBrushVerticesIndirectJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                           allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>      brushesTouchedByBrushCache;
-        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesArray;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                     allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<BlobAssetReference<BrushesTouchedByBrush>>      brushesTouchedByBrushCache;
+        [NoAlias, ReadOnly] public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesArray;
 
         // Read Write
         [NativeDisableParallelForRestriction]
@@ -85,7 +86,7 @@ namespace Chisel.Core
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
 
             var brushIntersectionsBlob = brushesTouchedByBrushCache[brushNodeOrder];
-            if (brushIntersectionsBlob == ChiselBlobAssetReference<BrushesTouchedByBrush>.Null)
+            if (brushIntersectionsBlob == BlobAssetReference<BrushesTouchedByBrush>.Null)
                 return;
             
             var vertices = loopVerticesLookup[brushIndexOrder.nodeOrder];

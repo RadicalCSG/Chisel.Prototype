@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using Unity.Burst;
 using UnitySceneExtensions;
 using UnityEngine;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -100,9 +101,9 @@ namespace Chisel.Core
             return RequiredSubMeshCount;
         }
 
-        public bool GenerateNodes(ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
+        public bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            var generatedBrushMeshes = new NativeList<ChiselBlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
+            var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
             try
             {
                 generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);

@@ -2,12 +2,13 @@
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using Unity.Mathematics;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
     public struct NativeChiselSurfaceDefinition
     {
-        public ChiselBlobArray<NativeChiselSurface> surfaces;
+        public BlobArray<NativeChiselSurface> surfaces;
     }
 
     [Serializable]

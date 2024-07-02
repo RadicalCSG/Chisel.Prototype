@@ -3,8 +3,8 @@ using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using Unity.Jobs;
-using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
@@ -21,14 +21,14 @@ namespace Chisel.Core
         }
 
         [NativeDisableUnsafePtrRestriction]
-        [NoAlias, ReadOnly] public CompactHierarchy*                                            compactHierarchyPtr;
-        [NoAlias, ReadOnly] public NativeReference<bool>                                        needRemappingRef;
-        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                       rebuildTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushesTouchedByBrush>>  brushesTouchedByBrushCache;
-        [NoAlias, ReadOnly] public NativeList<CompactNodeID>                                    brushes;
-        [NoAlias, ReadOnly] public int                                                          brushCount;
-        [NoAlias, ReadOnly] public NativeList<int>                                              nodeIDValueToNodeOrder;
-        [NoAlias, ReadOnly] public NativeReference<int>                                         nodeIDValueToNodeOrderOffsetRef;
+        [NoAlias, ReadOnly] public CompactHierarchy*                                      compactHierarchyPtr;
+        [NoAlias, ReadOnly] public NativeReference<bool>                                  needRemappingRef;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                 rebuildTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<BlobAssetReference<BrushesTouchedByBrush>>  brushesTouchedByBrushCache;
+        [NoAlias, ReadOnly] public NativeList<CompactNodeID>                              brushes;
+        [NoAlias, ReadOnly] public int                                                    brushCount;
+        [NoAlias, ReadOnly] public NativeList<int>                                        nodeIDValueToNodeOrder;
+        [NoAlias, ReadOnly] public NativeReference<int>                                   nodeIDValueToNodeOrderOffsetRef;
 
         // Write
         [NoAlias, WriteOnly] public NativeParallelHashSet<IndexOrder>   brushesThatNeedIndirectUpdateHashMap;
@@ -52,7 +52,7 @@ namespace Chisel.Core
 
                 var brushTouchedByBrush = brushesTouchedByBrushCache[nodeOrder];
                 if (!brushTouchedByBrush.IsCreated ||
-                    brushTouchedByBrush == ChiselBlobAssetReference<BrushesTouchedByBrush>.Null)
+                    brushTouchedByBrush == BlobAssetReference<BrushesTouchedByBrush>.Null)
                     continue;
 
                 ref var brushIntersections = ref brushTouchedByBrush.Value.brushIntersections;

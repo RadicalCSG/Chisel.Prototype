@@ -1,4 +1,6 @@
 ﻿using System;
+
+using Unity.Entities;
 using Unity.Mathematics;
 
 namespace Chisel.Core
@@ -32,9 +34,9 @@ namespace Chisel.Core
 
     struct BasePolygonsBlob
     {
-        public ChiselBlobArray<BasePolygon>   polygons;
-        public ChiselBlobArray<Edge>          edges;
-        public ChiselBlobArray<float3>        vertices;
-        public ChiselBlobArray<BaseSurface>   surfaces;
+        public BlobArray<BasePolygon>   polygons;
+        public BlobArray<Edge>          edges;
+        public BlobArray<float3>        vertices;
+        public BlobArray<BaseSurface>   surfaces;
     }
 }

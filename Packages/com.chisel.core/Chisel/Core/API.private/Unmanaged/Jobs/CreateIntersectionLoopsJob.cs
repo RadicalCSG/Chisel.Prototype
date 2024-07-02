@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using Debug = UnityEngine.Debug;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -21,8 +22,8 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeList<BrushPair2> uniqueBrushPairs;
 
         // Read
-        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushTreeSpacePlanes>>       brushTreeSpacePlaneCache;
-        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesCache;
+        [NoAlias, ReadOnly] public NativeList<BlobAssetReference<BrushTreeSpacePlanes>>       brushTreeSpacePlaneCache;
+        [NoAlias, ReadOnly] public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesCache;
         [NoAlias, ReadOnly] public NativeStream.Reader                                  intersectingBrushesStream;
 
         // Write

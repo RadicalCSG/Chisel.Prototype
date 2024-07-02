@@ -2,13 +2,14 @@
     "name": "com.chisel.editor",
     "rootNamespace": "",
     "references": [
+        "Unity.Entities",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Mathematics.Extensions",
         "com.chisel.core",
         "com.chisel.components",
         "com.scene.handle.extensions.editor",
-        "com.scene.handle.extensions.runtime",
-        "Unity.Mathematics",
-        "Unity.Mathematics.Extensions",
-        "Unity.Collections"
+        "com.scene.handle.extensions.runtime"
     ],
     "includePlatforms": [
         "Editor"

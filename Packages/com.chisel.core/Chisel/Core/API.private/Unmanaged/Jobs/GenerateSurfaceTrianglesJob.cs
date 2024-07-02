@@ -9,6 +9,7 @@ using Vector3 = UnityEngine.Vector3;
 using Quaternion = UnityEngine.Quaternion;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -17,16 +18,16 @@ namespace Chisel.Core
     {
         // Read
         // 'Required' for scheduling with index count
-        [NoAlias, ReadOnly] public NativeList<IndexOrder>                                   allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<IndexOrder>                           allUpdateBrushIndexOrders;
         
-        [NoAlias, ReadOnly] public NativeList<ChiselBlobAssetReference<BasePolygonsBlob>>   basePolygonCache;
-        [NoAlias, ReadOnly] public NativeList<NodeTransformations>                          transformationCache;
-        [NoAlias, ReadOnly] public NativeStream.Reader                                      input;        
-        [NoAlias, ReadOnly] public NativeArray<MeshQuery>                                   meshQueries;
+        [NoAlias, ReadOnly] public NativeList<BlobAssetReference<BasePolygonsBlob>> basePolygonCache;
+        [NoAlias, ReadOnly] public NativeList<NodeTransformations>                  transformationCache;
+        [NoAlias, ReadOnly] public NativeStream.Reader                              input;        
+        [NoAlias, ReadOnly] public NativeArray<MeshQuery>                           meshQueries;
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeList<ChiselBlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
+        [NoAlias] public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>    brushRenderBufferCache;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float3>               surfaceColliderVertices;
@@ -166,7 +167,7 @@ namespace Chisel.Core
             NativeCollectionHelpers.EnsureCapacityAndClear(ref loops, maxLoops);
             NativeCollectionHelpers.EnsureCapacityAndClear(ref surfaceIndexList, maxIndices);
 
-            var builder = new ChiselBlobBuilder(Allocator.Temp, 4096);
+            var builder = new BlobBuilder(Allocator.Temp, 4096);
             ref var root = ref builder.ConstructRoot<ChiselBrushRenderBuffer>();
             var surfaceRenderBuffers = builder.Allocate(ref root.surfaces, surfaceLoopIndices.Length);
 

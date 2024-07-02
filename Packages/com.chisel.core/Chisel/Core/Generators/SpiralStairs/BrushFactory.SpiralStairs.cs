@@ -1,5 +1,6 @@
 using Unity.Mathematics;
 using Unity.Collections;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
@@ -8,9 +9,9 @@ namespace Chisel.Core
     {
         // TODO: create helper method to cut brushes, use that instead of intersection + subtraction brushes
         // TODO: create spiral sides support
-        public static bool GenerateSpiralStairs(NativeList<ChiselBlobAssetReference<BrushMeshBlob>>        brushMeshes, 
+        public static bool GenerateSpiralStairs(NativeList<BlobAssetReference<BrushMeshBlob>>        brushMeshes, 
                                                 ref ChiselSpiralStairs                               definition, 
-                                                in ChiselBlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
                                                 Allocator                                            allocator)
         {
             const bool fitToBounds = false;

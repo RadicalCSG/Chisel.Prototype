@@ -1,4 +1,7 @@
 ﻿using System;
+
+using Unity.Entities;
+
 using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core
@@ -182,8 +185,8 @@ namespace Chisel.Core
 
     struct BrushesTouchedByBrush
     {
-        public ChiselBlobArray<BrushIntersection> brushIntersections;
-        public ChiselBlobArray<uint>              intersectionBits;
+        public BlobArray<BrushIntersection> brushIntersections;
+        public BlobArray<uint>              intersectionBits;
         public int BitCount;
         public int BitOffset;
 

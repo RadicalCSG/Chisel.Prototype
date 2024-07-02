@@ -12,7 +12,7 @@ namespace Chisel.Components
         public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
 
         #region Properties
-        public ChiselAABB Bounds
+        public AABB Bounds
         {
             get { return definition.settings.bounds; }
             set { if (math.all(value.Min == definition.settings.bounds.Min) && math.all(value.Max == definition.settings.bounds.Max)) return; definition.settings.bounds = value; OnValidateState(); }

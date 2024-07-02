@@ -4,6 +4,7 @@ using Unity.Burst;
 using Unity.Burst.CompilerServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 
@@ -411,7 +412,7 @@ namespace Chisel.Core
             m_Vertices->AddRangeNoResize(*otherHashedVertices.m_Vertices);
         }
 
-        public HashedVertices([ReadOnly] ref ChiselBlobArray<float3> uniqueVertices, Allocator allocator = Allocator.Persistent)
+        public HashedVertices([ReadOnly] ref BlobArray<float3> uniqueVertices, Allocator allocator = Allocator.Persistent)
             : this(uniqueVertices.Length, allocator)
         {
             // Add Unique vertex
@@ -611,7 +612,7 @@ namespace Chisel.Core
         }
 
 
-        public unsafe void AddUniqueVertices([ReadOnly] ref ChiselBlobArray<float3> uniqueVertices)
+        public unsafe void AddUniqueVertices([ReadOnly] ref BlobArray<float3> uniqueVertices)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
@@ -649,7 +650,7 @@ namespace Chisel.Core
             }
         }
         
-        public unsafe void ReplaceIfExists([ReadOnly] ref ChiselBlobArray<float3> uniqueVertices)
+        public unsafe void ReplaceIfExists([ReadOnly] ref BlobArray<float3> uniqueVertices)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);

@@ -3,16 +3,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Mathematics;
 using Unity.Collections;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
     struct BrushTreeSpaceVerticesBlob
     {
-        public ChiselBlobArray<float3> treeSpaceVertices;
+        public BlobArray<float3> treeSpaceVertices;
     }
 
     struct BrushTreeSpacePlanes
     {
-        public ChiselBlobArray<float4> treeSpacePlanes;
+        public BlobArray<float4> treeSpacePlanes;
     }
 }
