@@ -1612,7 +1612,7 @@ ForceRerun:
                 UpdateBrushMeshes();
 
                 Profiler.BeginSample("UpdateTrampoline.End");
-                registerNodes		.Clear();
+                registerNodes	.Clear();
                 unregisterNodes	.Clear();
 
                 var prevSceneHierarchy = ListPool<KeyValuePair<int, ChiselSceneHierarchy>>.Get();

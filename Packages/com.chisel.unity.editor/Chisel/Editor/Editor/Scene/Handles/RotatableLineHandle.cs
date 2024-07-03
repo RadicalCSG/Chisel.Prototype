@@ -65,7 +65,7 @@ namespace Chisel.Editors
             if (GUIUtility.hotControl != id)
                 return angle;
 
-            rotatedAngleOffset += Utilities.GeometryMath.SignedAngle(vector, (newPosition - origin).normalized, handleDir);
+            rotatedAngleOffset += MathExtensions.SignedAngle(vector, (newPosition - origin).normalized, handleDir);
             
             
             // TODO: put somewhere else

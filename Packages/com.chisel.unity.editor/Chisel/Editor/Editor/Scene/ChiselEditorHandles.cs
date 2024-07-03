@@ -255,7 +255,7 @@ namespace Chisel.Editors
                     vertices2D.Length != vertices3D.Length)
                     vertices2D = new Vector2[vertices3D.Length];
 
-                plane = GeometryMath.CalculatePlane(input);
+                plane = MathExtensions.CalculatePlane(input);
 				Chisel.Editors.GeometryUtility.CalculateTangents(plane.normal, out tangent, out binormal);
 
                 for (int i = 0; i < vertices2D.Length; i++)
@@ -293,7 +293,7 @@ namespace Chisel.Editors
                     var y = Vector3.Dot(binormal, intersectionPoint);
                     var planePoint = new Vector2(x, y);
 
-                    if (GeometryMath.ContainsPoint(vertices2D, planePoint))
+                    if (MathExtensions.ContainsPoint(vertices2D, planePoint))
                         return 0;
                 }
 
@@ -325,7 +325,7 @@ namespace Chisel.Editors
                     var y = Vector3.Dot(binormal, intersectionPoint);
                     var planePoint = new Vector2(x, y);
 
-                    if (GeometryMath.ContainsPoint(vertices2D, planePoint))
+                    if (MathExtensions.ContainsPoint(vertices2D, planePoint))
                     {
                         closestPoint = intersectionPoint;
                         return true;
@@ -873,7 +873,7 @@ namespace Chisel.Editors
 			//Chisel.Editors.SceneHandles.DrawLine(center, center + currVector);
 			//Chisel.Editors.SceneHandles.DrawLine(center, center + originalVector);
 
-			var angleDiff   = GeometryMath.SignedAngle(originalVector, currVector.normalized, normal);
+			var angleDiff   = MathExtensions.SignedAngle(originalVector, currVector.normalized, normal);
             var newAngle    = (angle + angleDiff);
             if (Snapping.RotateSnappingActive && Snapping.RotateSnappingStep != 0)
                 newAngle = (int)(newAngle / Snapping.RotateSnappingStep) * Snapping.RotateSnappingStep;
