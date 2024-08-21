@@ -543,7 +543,7 @@ namespace Chisel.Editors
                     var edgeWorldPlane   = localToWorldSpace.TransformPlane(edgeLocalPlane);
                     
                     var currVertex      = localToWorldSpace.MultiplyPoint(localVertices[halfEdges[e].vertexIndex]);
-                    var closestPoint    = Chisel.Core.GeometryMath.ProjectPointLine(intersectionPoint, prevVertex, currVertex);
+                    var closestPoint    = Chisel.Core.MathExtensions.ProjectPointLine(intersectionPoint, prevVertex, currVertex);
                     var abs_dist        = (closestPoint - intersectionPoint).sqrMagnitude * preferenceFactor;
                     
                     if (abs_dist < bestDist)

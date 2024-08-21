@@ -144,7 +144,7 @@ namespace Chisel.Editors
             }
 
             int result;
-            unchecked { result = (int)MathExtensions.Hash(nameBuffer); }
+            unchecked { result = (int)HashExtensions.Hash(nameBuffer); }
             ArrayPool<char>.Shared.Return(nameBuffer);
             return result; 
         }
