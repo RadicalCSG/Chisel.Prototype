@@ -173,8 +173,9 @@ namespace Chisel.Components
         public override CSGTreeNode TopTreeNode 
         { 
             [MethodImpl(MethodImplOptions.AggressiveInlining)] get 
-            { 
-                if (!ValidNodes) return CSGTreeNode.Invalid; return Node; 
+            {
+                if (!ValidNodes) return CSGTreeNode.Invalid;
+                return Node; 
             } 
             [MethodImpl(MethodImplOptions.AggressiveInlining)] protected set 
             { 

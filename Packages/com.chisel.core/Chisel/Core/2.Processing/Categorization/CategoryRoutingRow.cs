@@ -99,64 +99,66 @@ namespace Chisel.Core
                 // Defines final output from combination of categorization of left and right node
                 //new CategoryRoutingRow[] // Additive Operation
                 //{
-	                //             	        right node                                                                                                              |
-	                //                                                              self                  self                                                      |
-	                //                      inside                aligned           aligned               reverse-aligned       reverse-aligned   outside           |     left-node       
-	                //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	                Inside,               Inside,           Inside,               Inside,               Inside,           Inside            , // inside
-	                Inside,               Aligned,          SelfAligned,          Inside,               Inside,           Aligned           , // other-aligned
-	                Inside,               Aligned,          SelfAligned,          Inside,               Inside,           SelfAligned       , // self-aligned
-	                Inside,               Inside,           Inside,               SelfReverseAligned,   ReverseAligned,   SelfReverseAligned, // self-reverse-aligned
-	                Inside,               Inside,           Inside,               SelfReverseAligned,   ReverseAligned,   ReverseAligned    , // other-reverse-aligned
-	                Inside,               Aligned,          SelfAligned,          SelfReverseAligned,   ReverseAligned,   Outside           , // outside
+	            //  right node                                                                                                                 |
+	            //                                            self                 self                                                        |
+	            //  inside               aligned              aligned              reverse-aligned      reverse-aligned      outside           |    left-node       
+	            //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                    Inside,              Inside,              Inside,              Inside,              Inside,              Inside            , // inside
+                    Inside,              Aligned,             SelfAligned,         Inside,              Inside,              Aligned           , // aligned
+                    Inside,              Aligned,             SelfAligned,         Inside,              Inside,              SelfAligned       , // self-aligned
+	                Inside,              Inside,              Inside,              SelfReverseAligned,  ReverseAligned,      SelfReverseAligned, // self-reverse-aligned
+                    Inside,              Inside,              Inside,              SelfReverseAligned,  ReverseAligned,      ReverseAligned    , // reverse-aligned
+                    Inside,              Aligned,             SelfAligned,         SelfReverseAligned,  ReverseAligned,      Outside           , // outside
                 //},
-
+                
                 // Subtractive set operation on polygons: output = !(!left-node || right-node)
                 // Defines final output from combination of categorization of left and right node
                 //new CategoryRoutingRow[] // Subtractive Operation
                 //{
-	                //             	        right node                                                                                                              |
-	                //                                                              self                  self                                                      |
-	                //                      inside                aligned           aligned               reverse-aligned       reverse-aligned   outside           |     left-node       
-	                //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	                Outside,              ReverseAligned,   SelfReverseAligned,   SelfAligned,          Aligned,          Inside            , // inside
-	                Outside,              Aligned,          Inside,               SelfAligned,          Aligned,          Aligned           , // other-aligned
-	                Outside,              Aligned,          Inside,               SelfAligned,          Aligned,          SelfAligned       , // self-aligned
-	                Outside,              ReverseAligned,   SelfReverseAligned,   Outside,              Outside,          SelfReverseAligned, // self-reverse-aligned
-	                Outside,              ReverseAligned,   SelfReverseAligned,   Outside,              Outside,          ReverseAligned    , // other-reverse-aligned
-	                Outside,              Outside,          Outside,              Outside,              Outside,          Outside           , // outside
+	            //  right node                                                                                                                 |
+	            //                                            self                 self                                                        |
+	            //  inside               aligned              aligned              reverse-aligned      reverse-aligned      outside           |    left-node       
+	            //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                    Outside,             ReverseAligned,      SelfReverseAligned,  SelfAligned,         Aligned,             Inside            , // inside
+                    Outside,             Outside,             Outside,             Aligned,             Aligned,             Aligned           , // aligned
+                    Outside,             Outside,             Outside,             Aligned,             Aligned,             SelfAligned       , // self-aligned
+                    Outside,             ReverseAligned,      SelfReverseAligned,  Outside,             Outside,             SelfReverseAligned, // self-reverse-aligned
+                    Outside,             ReverseAligned,      SelfReverseAligned,  Outside,             Outside,             ReverseAligned    , // reverse-aligned
+                    Outside,             Outside,             Outside,             Outside,             Outside,             Outside           , // outside
                 //},
-
+                
                 // Common set operation on polygons: output = !(!left-node || !right-node)
                 // Defines final output from combination of categorization of left and right node
                 //new CategoryRoutingRow[] // Intersection Operation
                 //{
-	                //             	        right node                                                                                                              |
-	                //                                                              self                  self                                                      |
-	                //                      inside                aligned           aligned               reverse-aligned       reverse-aligned   outside           |     left-node       
-	                //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	                Inside,               Aligned,          SelfAligned,          SelfReverseAligned,   ReverseAligned,   Outside           , // inside
-	                Aligned,              Aligned,          SelfAligned,          Outside,              Outside,          Outside           , // other-aligned
-	                SelfAligned,          Aligned,          SelfAligned,          Outside,              Outside,          Outside           , // self-aligned
-	                SelfReverseAligned,   Outside,          Outside,              SelfReverseAligned,   ReverseAligned,   Outside           , // self-reverse-aligned
-	                ReverseAligned,       Outside,          Outside,              SelfReverseAligned,   ReverseAligned,   Outside           , // other-reverse-aligned
-	                Outside,              Outside,          Outside,              Outside,              Outside,          Outside           , // outside
+	            //  right node                                                                                                                 |
+	            //                                            self                 self                                                        |
+	            //  inside               aligned              aligned              reverse-aligned      reverse-aligned      outside           |    left-node       
+	            //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                    Inside,              Aligned,             SelfAligned,         SelfReverseAligned,  ReverseAligned,      Outside           , // inside
+
+                    Aligned,             Aligned,             SelfAligned,         Outside,             Outside,             Outside           , // aligned
+                    SelfAligned,         Aligned,             SelfAligned,         Outside,             Outside,             Outside           , // self-aligned
+                    SelfReverseAligned,  Outside,             Outside,             SelfReverseAligned,  ReverseAligned,      Outside           , // self-reverse-aligned
+	                ReverseAligned,      Outside,             Outside,             SelfReverseAligned,  ReverseAligned,      Outside           , // reverse-aligned
+
+                    Outside,             Outside,             Outside,             Outside,             Outside,             Outside           , // outside
                 //},
 
                 // Additive set operation on polygons: output = (left-node || right-node)
                 // Defines final output from combination of categorization of left and right node
                 //new CategoryRoutingRow[] // AdditiveKeepInside Operation
                 //{
-	                //             	        right node                                                                                                              |
-	                //                                                              self                  self                                                      |
-	                //                      inside                aligned           aligned               reverse-aligned       reverse-aligned   outside           |     left-node       
-	                //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	                Inside,               Inside,           Inside,               Inside,               Inside,           Inside            , // inside
-	                Inside,               Aligned,          SelfAligned,          Inside,               Inside,           Aligned           , // other-aligned
-	                Inside,               Aligned,          SelfAligned,          Inside,               Inside,           SelfAligned       , // self-aligned
-	                Inside,               Inside,           Inside,               SelfReverseAligned,   ReverseAligned,   SelfReverseAligned, // self-reverse-aligned
-	                Inside,               Inside,           Inside,               SelfReverseAligned,   ReverseAligned,   ReverseAligned    , // other-reverse-aligned
-	                Inside,               Aligned,          SelfAligned,          SelfReverseAligned,   ReverseAligned,   Outside           , // outside
+	            //  right node                                                                                                                 |
+	            //                                            self                 self                                                        |
+	            //  inside               aligned              aligned              reverse-aligned      reverse-aligned      outside           |    left-node       
+	            //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                    Inside,              Inside,              Inside,              Inside,              Inside,              Inside            , // inside
+                    Inside,              Aligned,             SelfAligned,         Inside,              Inside,              Aligned           , // aligned
+                    Inside,              Aligned,             SelfAligned,         Inside,              Inside,              SelfAligned       , // self-aligned
+	                Inside,              Inside,              Inside,              SelfReverseAligned,  ReverseAligned,      SelfReverseAligned, // self-reverse-aligned
+                    Inside,              Inside,              Inside,              SelfReverseAligned,  ReverseAligned,      ReverseAligned    , // reverse-aligned
+                    Inside,              Aligned,             SelfAligned,         SelfReverseAligned,  ReverseAligned,      Outside           , // outside
                 //}
             };
 

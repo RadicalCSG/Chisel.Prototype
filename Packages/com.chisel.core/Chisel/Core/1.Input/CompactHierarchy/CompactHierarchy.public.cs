@@ -239,8 +239,9 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValidCompactNodeID(CompactNodeID compactNodeID)
         {
-            Debug.Assert(IsCreated);
-            if (!idManager.IsValidID(compactNodeID.value, compactNodeID.generation, out var index))
+            if (!IsCreated)
+				return false;
+			if (!idManager.IsValidID(compactNodeID.value, compactNodeID.generation, out var index))
                 return false;
             if (compactNodes[index].compactNodeID != compactNodeID)
                 return false;

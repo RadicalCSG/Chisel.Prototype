@@ -80,7 +80,7 @@ namespace Chisel.Core
                 public NativeList<BrushIntersectWith>       brushIntersectionsWith;
                 public NativeArray<int2>                    brushIntersectionsWithRange;
                 public NativeList<IndexOrder>               brushesThatNeedIndirectUpdate;
-                public NativeParallelHashSet<IndexOrder>            brushesThatNeedIndirectUpdateHashMap;
+                public NativeParallelHashSet<IndexOrder>    brushesThatNeedIndirectUpdateHashMap;
 
                 public NativeList<BrushPair2>               uniqueBrushPairs;
 
@@ -472,7 +472,7 @@ namespace Chisel.Core
                 // TODO: find actual vertex count
                 Temporaries.outputSurfaceVertices           = new NativeList<float3>(65535 * 10, defaultAllocator);
 
-                Temporaries.outputSurfaces                  = new NativeList<BrushIntersectionLoop>(brushCount * 16, defaultAllocator);
+                Temporaries.outputSurfaces                  = new NativeList<BrushIntersectionLoop>(brushCount * 32, defaultAllocator);
                 Temporaries.brushIntersectionsWith          = new NativeList<BrushIntersectWith>(brushCount, defaultAllocator);
 
                 Temporaries.nodeIDValueToNodeOrderOffsetRef = new NativeReference<int>(defaultAllocator);
