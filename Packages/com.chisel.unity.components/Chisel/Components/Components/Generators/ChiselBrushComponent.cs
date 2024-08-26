@@ -1,4 +1,4 @@
-﻿using Chisel.Core;
+using Chisel.Core;
 using UnityEngine;
 
 namespace Chisel.Components
@@ -13,8 +13,8 @@ namespace Chisel.Components
         #region Properties
         public BrushMesh BrushMesh
         {
-            get { return definition.brushOutline; }
-            set { if (value == definition.brushOutline) return; definition.brushOutline = value; OnValidateState(); }
+            get { return definition.BrushOutline; }
+            set { if (value == definition.BrushOutline) return; definition.BrushOutline = value; OnValidateState(); }
         }
         #endregion
 
@@ -34,7 +34,8 @@ namespace Chisel.Components
 
         protected override bool EnsureTopNodeCreatedInternal(in CSGTree tree, ref CSGTreeNode node, int userID)
         {
-            OnValidateDefinition();
+			if (!OnValidateDefinition())
+				return false;
 
             var brush = (CSGTreeBrush)node;
             if (!brush.Valid)
@@ -44,7 +45,7 @@ namespace Chisel.Components
 
         protected override int GetDefinitionHash()
         {
-            return definition.brushOutline?.GetHashCode() ?? 0;
+            return definition.BrushOutline?.GetHashCode() ?? 0;
         }
 
         protected override void UpdateGeneratorNodesInternal(in CSGTree tree, ref CSGTreeNode node)

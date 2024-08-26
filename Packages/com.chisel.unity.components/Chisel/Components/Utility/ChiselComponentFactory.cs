@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+
 using Chisel.Core;
 using UnityEngine;
 
@@ -69,6 +71,7 @@ namespace Chisel.Components
                 transform.SetLocal(trsMatrix);
         }
 
+        static Dictionary<string, string> cleanedupTypenames = new();
 
         public static T Create<T>(string name, Transform parent, Matrix4x4 trsMatrix) where T : ChiselNode
         {
@@ -76,15 +79,25 @@ namespace Chisel.Components
             // TODO: handle scene being locked by version control
 
             if (string.IsNullOrEmpty(name))
-            {
+			{
+				string orgTypename = typeof(T).Name;
+                if (!cleanedupTypenames.TryGetValue(orgTypename, out var typename))
+                {
+                    typename = orgTypename;
+                    if (typename.StartsWith("Chisel"))
+                        typename = typename.Substring("Chisel".Length);
+                    if (typename.EndsWith("Component"))
+                        typename = typename.Substring(0, typename.Length - "Component".Length);
+                    cleanedupTypenames[orgTypename] = typename;
+                }
 #if UNITY_EDITOR
-                name = UnityEditor.GameObjectUtility.GetUniqueNameForSibling(parent, typeof(T).Name);
+				name = UnityEditor.GameObjectUtility.GetUniqueNameForSibling(parent, typename);
 #else
-                name = typeof(T).Name;
+                name = typename;
 #endif
-            }
+			}
 
-            var newGameObject = new GameObject(name);
+			var newGameObject = new GameObject(name);
 #if UNITY_EDITOR
             UnityEditor.Undo.RegisterCreatedObjectUndo(newGameObject, "Created " + name);
 #endif

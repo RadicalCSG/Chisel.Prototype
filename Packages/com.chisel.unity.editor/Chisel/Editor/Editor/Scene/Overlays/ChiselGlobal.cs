@@ -226,7 +226,7 @@ namespace Chisel.Editors
 
                 ConvertBrush(brushNode, in surfaceDefinition, out var brushMesh, out var newSurfaceDefinition);
                 brushComponent.surfaceDefinition = newSurfaceDefinition;
-                brushComponent.definition = new ChiselBrushDefinition { brushOutline = brushMesh };
+                brushComponent.definition = new ChiselBrushDefinition { BrushOutline = brushMesh };
                 return brushComponent;
             }
 
@@ -271,7 +271,7 @@ namespace Chisel.Editors
 
                 ConvertBrush(brushNode, in surfaceDefinition, out var brushMesh, out var newSurfaceDefinition);
                 brushComponent.surfaceDefinition = newSurfaceDefinition;
-                brushComponent.definition = new ChiselBrushDefinition { brushOutline = brushMesh };
+                brushComponent.definition = new ChiselBrushDefinition { BrushOutline = brushMesh };
                 return brushComponent;
             } 
             

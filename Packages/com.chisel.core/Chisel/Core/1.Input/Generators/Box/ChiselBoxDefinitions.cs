@@ -55,18 +55,19 @@ namespace Chisel.Core
         #endregion
 
         #region Validation
-        public void Validate()
+        public bool Validate()
         {
             var originalBox = bounds;
             var min = math.min(originalBox.Min, originalBox.Max);
             var max = math.max(originalBox.Min, originalBox.Max);
             bounds = new MinMaxAABB { Min = min, Max = max };
+            return true;
         }
 
         const string kDimensionCannotBeZero = "One or more dimensions of the box is zero, which is not allowed";
 
-        [BurstDiscard]
-        public void GetWarningMessages(IChiselMessageHandler messages)
+		[BurstDiscard]
+        public void GetMessages(IChiselMessageHandler messages)
         {
             var size = Size;
             if (size.x == 0 || size.y == 0 || size.z == 0)

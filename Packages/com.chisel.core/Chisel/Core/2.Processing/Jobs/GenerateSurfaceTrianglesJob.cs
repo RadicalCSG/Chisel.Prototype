@@ -196,11 +196,13 @@ namespace Chisel.Core
                     loops.Add(surfaceLoopIndex);
                 }
 
-                // TODO: why are we doing this in tree-space? better to do this in brush-space, then we can more easily cache this
                 var surfaceLayers           = baseSurfaces[surfaceIndex].layers;
                 var localSpacePlane         = baseSurfaces[surfaceIndex].localPlane;
                 var UV0                     = baseSurfaces[surfaceIndex].UV0;
-                var localSpaceToPlaneSpace  = MathExtensions.GenerateLocalToPlaneSpaceMatrix(localSpacePlane);
+
+				// We need to convert our UV matrix from tree-space, to brush local-space, to plane-space
+                // since the vertices of the polygons, at this point, are in tree-space.
+				var localSpaceToPlaneSpace  = MathExtensions.GenerateLocalToPlaneSpaceMatrix(localSpacePlane);
                 var treeSpaceToPlaneSpace   = math.mul(localSpaceToPlaneSpace, treeToNode);
                 var uv0Matrix               = math.mul(UV0.ToFloat4x4(), treeSpaceToPlaneSpace);
 

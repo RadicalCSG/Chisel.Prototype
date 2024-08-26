@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using Chisel.Core;
 using Unity.Collections;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Chisel.Components
 {
@@ -26,7 +27,8 @@ namespace Chisel.Components
         static readonly GeneratorBrushJobPool<Generator> s_JobPool = new GeneratorBrushJobPool<Generator>();
         protected override bool EnsureTopNodeCreatedInternal(in CSGTree tree, ref CSGTreeNode node, int userID)
         {
-            OnValidateDefinition();
+            if (!OnValidateDefinition())
+                return false;
 
             var brush = (CSGTreeBrush)node;
             node = GenerateTopNode(in tree, brush, userID, operation);
@@ -53,7 +55,12 @@ namespace Chisel.Components
             var settings = definition.GetBrushGenerator();
             s_JobPool.ScheduleUpdate(brush, settings, surfaceDefinitionBlob);
         }
-    }
+
+		public override void GetMessages(IChiselMessageHandler messageHandler)
+		{
+            definition?.GetMessages(messageHandler);
+		}
+	}
 
     public abstract class ChiselBranchGeneratorComponent<Generator, DefinitionType> : ChiselNodeGeneratorComponent<DefinitionType>
         where Generator      : unmanaged, IBranchGenerator
@@ -75,9 +82,10 @@ namespace Chisel.Components
         static readonly GeneratorBranchJobPool<Generator> s_JobPool = new GeneratorBranchJobPool<Generator>();
         protected override bool EnsureTopNodeCreatedInternal(in CSGTree tree, ref CSGTreeNode node, int userID)
         {
-            OnValidateDefinition();
+			if (!OnValidateDefinition())
+				return false;
 
-            var branch = (CSGTreeBranch)node;
+			var branch = (CSGTreeBranch)node;
             node = GenerateTopNode(in tree, branch, userID, operation);
             return true;
         }
@@ -126,29 +134,41 @@ namespace Chisel.Components
             base.OnResetInternal(); 
         }
 
-        protected void OnValidateDefinition()
-        {
-            definition.Validate();
-            if (surfaceDefinition == null)
+        protected bool OnValidateDefinition(bool logErrors = false)
+		{
+            bool success = true;
+            try
             {
-                surfaceDefinition = new ChiselSurfaceDefinition();
-                surfaceDefinition.Reset();
+                success = definition.Validate();
+				if (surfaceDefinition == null)
+                {
+                    surfaceDefinition = new ChiselSurfaceDefinition();
+                    surfaceDefinition.Reset();
+                }
+                surfaceDefinition.EnsureSize(definition.RequiredSurfaceCount);
+                definition.UpdateSurfaces(ref surfaceDefinition);
             }
-            surfaceDefinition.EnsureSize(definition.RequiredSurfaceCount);
-            definition.UpdateSurfaces(ref surfaceDefinition);
-        }
+            catch (System.Exception ex)
+			{
+				success = false;
+				Debug.LogException(ex, this);
+			}
+            if (!success && logErrors)
+			    Debug.LogError($"Validation failed for {this.name}", this);
+            return success;
+		}
 
         protected override void OnValidateState()
         {
-            OnValidateDefinition();
-            base.OnValidateState(); 
+            if (OnValidateDefinition())
+			    base.OnValidateState();
         }
 
-        // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
-        public override void GetWarningMessages(IChiselMessageHandler messages)
+		// Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
+		public override void GetMessages(IChiselMessageHandler messages)
         {
-            base.GetWarningMessages(messages);
-            definition.GetWarningMessages(messages);
+            base.GetMessages(messages);
+            definition.GetMessages(messages);
         }
     }
 
@@ -330,27 +350,36 @@ namespace Chisel.Components
 
         // TODO: improve warning messages
         const string kFailedToGenerateNodeMessage = "Failed to generate internal representation of generator (this should never happen)";
-        const string kGeneratorIsPartOfDefaultModel = "This generator is part of the default model, please place it underneath a GameObject with a " + ChiselModelComponent.kNodeTypeName + " component";
+		const string kBrushNodeIsInvalidMessage = "The internal brush representation is invalid.";
+		const string kGeneratorIsPartOfDefaultModel = "This generator is part of the default model, please place it underneath a GameObject with a " + ChiselModelComponent.kNodeTypeName + " component";
 
-        // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
-        public override void GetWarningMessages(IChiselMessageHandler messages)
+		// Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
+		public override void GetMessages(IChiselMessageHandler messages)
         {
-            if (!ValidNodes)
+			if (!ValidNodes)
             {
-                messages.Warning(kFailedToGenerateNodeMessage);
-                return;
+                if (this is ChiselBrushComponent)
+                    messages.Warning(kBrushNodeIsInvalidMessage);
+                else
+				    messages.Warning(kFailedToGenerateNodeMessage);
+				return;
             }
 
             var brush = (CSGTreeBrush)Node;
             if (brush.Valid && brush.BrushMesh == BrushMeshInstance.InvalidInstance)
-            {
-                messages.Warning(kFailedToGenerateNodeMessage);
-                return;
+			{
+				if (this is ChiselBrushComponent)
+					messages.Warning(kBrushNodeIsInvalidMessage);
+				else
+					messages.Warning(kFailedToGenerateNodeMessage);
+				return;
             }
 
             if (ChiselGeneratedComponentManager.IsDefaultModel(hierarchyItem.Model))
+            {
                 messages.Warning(kGeneratorIsPartOfDefaultModel);
-        }
+            }
+		}
 
         protected override void OnValidateState()
         {

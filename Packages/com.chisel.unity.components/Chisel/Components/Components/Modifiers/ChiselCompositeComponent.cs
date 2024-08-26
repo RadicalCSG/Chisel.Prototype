@@ -29,7 +29,7 @@ namespace Chisel.Components
         const string kFailedToGenerateNodeMessage = "Failed to generate internal representation of " + kNodeTypeName + " (this should never happen)";
 
         // Will show a warning icon in hierarchy when a generator has a problem (do not make this method slow, it is called a lot!)
-        public override void GetWarningMessages(IChiselMessageHandler messages)
+        public override void GetMessages(IChiselMessageHandler messages)
         {
             if (!PassThrough && !Node.Valid)
                 messages.Warning(kFailedToGenerateNodeMessage);

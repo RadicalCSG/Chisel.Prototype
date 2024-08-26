@@ -93,7 +93,7 @@ namespace Chisel.Core
         #endregion
         
         #region Validation
-        public void Validate() { }
+        public bool Validate() { return true; }
 
         [BurstDiscard]
         public void GetWarningMessages(IChiselMessageHandler messages) { }
@@ -127,11 +127,11 @@ namespace Chisel.Core
         public override int RequiredSurfaceCount { get { return 2 + shape.controlPoints.Length; } }
 
 
-        public override void Validate()
+        public override bool Validate()
         {
             shape ??= new Curve2D(kDefaultShape);
             path  ??= new ChiselPath(ChiselPath.Default);
-            base.Validate();
+            return base.Validate();
         }
 
         const Allocator defaultAllocator = Allocator.TempJob;

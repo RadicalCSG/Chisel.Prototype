@@ -108,7 +108,7 @@ namespace Chisel.Core
         #endregion
 
         #region Validation
-        public void Validate()
+        public bool Validate()
         {
             tubeWidth			= math.max(tubeWidth,  kMinTubeDiameter);
             tubeHeight			= math.max(tubeHeight, kMinTubeDiameter);
@@ -118,6 +118,7 @@ namespace Chisel.Core
             verticalSegments	= math.max(verticalSegments, 3);
 
             totalAngle			= math.clamp(totalAngle, 1, 360); // TODO: constants
+            return true;
         }
 
         [BurstDiscard]

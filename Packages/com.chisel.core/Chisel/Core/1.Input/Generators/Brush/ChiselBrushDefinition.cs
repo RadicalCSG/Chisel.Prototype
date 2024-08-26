@@ -13,8 +13,8 @@ namespace Chisel.Core
         [SerializeField] int version = 0;
         
         // TODO: avoid storing surfaceDefinition and surfaces in brushOutline twice, which is wasteful and causes potential conflicts
-        [HideInInspector]
-        public BrushMesh        brushOutline;
+        //[HideInInspector]
+        private BrushMesh        brushOutline;
 
 
         [HideInInspector]
@@ -22,10 +22,30 @@ namespace Chisel.Core
         [HideInInspector]
         [SerializeField] bool   validState = true;
 
-        public bool ValidState  { get { return validState; } set { validState = value; } }
+        // TODO: clean this mess up
+        public void ResetValidState() 
+        {
+			validState = true;
+			isInsideOut = false; 
+        } 
+		public BrushMesh BrushOutline
+        {
+            get { return brushOutline; }
+            set
+            {
+                if (brushOutline == value)
+                    return;
+				ResetValidState();
+				brushOutline = value;
+			}
+        }
+
+		public bool ValidState  { get { return validState; } }
         public bool IsInsideOut { get { return isInsideOut; } }
 
-        public bool IsValid
+		string errorMessage = null;
+
+		public bool IsValid
         {
             get
             {
@@ -42,8 +62,9 @@ namespace Chisel.Core
 
         public void Reset()
         {
+			ResetValidState();
             brushOutline = null;
-        }
+		}
 
         public bool EnsurePlanarPolygons()
         {
@@ -66,31 +87,54 @@ namespace Chisel.Core
                 brushOutline.polygons[p].descriptionIndex = p;
         }
 
-        public void Validate()
-        {
-            if (!IsValid)
-                return;
+		public bool Validate()
+		{
+			try
+			{
+				if (!IsValid)
+                    return false;
 
-            if (version != kLatestVersion)
-                version = kLatestVersion;
+			    errorMessage = string.Empty;
+                if (version != kLatestVersion)
+                    version = kLatestVersion;
 
-            brushOutline.CalculatePlanes();
-            
-            // If the brush is concave, we set the generator to not be valid, so that when we commit, it will be reverted
-            validState = brushOutline.HasVolume() &&            // TODO: implement this, so we know if a brush is a 0D/1D/2D shape
-                         !brushOutline.IsConcave() &&           // TODO: eventually allow concave shapes
-                         !brushOutline.IsSelfIntersecting();    // TODO: in which case this needs to be implemented
-
-            // TODO: shouldn't do this all the time:
-            {
-                // Detect if outline is inside-out and if so, just invert all polygons.
-                isInsideOut = brushOutline.IsInsideOut();
-                if (isInsideOut)
+				if (!brushOutline.ValidateData(out errorMessage))
                 {
-                    brushOutline.Invert();
-                    isInsideOut = false;
-                }
+                    Debug.LogError(errorMessage);
+                    validState = false;
+                    return false;
+				}
 
+				brushOutline.CalculatePlanes();
+
+				// If the brush is concave, we set the generator to not be valid, so that when we commit, it will be reverted
+				if (!brushOutline.ValidateShape(out errorMessage))
+				{
+					Debug.LogError(errorMessage);
+					validState = false;
+					return false;
+				}
+
+				// TODO: shouldn't do this all the time:
+				{
+                    // Detect if outline is inside-out and if so, just invert all polygons.
+                    isInsideOut = brushOutline.IsInsideOut();
+                    if (isInsideOut)
+                    {
+                        brushOutline.Invert();
+                        isInsideOut = false;
+                    }
+                     
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    errorMessage = ex.ToString();
+				}
+                throw ex;
             }
         }
 
@@ -144,16 +188,18 @@ namespace Chisel.Core
         {
         }
 
-        public void GetWarningMessages(IChiselMessageHandler messages)
+		public void GetMessages(IChiselMessageHandler messages)
         {
-            if (!IsValid)
-            {
-                // TODO: show message that internal brush is invalid
-            }
-            if (ValidState)
-            {
-                // TODO: show message that brush is not in valid state
-            }
-        }
+            if (!IsValid || !ValidState)
+			{
+                if (!string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    if (messages.Destination == MessageDestination.Hierarchy)
+                        messages.Warning("The brush is in an invalid state. View brush in inspector for more details.");
+                    else
+						messages.Warning(errorMessage);
+                }
+			}
+		}
     }
 } 

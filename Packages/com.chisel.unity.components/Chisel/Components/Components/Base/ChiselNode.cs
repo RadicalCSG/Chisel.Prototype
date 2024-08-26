@@ -6,8 +6,8 @@ namespace Chisel.Components
 {
     [DisallowMultipleComponent]
     //[ExcludeFromObjectFactoryAttribute]
-    public abstract class ChiselNode : MonoBehaviour
-    {
+    public abstract class ChiselNode : MonoBehaviour, IChiselMessageProvider
+	{
         public const string kDocumentationBaseURL = "http://example.com/docs/"; // TODO: put somewhere else / put documentation online
         public const string kDocumentationExtension = ".html";
 
@@ -53,7 +53,7 @@ namespace Chisel.Components
         public void OnValidate() { OnValidateState(); }
         protected virtual void OnValidateState() { SetDirty(); }
 
-        public abstract void GetWarningMessages(IChiselMessageHandler messages);
+		public abstract void GetMessages(IChiselMessageHandler messages);
 
         public void Reset() { OnResetInternal(); }
         protected virtual void OnResetInternal() { OnInitialize(); }

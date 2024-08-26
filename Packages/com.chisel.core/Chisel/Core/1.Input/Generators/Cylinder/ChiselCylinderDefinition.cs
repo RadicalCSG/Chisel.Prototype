@@ -281,7 +281,7 @@ namespace Chisel.Core
         #endregion
 
         #region Validation
-        public void Validate()
+        public bool Validate()
         {
             topDiameterX = math.abs(topDiameterX);
             topDiameterZ = math.abs(topDiameterZ);
@@ -289,10 +289,11 @@ namespace Chisel.Core
             bottomDiameterZ = math.abs(bottomDiameterZ);
 
             sides = math.max(3, sides);
+            return true;
         }
 
         [BurstDiscard]
-        public void GetWarningMessages(IChiselMessageHandler messages)
+        public void GetMessages(IChiselMessageHandler messages)
         {
         }
         #endregion

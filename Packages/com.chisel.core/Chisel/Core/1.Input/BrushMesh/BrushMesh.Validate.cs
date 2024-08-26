@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace Chisel.Core
 {
@@ -6,51 +6,89 @@ namespace Chisel.Core
     {
         public bool Validate(bool logErrors = false)
         {
-            var vertices = this.vertices;
+            if (!ValidateData(out var errorMessage))
+            {
+                if (logErrors) Debug.LogError(errorMessage);
+                return false;
+            }
+            if (planes == null)
+                CalculatePlanes();
+			if (!ValidateShape(out errorMessage))
+			{
+				if (logErrors) Debug.LogError(errorMessage);
+				return false;
+			}
+            return true;
+        }
+
+        static System.Text.StringBuilder errorMessageBuilder = new System.Text.StringBuilder();
+		public bool ValidateData(out string errorMessage)
+        {
+            errorMessage = null;
+			var vertices = this.vertices;
             if (vertices == null || vertices.Length == 0)
             {
-                if (logErrors) Debug.LogError("BrushMesh has no vertices set");
+				errorMessage = "BrushMesh: BrushMesh has no vertices set";
                 return false;
             }
 
             var halfEdges = this.halfEdges;
             if (halfEdges == null || halfEdges.Length == 0)
             {
-                if (logErrors) Debug.LogError("BrushMesh has no halfEdges set");
+				errorMessage = "BrushMesh: BrushMesh has no halfEdges set";
                 return false;
             }
 
             var polygons = this.polygons;
             if (polygons == null || polygons.Length == 0)
             {
-                if (logErrors) Debug.LogError("BrushMesh has no polygons set");
+				errorMessage = "BrushMesh: BrushMesh has no polygons set";
                 return false;
             }
 
-            bool fail = false;
+			if (vertices.Length < 5)
+			{
+				errorMessage = $"BrushMesh must have at least 5 vertices, but has {vertices.Length} vertices";
+				return false;
+			}
 
-            for (int h = 0; h < halfEdges.Length; h++)
+			if (polygons.Length < 4)
+			{
+				errorMessage = $"BrushMesh must have at least 4 polygons, but has {polygons.Length} polygons";
+				return false;
+			}
+
+			if (halfEdges.Length < 3 * 4)
+			{
+				errorMessage = $"BrushMesh must have at least 12 halfedges, but has {halfEdges.Length} halfedges";
+				return false;
+			}
+
+			bool fail = false;
+			errorMessageBuilder.Clear();
+
+			for (int h = 0; h < halfEdges.Length; h++)
             {
                 if (halfEdges[h].vertexIndex < 0)
                 {
-                    if (logErrors) Debug.LogError("halfEdges[" + h + "].vertexIndex is " + halfEdges[h].vertexIndex);
+					errorMessageBuilder.AppendLine($"BrushMesh: halfEdges[{h}].vertexIndex is {halfEdges[h].vertexIndex}");
                     fail = true;
                 } else
                 if (halfEdges[h].vertexIndex >= vertices.Length)
                 {
-                    if (logErrors) Debug.LogError("halfEdges[" + h + "].vertexIndex is " + halfEdges[h].vertexIndex + ", but there are " + vertices.Length + " vertices.");
+					errorMessageBuilder.AppendLine($"BrushMesh: halfEdges[{h}].vertexIndex is {halfEdges[h].vertexIndex}, but there are {vertices.Length} vertices.");
                     fail = true;
                 }
 
                 if (halfEdges[h].twinIndex < 0)
                 {
-                    if (logErrors) Debug.LogError("halfEdges[" + h + "].twinIndex is " + halfEdges[h].twinIndex);
+					errorMessageBuilder.AppendLine($"BrushMesh: halfEdges[{h}].twinIndex is {halfEdges[h].twinIndex}");
                     fail = true;
                     continue;
                 } else
                 if (halfEdges[h].twinIndex >= halfEdges.Length)
                 {
-                    if (logErrors) Debug.LogError("halfEdges[" + h + "].twinIndex is " + halfEdges[h].twinIndex + ", but there are " + halfEdges.Length + " edges.");
+					errorMessageBuilder.AppendLine($"BrushMesh: halfEdges[{h}].twinIndex is {halfEdges[h].twinIndex}, but there are {halfEdges.Length} edges.");
                     fail = true;
                     continue;
                 }
@@ -59,7 +97,7 @@ namespace Chisel.Core
                 var twin		= halfEdges[twinIndex];
                 if (twin.twinIndex != h)
                 {
-                    if (logErrors) Debug.LogError("halfEdges[" + h + "].twinIndex is " + halfEdges[h].twinIndex + ", but the twinIndex of its twin is " + twin.twinIndex + " instead of " + h + ".");
+					errorMessageBuilder.AppendLine($"BrushMesh: halfEdges[{h}].twinIndex is {halfEdges[h].twinIndex}, but the twinIndex of its twin is {twin.twinIndex} instead of {h}.");
                     fail = true;
                 }
             }
@@ -71,28 +109,28 @@ namespace Chisel.Core
                 var polygonFail = false;
                 if (firstEdge < 0)
                 {
-                    if (logErrors) Debug.LogError("polygons[" + p + "].firstEdge is " + firstEdge);
+					errorMessageBuilder.AppendLine($"BrushMesh: polygons[{p}].firstEdge is {firstEdge}.");
                     polygonFail = true;
                 } else
                 if (firstEdge >= halfEdges.Length)
                 {
-                    if (logErrors) Debug.LogError("polygons[" + p + "].firstEdge is " + firstEdge + ", but there are " + halfEdges.Length + " edges.");
+					errorMessageBuilder.AppendLine($"BrushMesh: polygons[{p}].firstEdge is {firstEdge}, but there are {halfEdges.Length} edges.");
                     polygonFail = true;
                 }
                 if (count <= 2)
                 {
-                    if (logErrors) Debug.LogError("polygons[" + p + "].edgeCount is " + count);
+					errorMessageBuilder.AppendLine($"BrushMesh: polygons[{p}].edgeCount is {count}.");
                     polygonFail = true;
                 } else
                 if (firstEdge + count - 1 >= halfEdges.Length)
                 {
-                    if (logErrors) Debug.LogError("polygons[" + p + "].firstEdge + polygons[" + p + "].edgeCount is " + (firstEdge + count) + ", but there are " + halfEdges.Length + " edges.");
+					errorMessageBuilder.AppendLine($"BrushMesh: polygons[{p}].firstEdge + polygons[{p}].edgeCount is {(firstEdge + count)}, but there are {halfEdges.Length} edges.");
                     polygonFail = true;
                 } else
                 if (p < polygons.Length - 1 &&
                     polygons[p + 1].firstEdge != firstEdge + count)
                 {
-                    if (logErrors) Debug.LogError("polygons[" + (p + 1) + "].firstEdge does not equal polygons[" + p + "].firstEdge + polygons[" + p + "].edgeCount.");
+					errorMessageBuilder.AppendLine($"BrushMesh: polygons[{(p + 1)}].firstEdge does not equal polygons[{p}].firstEdge + polygons[{p}].edgeCount.");
                     polygonFail = true;
                 }
 
@@ -113,36 +151,101 @@ namespace Chisel.Core
 
                     if (h0.vertexIndex != t1.vertexIndex)
                     {
-                        if (logErrors)
-                        {
-                            Debug.LogError("halfEdges[" + (i0 + firstEdge) + "].vertexIndex (" + h0.vertexIndex + ") is not equal to halfEdges[halfEdges[" + (i1 + firstEdge) + "].twinIndex(" + h1.twinIndex + ")].vertexIndex (" + t1.vertexIndex + ").");
-                        }
+						errorMessageBuilder.AppendLine($"BrushMesh: halfEdges[{(i0 + firstEdge)}].vertexIndex ({h0.vertexIndex}) is not equal to halfEdges[halfEdges[{(i1 + firstEdge)}].twinIndex({h1.twinIndex})].vertexIndex ({t1.vertexIndex}).");
                         fail = true;
                     }
                 }
             }
-            if (fail)
-                return false;
 
-            if (IsSelfIntersecting())
+			if (fail)
             {
-                if (logErrors)
+                if (errorMessageBuilder.Length > 0)
+                    errorMessage = errorMessageBuilder.ToString();
+                else
+                    errorMessage = "BrushMesh: Unknown failure";
+				return false;
+			}
+
+			if (planes == null || polygons.Length != planes.Length)
+			{
+				// Try to fix this
+				CalculatePlanes();
+                if (planes == null || polygons.Length != planes.Length)
                 {
-                    Debug.LogError("Brush is self intersecting");
-                }
+                    if (planes == null)
+                        errorMessage = $"BrushMesh: number of polygons ({polygons.Length}) must be equal to number of planes (null)";
+                    else
+                        errorMessage = $"BrushMesh: number of polygons ({polygons.Length}) must be equal to number of planes ({planes.Length})";
+					return false;
+				}
+			}
+
+			if (halfEdgePolygonIndices.Length != halfEdges.Length)
+			{
+				// Try to fix this
+				UpdateHalfEdgePolygonIndices();
+				if (halfEdgePolygonIndices.Length != halfEdges.Length)
+				{
+					errorMessage = $"BrushMesh: number of halfEdgePolygonIndices ({halfEdgePolygonIndices.Length}) must be equal to number of halfEdges ({halfEdges.Length})";
+					return false;
+				}
+			}
+
+			fail = false;
+			for (int h = 0; h < halfEdgePolygonIndices.Length; h++)
+			{
+				var polygonIndex = halfEdgePolygonIndices[h];
+				if (polygonIndex < 0 ||
+					polygonIndex >= polygons.Length)
+				{
+					errorMessageBuilder.AppendLine($"BrushMesh: halfEdgePolygonIndices value is out of range (must be between 0 and {polygons.Length}, and is {polygonIndex})");
+					fail = true;
+				} else 
+                {
+                    var firstEdge = polygons[polygonIndex].firstEdge;
+                    var lastEdge = polygons[polygonIndex].firstEdge + polygons[polygonIndex].edgeCount;
+                    if (h < firstEdge ||
+                        h >= lastEdge)
+					{
+						errorMessageBuilder.AppendLine($"BrushMesh: halfEdgePolygonIndices[{h}] leads to wrong polygon ({polygonIndex}) with range ({firstEdge}, {lastEdge}]");
+                        fail = true;
+					}
+				}
+			}
+
+			if (fail)
+			{
+				if (errorMessageBuilder.Length > 0)
+					errorMessage = errorMessageBuilder.ToString();
+				else
+					errorMessage = "BrushMesh: Unknown failure";
+				return false;
+			}
+
+			return true;
+        }
+        
+		public bool ValidateShape(out string errorMessage)
+        {
+            errorMessage = null;			
+			if (!HasVolume())
+            {
+				errorMessage = "BrushMesh: Brush has no volume";
                 return false;
             }
 
-            if (!HasVolume())
-            {
-                if (logErrors)
-                {
-                    Debug.LogError("Brush has no volume");
-                }
-                return false;
-            }
+            if (IsConcave())           // TODO: eventually allow concave shapes
+			{
+				errorMessage = "BrushMesh: Brush is concave";
+				return false;
+			}
 
-            return true;
+			if (IsSelfIntersecting())    // TODO: in which case this needs to be implemented
+			{
+				errorMessage = "BrushMesh: Brush is self intersecting";
+				return false;
+			}
+			return true;
         }
     }
 }

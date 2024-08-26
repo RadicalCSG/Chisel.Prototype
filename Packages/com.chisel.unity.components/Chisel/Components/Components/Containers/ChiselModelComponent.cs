@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+
 using Chisel.Core;
+
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -270,22 +273,29 @@ namespace Chisel.Components
         // TODO: improve warning messages
         const string kModelHasNoChildrenMessage = kNodeTypeName + " has no children and will not have an effect";
         const string kFailedToGenerateNodeMessage = "Failed to generate internal representation of " + kNodeTypeName + " (this should never happen)";
+		const string kChildNodesWithProblems = kNodeTypeName + " has children with errors";
 
-        // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
-        public override void GetWarningMessages(IChiselMessageHandler messages)
+		// Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
+		public override void GetMessages(IChiselMessageHandler messages)
         {
             if (!Node.Valid)
                 messages.Warning(kFailedToGenerateNodeMessage);
 
             // A model makes no sense without any children
-            if (hierarchyItem != null)
-            {
-                if (hierarchyItem.Children.Count == 0)
-                    messages.Warning(kModelHasNoChildrenMessage);
-            } else
             if (transform.childCount == 0)
+            { 
                 messages.Warning(kModelHasNoChildrenMessage);
-        }
+            } else
+			{
+                if (transform.GetComponentInChildren<ChiselNode>() == null)
+				{
+					messages.Warning(kModelHasNoChildrenMessage);
+				}
+			}
+
+            //if (invalidChildNodes.Count > 0)
+			//	messages.Warning(kChildNodesWithProblems);
+		}
 
         public override void SetDirty() { if (Node.Valid) Node.SetDirty(); }
 

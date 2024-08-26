@@ -518,7 +518,7 @@ namespace Chisel.Core
                 this.halfEdgePolygonIndices = newHalfEdgePolygonIndices;
                 this.halfEdges              = newHalfEdges;
                 this.CalculatePlanes();
-                if (!this.Validate())
+                if (!this.Validate(logErrors: true))
                 {                    
                     this.polygons               = orgPolygons;
                     this.vertices               = orgVertices;
@@ -533,7 +533,7 @@ namespace Chisel.Core
                 vertices                = this.vertices;
                 halfEdges               = this.halfEdges;
                 halfEdgePolygonIndices  = this.halfEdgePolygonIndices;
-                planes                = this.planes;
+                planes                  = this.planes;
 
                 haveSplitPolygons = true;
             }
@@ -717,7 +717,8 @@ namespace Chisel.Core
             for (int n = 0; n < newHalfEdges.Length; n++)
             {
                 var remap = edgeRemap[newHalfEdges[n].twinIndex];
-                Debug.Assert(newHalfEdges[remap].vertexIndex != -1, "halfEdges[" + remap + "].vertexIndex == -1");
+				Debug.Assert(remap >= 0 && remap < edgeRemap.Length, $"{remap} >= 0 && {remap} < {edgeRemap.Length}");
+				Debug.Assert(newHalfEdges[remap].vertexIndex != -1, $"halfEdges[{remap}].vertexIndex == -1");
                 newHalfEdges[n].twinIndex = remap;
             }
             halfEdges = newHalfEdges;
