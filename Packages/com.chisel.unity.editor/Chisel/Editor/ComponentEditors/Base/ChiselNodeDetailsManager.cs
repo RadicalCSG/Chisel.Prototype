@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using System;
@@ -57,14 +57,22 @@ namespace Chisel.Editors
         }
 
         class HierarchyMessageHandler : IChiselMessageHandler
-        {
-            static System.Text.StringBuilder warningStringBuilder = new System.Text.StringBuilder();
+		{
+			public MessageDestination Destination
+			{
+				get { return MessageDestination.Hierarchy; }
+			}
 
-            // TODO: how to handle these kind of message in the hierarchy? cannot show buttons, 
-            //       but still want to show a coherent message
-            public void Warning(string message, Action buttonAction, string buttonText)
+			static System.Text.StringBuilder warningStringBuilder = new System.Text.StringBuilder();
+
+			public void SetTitle(string name, UnityEngine.Object reference)
+			{
+			}
+
+			// TODO: how to handle these kind of message in the hierarchy? cannot show buttons, 
+			//       but still want to show a coherent message
+			public void Warning(string message, Action buttonAction, string buttonText)
             {
-                throw new NotImplementedException();
             }
 
             public void Warning(string message)
@@ -84,7 +92,7 @@ namespace Chisel.Editors
         public static GUIContent GetHierarchyIcon(ChiselNode node, out bool hasValidState)
         {
             hierarchyMessageHandler.Clear();
-            node.GetWarningMessages(hierarchyMessageHandler);
+            node.GetMessages(hierarchyMessageHandler);
             string nodeMessage;
             if (hierarchyMessageHandler.Length != 0)
             {

@@ -190,7 +190,7 @@ namespace Chisel.Core
         public const float	kMinInnerDiameter		= 0.00f;
         public const float	kMinOuterDiameter		= 0.01f;
 
-        public void Validate()
+        public bool Validate()
         {
             stepHeight      = math.max(kMinStepHeight, stepHeight);
 
@@ -209,6 +209,7 @@ namespace Chisel.Core
 
             innerSegments   = math.max(kMinSegments, innerSegments);
             outerSegments   = math.max(kMinSegments, outerSegments);
+            return true;
         }
 
         [BurstDiscard]

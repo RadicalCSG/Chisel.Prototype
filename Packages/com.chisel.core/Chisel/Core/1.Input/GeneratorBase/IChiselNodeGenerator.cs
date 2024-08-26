@@ -8,10 +8,10 @@ namespace Chisel.Core
     {
         int RequiredSurfaceCount { get; }
         void Reset();
-        void Validate();
+        bool Validate();
         void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition);
         void OnEdit(IChiselHandles handles);
-        void GetWarningMessages(IChiselMessageHandler messages);
+		void GetMessages(IChiselMessageHandler messages);
     }
 
     public interface IBrushGenerator
@@ -20,8 +20,8 @@ namespace Chisel.Core
         void Reset();
         int RequiredSurfaceCount { get; }
         void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition);
-        void Validate();
-        void GetWarningMessages(IChiselMessageHandler messages);
+        bool Validate();
+		void GetMessages(IChiselMessageHandler messages);
     }
 
     public abstract class SerializedBrushGenerator<BrushGenerator> : IChiselNodeGenerator
@@ -40,14 +40,14 @@ namespace Chisel.Core
             settings.UpdateSurfaces(ref surfaceDefinition);
         }
 
-        public virtual void Validate()
+        public virtual bool Validate()
         {
-            settings.Validate();
+            return settings.Validate();
         }
         
-        public virtual void GetWarningMessages(IChiselMessageHandler messages)
+        public virtual void GetMessages(IChiselMessageHandler messages)
         {
-            settings.GetWarningMessages(messages);
+            settings.GetMessages(messages);
         }
 
         public abstract void OnEdit(IChiselHandles handles);
@@ -103,7 +103,7 @@ namespace Chisel.Core
         void Reset();
         int RequiredSurfaceCount { get; }
         void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition);
-        void Validate();
+        bool Validate();
         void GetWarningMessages(IChiselMessageHandler messages);
     }
 
@@ -117,14 +117,14 @@ namespace Chisel.Core
         public virtual BranchGenerator GetBranchGenerator() { return settings; }
 
         public virtual void Reset()     { settings.Reset(); }
-        public virtual void Validate()  { settings.Validate(); }
+        public virtual bool Validate()  { return settings.Validate(); }
 
         public virtual void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             settings.UpdateSurfaces(ref surfaceDefinition);
         }
 
-        public virtual void GetWarningMessages(IChiselMessageHandler messages)
+        public virtual void GetMessages(IChiselMessageHandler messages)
         {
             settings.GetWarningMessages(messages);
         }

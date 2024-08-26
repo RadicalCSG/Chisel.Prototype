@@ -75,7 +75,7 @@ namespace Chisel.Core
         public const float	kMinLength	    = 0.01f;
         public const float	kMinHeight	    = 0.01f;
 
-        public void Validate()
+        public bool Validate()
         {
             topLength	    = math.max(topLength,    0);
             bottomLength	= math.max(bottomLength, 0);
@@ -87,10 +87,11 @@ namespace Chisel.Core
 
             topSides		= math.max(topSides,	 1);
             bottomSides	    = math.max(bottomSides, 1);
+            return true;
         }
 
         [BurstDiscard]
-        public void GetWarningMessages(IChiselMessageHandler messages)
+        public void GetMessages(IChiselMessageHandler messages)
         {
         }
         #endregion

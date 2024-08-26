@@ -24,8 +24,6 @@ namespace Chisel.Editors
     [CustomEditor(typeof(ChiselModelComponent))]
     public sealed class ChiselModelEditor : ChiselNodeEditor<ChiselModelComponent>
     {
-        const string kModelHasNoChildren = "This model has no chisel nodes as children and will not generate any geometry.\nAdd some chisel nodes to see something.";
-
         [MenuItem(kGameObjectMenuModelPath + ChiselModelComponent.kNodeTypeName, false, kGameObjectMenuModelPriority)]
         internal static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselModelComponent.kNodeTypeName); }
 
@@ -215,7 +213,10 @@ namespace Chisel.Editors
             showUnwrapParams        = SessionState.GetBool(kDisplayUnwrapParamsKey, true);
 
             if (!target)
-                return;
+            {
+                childNodes = new UnityEngine.Object[] { };
+				return;
+            }
 
             vertexChannelMaskProp        = serializedObject.FindProperty($"{ChiselModelComponent.kVertexChannelMaskName}");
             createRenderComponentsProp   = serializedObject.FindProperty($"{ChiselModelComponent.kCreateRenderComponentsName}");
@@ -253,8 +254,7 @@ namespace Chisel.Editors
             gameObjectsSerializedObject = new SerializedObject(serializedObject.targetObjects.Select(t => ((Component)t).gameObject).ToArray());
             staticEditorFlagsProp = gameObjectsSerializedObject.FindProperty("m_StaticEditorFlags");
 
-
-            for (int t = 0; t < targets.Length; t++)
+			for (int t = 0; t < targets.Length; t++)
             {
                 var modelTarget = targets[t] as ChiselModelComponent;
                 if (!modelTarget)
@@ -262,8 +262,27 @@ namespace Chisel.Editors
 
                 if (!modelTarget.IsInitialized)
                     modelTarget.OnInitialize();
-            }
-        }
+
+			}
+
+
+			HashSet<UnityEngine.Object> uniqueChildNodes = new HashSet<UnityEngine.Object>();
+			if (targets.Length == 1)
+			{
+				var modelTarget = targets[0] as ChiselModelComponent;
+                if (modelTarget)
+                {
+                    foreach (var child in modelTarget.GetComponentsInChildren<ChiselNode>(includeInactive: false))
+                    {
+						if (child.isActiveAndEnabled)
+						    uniqueChildNodes.Add(child);
+                    }
+                }
+			}
+			childNodes = uniqueChildNodes.ToArray();
+		}
+
+		UnityEngine.Object[] childNodes;
 
 		bool IsPreset
 		{
@@ -902,7 +921,6 @@ namespace Chisel.Editors
 
             if (TargetsUseInstancingShader())
             {
-
                 if (BatchingStatic)
                 {
                     EditorGUILayout.HelpBox(StaticBatchingWarningContents.text, MessageType.Warning, true);
@@ -1056,9 +1074,9 @@ namespace Chisel.Editors
             }
             return false;
         }
-        
 
-        protected override void OnEditSettingsGUI(SceneView sceneView)
+
+		protected override void OnEditSettingsGUI(SceneView sceneView)
         {
             if (Tools.current != Tool.Custom)
                 return;
@@ -1066,7 +1084,13 @@ namespace Chisel.Editors
 
         }
 
-        public override void OnInspectorGUI()
+		static readonly ChiselComponentInspectorMessageHandler messages = new();
+
+        Vector2 modelMessagesScrollPosition = Vector2.zero;
+		Vector2 childMessagesScrollPosition = Vector2.zero;
+        bool showMessages = false;
+
+		public override void OnInspectorGUI()
         {
             Profiler.BeginSample("OnInspectorGUI");
             try
@@ -1082,23 +1106,18 @@ namespace Chisel.Editors
                 if (IsDefaultModel())
                     EditorGUILayout.HelpBox(DefaultModelContents.text, MessageType.Warning);
 
-                bool hasNoChildren = false;
-                foreach (var target in serializedObject.targetObjects)
+				messages.StartWarnings(modelMessagesScrollPosition);
+				ChiselMessages.ShowMessages(targets, messages);
+				modelMessagesScrollPosition = messages.EndWarnings();
+
+                if (targets.Length == 1)
                 {
-                    var model = target as ChiselModelComponent;
-                    if (!model)
-                        continue;
-                    if (model.transform.childCount == 0)
-                    {
-                        hasNoChildren = true;
-                    }
-                }
-                if (hasNoChildren)
-                {
-                    EditorGUILayout.HelpBox(kModelHasNoChildren, MessageType.Warning, true);
+                    messages.StartWarnings(childMessagesScrollPosition);
+                    ChiselMessages.ShowMessages(childNodes, messages);
+					childMessagesScrollPosition = messages.EndWarnings();
                 }
 
-                EditorGUI.BeginChangeCheck();
+				EditorGUI.BeginChangeCheck();
                 {
                     showGenerationSettings = EditorGUILayout.BeginFoldoutHeaderGroup(showGenerationSettings, GenerationSettingsContent);
                     if (showGenerationSettings)

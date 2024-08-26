@@ -92,12 +92,13 @@ namespace Chisel.Core
         #endregion
         
         #region Validation
-        public void Validate()
+        public bool Validate()
         {
             curveSegments	    = math.max(curveSegments, 2);
             revolveSegments	    = math.max(revolveSegments, 1);
 
             totalAngle		    = math.clamp(totalAngle, 1, 360); // TODO: constants
+            return true;
         }
 
         [BurstDiscard]
@@ -127,10 +128,10 @@ namespace Chisel.Core
             base.Reset();
         }
 
-        public override void Validate() 
+        public override bool Validate() 
         {
             shape ??= kDefaultShape;
-            base.Validate(); 
+            return base.Validate(); 
         }
 
 

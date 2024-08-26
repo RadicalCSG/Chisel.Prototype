@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -197,9 +199,71 @@ namespace Chisel.Core
         bool DoPlanarScaleHandle(ref Vector2 scale2D, Vector3 position, Quaternion rotation, string undoMessage = null);
     }
 
+    public enum MessageDestination
+    {
+        Hierarchy,
+        Inspector
+    }
+
     public interface IChiselMessageHandler
     {
+		MessageDestination Destination { get; }
+		void SetTitle(string name, UnityEngine.Object reference);
         void Warning(string message, Action buttonAction, string buttonText);
         void Warning(string message);
-    }
+	}
+
+    public interface IChiselMessageProvider
+    {
+		void GetMessages(IChiselMessageHandler messageHandler);
+	}
+
+    public static class ChiselMessages
+	{
+		public static void ShowMessages(UnityEngine.Object[] targets, IChiselMessageHandler messageHandler)
+		{
+			if (targets.Length == 1)
+			{
+                var target = targets[0];
+				if (target is not IChiselMessageProvider generator)
+					return;
+				if (generator is MonoBehaviour component && !component.isActiveAndEnabled)
+					return;
+				generator?.GetMessages(messageHandler);
+				return;
+			}
+			foreach (var target in targets)
+			{
+				if (target is not IChiselMessageProvider generator)
+					continue;
+                if (target is MonoBehaviour component && !component.isActiveAndEnabled)
+                    continue;
+				messageHandler.SetTitle(target.name, target);
+				generator.GetMessages(messageHandler);
+			}
+		}
+
+		public static void ShowMessages(List<UnityEngine.Object> targets, IChiselMessageHandler messageHandler)
+		{
+			if (targets.Count == 1)
+			{
+				var target = targets[0];
+				if (target is not IChiselMessageProvider generator)
+					return;
+				if (generator is MonoBehaviour component && !component.isActiveAndEnabled)
+					return;
+				generator.GetMessages(messageHandler);
+				return;
+			}
+			foreach (var target in targets)
+			{
+				if (target is not IChiselMessageProvider generator)
+					continue;
+				if (generator is MonoBehaviour component && !component.isActiveAndEnabled)
+					continue;
+				messageHandler.SetTitle(target.name, target);
+				generator.GetMessages(messageHandler);
+			}
+		}
+	}
 }

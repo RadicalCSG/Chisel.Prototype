@@ -56,7 +56,7 @@ namespace Chisel.Core
         #region Validation
         public const float kMinSphereDiameter = 0.01f;
 
-        public void Validate()
+        public bool Validate()
         {
             diameterXYZ.x       = math.max(kMinSphereDiameter, math.abs(diameterXYZ.x));
             diameterXYZ.y       = math.max(0,                  math.abs(diameterXYZ.y)) * (diameterXYZ.y < 0 ? -1 : 1);
@@ -64,10 +64,11 @@ namespace Chisel.Core
 
             horizontalSegments  = math.max(horizontalSegments, 3);
             verticalSegments	= math.max(verticalSegments, 2);
+            return true;
         }
 
         [BurstDiscard]
-        public void GetWarningMessages(IChiselMessageHandler messages)
+        public void GetMessages(IChiselMessageHandler messages)
         {
         }
         #endregion

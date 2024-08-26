@@ -58,7 +58,8 @@ namespace Chisel.Core
         }
 
         float4 CalculatePlane(Polygon polygon)
-        {        
+        {
+            Debug.Assert(polygon.edgeCount >= 0);
             // Newell's algorithm to create a plane for concave polygons.
             // NOTE: doesn't work well for self-intersecting polygons
             var lastEdge	= polygon.firstEdge + polygon.edgeCount;
@@ -81,7 +82,6 @@ namespace Chisel.Core
 
             return new float4((float3)normal, (float)d);
         }
-
 
         public void CalculatePlanes()
         {
@@ -430,9 +430,8 @@ namespace Chisel.Core
             return true;
         }
 
-        static bool IsPolygonCompletelyPlaneAligned(int polygonIndex, List<VertexSide> vertexDistances, List<Polygon> polygons, List<HalfEdge> halfEdges)
+        static bool IsPolygonCompletelyPlaneAligned(in Polygon polygon,  List<HalfEdge> halfEdges, List<VertexSide> vertexDistances)
         {
-            var polygon     = polygons[polygonIndex];
             var firstEdge   = polygon.firstEdge;
             var edgeCount   = polygon.edgeCount;
             var lastEdge    = firstEdge + edgeCount;
@@ -809,7 +808,8 @@ namespace Chisel.Core
             CompactHalfEdges();
             if (planes == null || planes.Length != polygons.Length)
                 CalculatePlanes();
-            Validate(logErrors: true);
+            UpdateHalfEdgePolygonIndices();
+			Validate(logErrors: true);
         }
 
         static HalfEdge[] sTempEdgeCache = null;
@@ -1561,14 +1561,19 @@ namespace Chisel.Core
                     s_VertexDistances.Add(new VertexSide { Distance = distance, Halfspace = halfspace });
                 }
 
+                bool foundAligned = false;
                 for (var p = polygons.Count - 1; p >= 0; p--)
                 {
-                    if (IsPolygonCompletelyPlaneAligned(p, s_VertexDistances, polygons, halfEdges))
+                    if (IsPolygonCompletelyPlaneAligned(polygons[p], halfEdges, s_VertexDistances))
                     {
-                        result = false;
-                        continue;
+                        var polygon = polygons[p];
+                        polygon.descriptionIndex = srcIndex;
+						polygons[p] = polygon;
+						foundAligned = true;
                     }
                 }
+                if (foundAligned)
+                    continue;
 
                 // We split all the polygons by the cutting plane (which creates new polygons at the end, so we start at the end going backwards)
                 for (var p = polygons.Count - 1; p >= 0; p--)
@@ -1869,7 +1874,7 @@ namespace Chisel.Core
                 //if (updateIndices)
                     UpdateHalfEdgePolygonIndices();
 
-                Validate(logErrors: true);
+                Validate();
 				return result;
             }
             finally

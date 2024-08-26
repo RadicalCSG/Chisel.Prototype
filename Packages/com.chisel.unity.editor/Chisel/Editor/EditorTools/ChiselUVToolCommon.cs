@@ -911,11 +911,11 @@ namespace Chisel.Editors
             // more accurate for small movements
             worldDragPlane		= worldProjectionPlane;
 
-            // TODO: (unfinished) prevents drag-plane from intersecting near plane (makes movement slow down to a singularity when further away from click position)
-            //worldDragPlane	= new Plane(Camera.current.transform.forward, worldStartPosition); 
+			// TODO: (unfinished) prevents drag-plane from intersecting near plane (makes movement slow down to a singularity when further away from click position)
+			//worldDragPlane	= new Plane(Camera.current.transform.forward, worldStartPosition); 
 
-            // TODO: ideally we'd interpolate the behavior of the worldPlane between near and far behavior
-            UpdateDragVector();
+			// TODO: ideally we'd interpolate the configuration of the worldPlane between near and far configuration
+			UpdateDragVector();
             return true;
         }
 

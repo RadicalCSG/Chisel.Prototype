@@ -6,6 +6,7 @@ using CanEditMultipleObjects = UnityEditor.CanEditMultipleObjects;
 using CustomEditor           = UnityEditor.CustomEditor;
 using Undo                   = UnityEditor.Undo;
 using GUIUtility             = UnityEngine.GUIUtility;
+using UnityEditor;
 
 namespace Chisel.Editors
 {
@@ -21,8 +22,9 @@ namespace Chisel.Editors
             var activeGenerators = s_ActiveOutlines.Keys.ToArray();
             foreach (var generator in activeGenerators)
             {
-                generator.definition.brushOutline.Validate();
-                generator.definition.brushOutline.CalculatePlanes();
+                generator.definition.ResetValidState();
+				generator.definition.BrushOutline.Validate();
+                generator.definition.BrushOutline.CalculatePlanes();
                 s_ActiveOutlines[generator] = new ChiselEditableOutline(generator);
                 UpdateEditableOutline(generator);
             }
@@ -52,7 +54,7 @@ namespace Chisel.Editors
                 generator.OnValidate();
         }
 
-        protected override void OnScene(IChiselHandles handles, ChiselBrushComponent generator)
+		protected override void OnScene(IChiselHandles handles, ChiselBrushComponent generator)
         {
             if (!s_ActiveOutlines.TryGetValue(generator, out ChiselEditableOutline editableOutline) ||
                 editableOutline == null)
@@ -86,17 +88,14 @@ namespace Chisel.Editors
             // Removes infinitely thin polygons (for instance, when snapping edges to edges)
             internalBrushMesh.RemoveDegenerateTopology(out outline.edgeRemap, out outline.polygonRemap);
 
-            internalBrushMesh.CalculatePlanes();
-
-            // If the brush is concave, we set the generator to not be valid, so that when we commit, it will be reverted
-            generator.definition.ValidState = internalBrushMesh.HasVolume() &&          // TODO: implement this, so we know if a brush is a 0D/1D/2D shape
-                                              !internalBrushMesh.IsConcave() &&         // TODO: eventually allow concave shapes
-                                              !internalBrushMesh.IsSelfIntersecting();  // TODO: in which case this needs to be implemented
-
-            generator.definition.brushOutline = internalBrushMesh;
-
-            generator.definition.EnsurePlanarPolygons();
             generator.OnValidate();
+
+			internalBrushMesh.CalculatePlanes();
+
+			generator.definition.BrushOutline = internalBrushMesh;
+
+            if (generator.definition.EnsurePlanarPolygons())
+                generator.OnValidate();
 
             outline.Rebuild();
         }
@@ -125,11 +124,11 @@ namespace Chisel.Editors
                     // We remove redundant vertices here since in editableOutline we make the assumption that the vertices 
                     // between the original and the 'fixed' brushMesh are identical. 
                     // This makes it a lot easier to find 'soft edges'.
-                    outline.vertexRemap = generator.definition.brushOutline.RemoveUnusedVertices();
-                    ChiselEditableOutline.RemapSelection(generator.definition.brushOutline, outline.selection, outline.vertexRemap, outline.edgeRemap, outline.polygonRemap);
+                    outline.vertexRemap = generator.definition.BrushOutline.RemoveUnusedVertices();
+                    ChiselEditableOutline.RemapSelection(generator.definition.BrushOutline, outline.selection, outline.vertexRemap, outline.edgeRemap, outline.polygonRemap);
 
                     // Ensure Undo registers any changes
-                    generator.definition.brushOutline = new BrushMesh(generator.definition.brushOutline);
+                    generator.definition.BrushOutline = new BrushMesh(generator.definition.BrushOutline);
                 }
 
                 // Create new outlines for our generators

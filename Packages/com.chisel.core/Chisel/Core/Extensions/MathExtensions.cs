@@ -86,18 +86,16 @@ namespace Chisel.Core
 
         public static float4x4 GenerateLocalToPlaneSpaceMatrix(float4 planeVector)
         {
-            float3 normal = planeVector.xyz;
-            CalculateTangents(normal, out float3 tangent, out float3 biNormal);
-            //var pointOnPlane = normal * planeVector.w;
-
+			float3 normal = -planeVector.xyz;
+			CalculateTangents(normal, out var tangent, out var biNormal);
+            var pointOnPlane = normal * -planeVector.w;
             return new float4x4
             {
                 c0 = new float4(tangent.x, biNormal.x, normal.x, 0.0f),
                 c1 = new float4(tangent.y, biNormal.y, normal.y, 0.0f),
                 c2 = new float4(tangent.z, biNormal.z, normal.z, 0.0f),
-                //c3 = new float4(math.dot(tangent, pointOnPlane), math.dot(biNormal, pointOnPlane), math.dot(normal, pointOnPlane), 1.0f)
-                c3 = new float4(0, 0, -planeVector.w, 1.0f)
-            };
+				c3 = new float4(math.dot(tangent, pointOnPlane), math.dot(biNormal, pointOnPlane), math.dot(normal, pointOnPlane), 1.0f)
+			};
         }
 
         public static Vector3 ClosestTangentAxis(Vector3 vector)

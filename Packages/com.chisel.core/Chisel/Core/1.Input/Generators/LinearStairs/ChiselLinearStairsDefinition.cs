@@ -236,7 +236,7 @@ namespace Chisel.Core
         public const float  kMinSideWidth			= 0.01f;
         public const float	kMinWidth				= 0.0001f;
 
-        public void Validate()
+        public bool Validate()
         {
             stepHeight		= math.max(kMinStepHeight, stepHeight);
             stepDepth		= math.clamp(stepDepth, kMinStepDepth, AbsDepth);
@@ -262,6 +262,7 @@ namespace Chisel.Core
 
             plateauHeight	= math.max(0, realHeight - totalStepHeight);
             stepDepth		= math.clamp(stepDepth, kMinStepDepth, AbsDepth / totalSteps);
+            return true;
         }
 
         [BurstDiscard]

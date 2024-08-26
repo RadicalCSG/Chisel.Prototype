@@ -18,7 +18,7 @@ namespace Chisel.Editors
         public ChiselEditableOutline(ChiselBrushComponent brush)
         {
             this.brush = brush;
-            this.brushMesh = new BrushMesh(this.brush.definition.brushOutline);
+            this.brushMesh = new BrushMesh(this.brush.definition.BrushOutline);
             this.selection = ChiselTopologySelectionManager.Selection[this.brush][0];
             Rebuild();
         }
@@ -511,7 +511,7 @@ namespace Chisel.Editors
                 brushMesh.halfEdges == null || brushMesh.halfEdges.Length == 0 ||
                 brushMesh.polygons == null || brushMesh.polygons.Length == 0)
                 return false;
-            return true;
+			return brushMesh.Validate();
         }
 
 

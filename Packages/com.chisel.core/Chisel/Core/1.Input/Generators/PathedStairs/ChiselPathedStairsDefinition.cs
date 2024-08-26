@@ -99,10 +99,10 @@ namespace Chisel.Core
         #region Validation
         public const int kMinCurveSegments = 2;
 
-        public void Validate()
+        public bool Validate()
         {
             curveSegments = math.max(curveSegments, kMinCurveSegments);
-            stairs.Validate();
+            return stairs.Validate();
         }
 
         [BurstDiscard]
@@ -132,10 +132,10 @@ namespace Chisel.Core
             base.Reset();
         }
 
-        public override void Validate() 
+        public override bool Validate() 
         {
             shape ??= kDefaultShape;
-            base.Validate(); 
+            return base.Validate(); 
         }
 
         const Allocator defaultAllocator = Allocator.TempJob;

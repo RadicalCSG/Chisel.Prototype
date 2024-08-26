@@ -1114,6 +1114,11 @@ namespace Chisel.Core
             surfaceDefinition.EnsureSize(planes.Length);
             CreateBox(bounds.min, bounds.max, out brushMesh);
 
+            for (int p = 0; p < brushMesh.polygons.Length; p++)
+            {
+                brushMesh.polygons[p].descriptionIndex = -1;
+			}
+
             // cut the brush using the given planes.
             brushMesh.Cut(planes);
         }

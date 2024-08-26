@@ -4,6 +4,8 @@ using Chisel.Components;
 using Chisel.Core;
 using Unity.Mathematics;
 using UnityEditor;
+using UnityEditor.Overlays;
+
 using UnityEngine;
 using Snapping = Chisel.Editors.Snapping;
 #if !UNITY_2020_2_OR_NEWER
@@ -1382,17 +1384,177 @@ namespace Chisel.Editors
 
     public sealed class ChiselComponentInspectorMessageHandler : IChiselMessageHandler
     {
-        public void Warning(string message, Action buttonAction, string buttonText)
+        public MessageDestination Destination
         {
-            // TODO: prevent duplicates
-            // TODO: show button to fix the problem
-            EditorGUILayout.HelpBox(message, MessageType.Warning, true);
+            get { return MessageDestination.Inspector; }
         }
 
-        public void Warning(string message)
+
+        bool hasLayoutStarted = false;
+        public void StartWarnings(Vector2 position)
         {
-            // TODO: prevent duplicates
-            EditorGUILayout.HelpBox(message, MessageType.Warning, true);
+            hasLayoutStarted = false;
+            scrollPosition = position;
+		}
+
+        static GUIContent warningIcon;
+        static GUIContent warningIcon2x;
+		static Vector2 iconSize;
+		static Vector2 iconSize2x;
+		static Vector2 scrollPosition;
+		int indentLevel;
+        float height;
+
+
+        string titleName = null;
+		bool titleShown = false;
+		UnityEngine.Object titleReferenceObject;
+        public void SetTitle(string name, UnityEngine.Object reference)
+        {
+            titleName = name;
+            titleShown = false;
+            titleReferenceObject = reference;
+		}
+
+        void StartWarningLayout()
+        {
+            if (hasLayoutStarted)
+                return;
+            if (warningIcon == null)
+            {
+                warningIcon = EditorGUIUtility.IconContent("console.warnicon.sml");
+                warningIcon2x = EditorGUIUtility.IconContent("console.warnicon.sml@2x");
+                GUIStyle defaultStyle = EditorStyles.helpBox;
+                iconSize = defaultStyle.CalcSize(warningIcon);
+                iconSize2x = defaultStyle.CalcSize(warningIcon2x);
+			}
+
+            indentLevel = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = 0;
+
+            scrollPosition = GUILayout.BeginScrollView(scrollPosition, EditorStyles.helpBox, GUILayout.ExpandWidth(true), GUILayout.MaxHeight(150), GUILayout.MinHeight(0));
+			hasLayoutStarted = true;
+            height = 0;
+		}
+
+        public (bool, float) ShowWarningIcon()
+        {
+            Rect rect = GUILayoutUtility.GetRect(0, 0, EditorStyles.helpBox);
+            if (EditorGUIUtility.pixelsPerPoint > 1)
+            {
+                rect.width = iconSize2x.x;
+                rect.height = iconSize2x.y;
+                EditorGUI.LabelField(rect, warningIcon2x);
+                return (true, rect.yMax);
+            } else
+            {
+                rect.width = iconSize.x;
+                rect.height = iconSize.y;
+                EditorGUI.LabelField(rect, warningIcon);
+				return (false, rect.yMax);
+			}
         }
+
+        public Vector2 EndWarnings()
+        {
+            if (hasLayoutStarted)
+            { 
+                if (EditorGUIUtility.pixelsPerPoint > 1)
+                {
+                    if (height < iconSize2x.y)
+                        GUILayoutUtility.GetRect(0, (iconSize2x.y - height) - EditorGUIUtility.singleLineHeight);
+                } else
+                {
+                    if (height < iconSize.y)
+                        GUILayoutUtility.GetRect(0, (iconSize.y - height) - EditorGUIUtility.singleLineHeight);
+                }
+                EditorGUI.indentLevel = indentLevel;
+				GUILayout.EndScrollView();
+                hasLayoutStarted = false;
+			    titleShown = false;
+			    titleName = null;
+            }
+            return scrollPosition;
+		}
+
+		public void ShowTitle()
+		{
+            if (titleShown)
+                return;
+			EditorGUI.indentLevel = 0;
+			(bool doubleSized, float warningIconBottom) = ShowWarningIcon();
+            if (!string.IsNullOrWhiteSpace(titleName))
+            { 
+			    var content = new GUIContent(titleName);
+			    Rect rect = GUILayoutUtility.GetRect(content, EditorStyles.label);
+                if (doubleSized)
+				{
+					rect.x += iconSize2x.x;
+					rect.width -= iconSize2x.x;
+					height = math.max(rect.yMax, warningIconBottom) + 3;
+				} else
+                {
+                    rect.x += iconSize.x;
+                    rect.width -= iconSize.x;
+					height = math.max(rect.yMax, warningIconBottom) + 3;
+				}
+                if (titleReferenceObject == null)
+			    {
+				    EditorGUI.LabelField(rect, content, EditorStyles.label);
+			    } else
+                {
+                    if (GUI.Button(rect, content, EditorStyles.label))
+                    {
+                        EditorGUIUtility.PingObject(titleReferenceObject);
+                    }
+                }
+			    EditorGUI.indentLevel = 1;
+			}
+			titleShown = true;
+		}
+
+		public void Warning(string message, Action buttonAction, string buttonText)
+        {
+            if (!hasLayoutStarted)
+                StartWarningLayout();
+            if (!titleShown)
+                ShowTitle();
+
+			// TODO: prevent duplicates?
+			EditorGUILayout.BeginHorizontal();
+            try
+            {
+                var content = new GUIContent(message);
+                Rect rect = GUILayoutUtility.GetRect(content, EditorStyles.label);
+                rect.x += iconSize.x;
+                rect.width -= iconSize.x;
+                EditorGUI.LabelField(rect, content);
+                var content2 = new GUIContent(buttonText);
+                Rect rect2 = GUILayoutUtility.GetRect(content2, EditorStyles.iconButton);
+                if (GUI.Button(rect2, content2, EditorStyles.iconButton))
+                    buttonAction?.Invoke();
+			    height += rect.height + rect2.height;
+            }
+            finally
+            {
+                EditorGUILayout.EndHorizontal();
+            }
+		}
+
+        public void Warning(string message)
+		{
+			if (!hasLayoutStarted)
+				StartWarningLayout();
+			if (!titleShown)
+				ShowTitle();
+
+			// TODO: prevent duplicates?
+			var content = new GUIContent(message);
+			Rect rect = GUILayoutUtility.GetRect(content, EditorStyles.label);
+			rect.x += iconSize.x;
+			rect.width -= iconSize.x;
+			EditorGUI.LabelField(rect, content);
+			height += rect.height;
+		}
     }
 }

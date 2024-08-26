@@ -39,6 +39,7 @@ namespace Chisel.Editors
         class UVMatrixState
         {
             public bool     initialized = false;
+            public Vector3  normal;
             public Vector2  translation;
             public float    rotation;
             public Vector2  scale;
@@ -60,6 +61,7 @@ namespace Chisel.Editors
             {
                 state.uvMatrix = uvMatrix;
                 uvMatrix.Decompose(out state.translation, out state.rotation, out state.scale);
+                state.normal = uvMatrix.PlaneNormal;
                 state.initialized = true;
             }
 
@@ -109,7 +111,7 @@ namespace Chisel.Editors
                     state.scale.x = (float)Math.Max(Math.Abs(state.scale.x), UVMatrix.kMinScale) * Math.Sign(state.scale.x);
                     state.scale.y = (float)Math.Max(Math.Abs(state.scale.y), UVMatrix.kMinScale) * Math.Sign(state.scale.y);
 
-                    uvMatrix = UVMatrix.TRS(state.translation, state.rotation, state.scale);
+                    uvMatrix = UVMatrix.TRS(state.translation, state.normal, state.rotation, state.scale);
                     UProp.vector4Value = uvMatrix.U;
                     VProp.vector4Value = uvMatrix.V;
                     state.uvMatrix = uvMatrix;

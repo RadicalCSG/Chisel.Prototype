@@ -832,14 +832,17 @@ namespace Chisel.Editors
             ShowInspectorHeader(operationProp);
         }
 
-        static readonly ChiselComponentInspectorMessageHandler warnings = new ChiselComponentInspectorMessageHandler();
-        protected virtual void ShowWarningMessages(IChiselMessageHandler warnings) { }
+        static readonly ChiselComponentInspectorMessageHandler warnings = new();
 
+		Vector2 messagesScrollPosition = Vector2.zero;
 
-        protected virtual void OnInspector() 
-        { 
-            OnDefaultInspector(); 
-            ShowWarningMessages(warnings); 
+		protected virtual void OnInspector() 
+        {
+            warnings.StartWarnings(messagesScrollPosition);
+			ChiselMessages.ShowMessages(targets, warnings);
+			messagesScrollPosition = warnings.EndWarnings();
+
+			OnDefaultInspector(); 
         }
 
         protected virtual void OnTargetModifiedInInspector() 
