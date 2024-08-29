@@ -8,7 +8,9 @@
         "Unity.Mathematics.Extensions",
         "Unity.Mathematics.Editor",
         "com.chisel.core",
-        "com.chisel.unity.components"
+        "com.chisel.unity.components",
+        "AssetMetadataEditor",
+        "AssetMetadataRuntime"
     ],
     "includePlatforms": [
         "Editor"

@@ -5,7 +5,8 @@ using UnityEditor;
 
 namespace Chisel.Editors
 {
-    [CustomPropertyDrawer(typeof(SurfaceFlags))]
+
+    [CustomPropertyDrawer(typeof(SurfaceDetailFlags))]
     public sealed class SurfaceFlagsPropertyDrawer : PropertyDrawer
     {
         readonly static GUIContent	kTextureLockedContent = new GUIContent("Lock texture to object", "When set, the texture will stay\n" +
@@ -22,7 +23,7 @@ namespace Chisel.Editors
             }
         }
 
-        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             return DefaultHeight;
         }
@@ -33,18 +34,18 @@ namespace Chisel.Editors
             
             // Draw label
             position = EditorGUI.PrefixLabel(position, GUIUtility.GetControlID(FocusType.Keyboard), label);
-            
-            // Don't make child fields be indented
-            var indent = EditorGUI.indentLevel;
+
+			// Don't make child fields be indented
+			var indent = EditorGUI.indentLevel;
             EditorGUI.indentLevel = 0;
             
             bool prevShowMixedValue			= EditorGUI.showMixedValue;
             EditorGUI.showMixedValue        = prevShowMixedValue || property.hasMultipleDifferentValues;
             try
             {
-                var surfaceFlags = (SurfaceFlags)property.intValue;
+                var surfaceDetailFlags  = (SurfaceDetailFlags)property.intValue;
 
-                bool isTextureLocked    = (surfaceFlags & SurfaceFlags.TextureIsInWorldSpace) == 0;
+                bool isTextureLocked    = (surfaceDetailFlags & SurfaceDetailFlags.TextureIsInWorldSpace) == 0;
                 
                 EditorGUI.BeginChangeCheck();
                 { 
@@ -52,10 +53,10 @@ namespace Chisel.Editors
                 }
                 if (EditorGUI.EndChangeCheck())
                 {
-                    if (isTextureLocked)	surfaceFlags &= ~SurfaceFlags.TextureIsInWorldSpace;
-                    else					surfaceFlags |=  SurfaceFlags.TextureIsInWorldSpace;
+                    if (isTextureLocked) surfaceDetailFlags &= ~SurfaceDetailFlags.TextureIsInWorldSpace;
+                    else			     surfaceDetailFlags |=  SurfaceDetailFlags.TextureIsInWorldSpace;
         
-                    property.intValue = (int)surfaceFlags;
+                    property.intValue = (int)surfaceDetailFlags;
                 }
             }
             catch (ExitGUIException) { }

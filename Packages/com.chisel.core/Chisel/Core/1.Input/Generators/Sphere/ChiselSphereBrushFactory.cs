@@ -8,7 +8,7 @@ namespace Chisel.Core
     public sealed partial class BrushMeshFactory
     {
         public static bool GenerateSphere(float3 diameterXYZ, float offsetY, float rotation, bool generateFromCenter, int horzSegments, int vertSegments,
-                                          in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                          in BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob,
                                           out BlobAssetReference<BrushMeshBlob> brushMesh,
                                           Allocator allocator)
         {
@@ -49,7 +49,7 @@ namespace Chisel.Core
         }
         
         public static bool CreateSphere(float3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, 
-                                        ref NativeChiselSurfaceDefinition surfaceDefinition,
+                                        ref InternalChiselSurfaceArray surfaceDefinition,
                                         in BlobBuilder builder,
                                         ref BrushMeshBlob root,
                                         out BlobBuilderArray<float3>                 vertices,

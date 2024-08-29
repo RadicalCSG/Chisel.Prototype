@@ -1088,8 +1088,7 @@ namespace Chisel.Editors
 
         Vector2 modelMessagesScrollPosition = Vector2.zero;
 		Vector2 childMessagesScrollPosition = Vector2.zero;
-        bool showMessages = false;
-
+        
 		public override void OnInspectorGUI()
         {
             Profiler.BeginSample("OnInspectorGUI");

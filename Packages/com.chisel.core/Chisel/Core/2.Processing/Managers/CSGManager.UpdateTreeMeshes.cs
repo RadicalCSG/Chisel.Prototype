@@ -510,7 +510,7 @@ namespace Chisel.Core
                 Temporaries.vertexBufferContents.EnsureInitialized();
 
                 // Regular index operator will return a copy instead of a reference *sigh*
-                for (int l = 0; l < SurfaceLayers.ParameterCount; l++)
+                for (int l = 0; l < SurfaceDestinationParameters.ParameterCount; l++)
                 {
                     var parameter = chiselLookupValues.parameters[l];
                     parameter.Clear();
@@ -1717,21 +1717,21 @@ namespace Chisel.Core
                         for (int m = 0; m < Temporaries.meshQueries.Length; m++)
                         {
                             var meshQuery = Temporaries.meshQueries[m];
-                            var surfaceParameterIndex = (meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1 &&
-                                                         meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex) ?
+                            var surfaceParameterIndex = (meshQuery.LayerParameterIndex >= SurfaceParameterIndex.Parameter1 &&
+                                                         meshQuery.LayerParameterIndex <= SurfaceParameterIndex.MaxParameterIndex) ?
                                                          (int)meshQuery.LayerParameterIndex : 0;
 
                             // Query uses Material
-                            if ((meshQuery.LayerQuery & LayerUsageFlags.Renderable) != 0 && surfaceParameterIndex == 1)
+                            if ((meshQuery.LayerQuery & SurfaceDestinationFlags.Renderable) != 0 && surfaceParameterIndex == 1)
                             {
                                 // Each Material is stored as a submesh in the same mesh
                                 meshAllocations += 1;
                             }
                             // Query uses PhysicMaterial
-                            else if ((meshQuery.LayerQuery & LayerUsageFlags.Collidable) != 0 && surfaceParameterIndex == 2)
+                            else if ((meshQuery.LayerQuery & SurfaceDestinationFlags.Collidable) != 0 && surfaceParameterIndex == 2)
                             {
                                 // Each PhysicMaterial is stored in its own separate mesh
-                                meshAllocations += Temporaries.parameterCounts[SurfaceLayers.kColliderLayer];
+                                meshAllocations += Temporaries.parameterCounts[SurfaceDestinationParameters.kColliderLayer];
                             } else
                                 meshAllocations++;
                         }

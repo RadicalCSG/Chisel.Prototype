@@ -13,8 +13,8 @@ namespace Chisel.Core
         [SerializeField] int version = 0;
         
         // TODO: avoid storing surfaceDefinition and surfaces in brushOutline twice, which is wasteful and causes potential conflicts
-        //[HideInInspector]
-        private BrushMesh        brushOutline;
+        [HideInInspector]
+        public BrushMesh        brushOutline;
 
 
         [HideInInspector]
@@ -77,7 +77,7 @@ namespace Chisel.Core
 
         public int RequiredSurfaceCount { get { return brushOutline?.polygons?.Length ?? 0; } }
 
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void UpdateSurfaces(ref ChiselSurfaceArray surfaceDefinition)
         {
             if (surfaceDefinition.surfaces == null ||
                 surfaceDefinition.surfaces.Length == 0)

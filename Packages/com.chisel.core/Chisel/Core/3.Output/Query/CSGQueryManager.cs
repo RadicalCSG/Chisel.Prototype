@@ -25,8 +25,8 @@ namespace Chisel.Core
             for (int n = 0; n < meshQueries.Length; n++)
             {
                 var meshQuery = meshQueries[n];
-                var core_surface_flags = surface.surfaceLayers.layerUsage;
-                if ((core_surface_flags & meshQuery.LayerQueryMask) == meshQuery.LayerQuery)
+                var destinationFlags = surface.destinationFlags;
+                if ((destinationFlags & meshQuery.LayerQueryMask) == meshQuery.LayerQuery)
                     return true;
             }
             return false;

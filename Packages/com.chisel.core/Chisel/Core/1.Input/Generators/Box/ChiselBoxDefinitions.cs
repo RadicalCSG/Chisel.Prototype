@@ -35,7 +35,7 @@ namespace Chisel.Core
         #endregion
 
         #region Generate
-        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.CreateBox(bounds.Min, bounds.Max,
                                             in surfaceDefinitionBlob,
@@ -51,7 +51,7 @@ namespace Chisel.Core
         public int RequiredSurfaceCount { get { return 6; } }
 
         [BurstDiscard]
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        public void UpdateSurfaces(ref ChiselSurfaceArray surfaceDefinition) { }
         #endregion
 
         #region Validation

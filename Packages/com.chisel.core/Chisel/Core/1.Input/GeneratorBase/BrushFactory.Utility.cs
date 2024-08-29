@@ -104,7 +104,7 @@ namespace Chisel.Core
 
         public unsafe static bool GenerateSegmentedSubMesh(int horzSegments, int vertSegments, bool topCap, bool bottomCap, int topVertex, int bottomVertex, 
                                                            in BlobBuilderArray<float3> segmentVertices, 
-                                                           ref NativeChiselSurfaceDefinition surfaceDefinition,
+                                                           ref InternalChiselSurfaceArray internalSurfaceArray,
                                                            in BlobBuilder builder,
                                                            ref BrushMeshBlob root,
                                                            out BlobBuilderArray<BrushMeshBlob.Polygon> polygons,
@@ -175,7 +175,7 @@ namespace Chisel.Core
                     halfEdges[currEdgeIndex] = new BrushMeshBlob.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p };
                     twins[h] = currEdgeIndex;
                 }
-                polygons[polygonIndex] = new BrushMeshBlob.Polygon { firstEdge = edgeIndex, edgeCount = polygonEdgeCount, descriptionIndex = 0, surface = surfaceDefinition.surfaces[0] };
+                polygons[polygonIndex] = new BrushMeshBlob.Polygon { firstEdge = edgeIndex, edgeCount = polygonEdgeCount, descriptionIndex = 0, surface = internalSurfaceArray.surfaces[0] };
                 edgeIndex += polygonEdgeCount;
                 polygonIndex++;
             }
@@ -241,7 +241,7 @@ namespace Chisel.Core
                         halfEdges[edgeIndex + 3] = new BrushMeshBlob.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p + horzSegments};
                         twins[h] = edgeIndex + 3;
                     }
-                    polygons[polygonIndex] = new BrushMeshBlob.Polygon { firstEdge = edgeIndex, edgeCount = polygonEdgeCount, descriptionIndex = 0, surface = surfaceDefinition.surfaces[0] };
+                    polygons[polygonIndex] = new BrushMeshBlob.Polygon { firstEdge = edgeIndex, edgeCount = polygonEdgeCount, descriptionIndex = 0, surface = internalSurfaceArray.surfaces[0] };
                     edgeIndex += polygonEdgeCount;
                     polygonIndex++;
                 }
@@ -257,41 +257,41 @@ namespace Chisel.Core
                     halfEdges[twins[h]].twinIndex = currEdgeIndex;
                     halfEdges[currEdgeIndex] = new BrushMeshBlob.HalfEdge { twinIndex = twins[h], vertexIndex = startVertex + (horzSegments - 1) - h };
                 }
-                polygons[polygonIndex] = new BrushMeshBlob.Polygon { firstEdge = edgeIndex, edgeCount = polygonEdgeCount, descriptionIndex = 0, surface = surfaceDefinition.surfaces[0] };
+                polygons[polygonIndex] = new BrushMeshBlob.Polygon { firstEdge = edgeIndex, edgeCount = polygonEdgeCount, descriptionIndex = 0, surface = internalSurfaceArray.surfaces[0] };
             }
             return true;
         }
 
 
         public static unsafe void CreateExtrudedSubMesh(int segments, int segmentTopIndex, int segmentBottomIndex,
-                                                        in BlobBuilderArray<float3> localVertices,
-                                                        in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                        in BlobBuilderArray<float3>                       localVertices,
+                                                        in BlobAssetReference<InternalChiselSurfaceArray> internalSurfaceArrayBlob,
                                                         in BlobBuilder builder, ref BrushMeshBlob root,
-                                                        out BlobBuilderArray<BrushMeshBlob.Polygon> polygons,
+                                                        out BlobBuilderArray<BrushMeshBlob.Polygon>  polygons,
                                                         out BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges)
         {
-            CreateExtrudedSubMesh(segments, null, 0, segmentTopIndex, segmentBottomIndex, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out polygons, out halfEdges);
+            CreateExtrudedSubMesh(segments, null, 0, segmentTopIndex, segmentBottomIndex, in localVertices, in internalSurfaceArrayBlob, in builder, ref root, out polygons, out halfEdges);
         }
 
         public static unsafe void CreateExtrudedSubMesh(int segments, [ReadOnly] NativeArray<int> segmentDescriptionIndices, int segmentDescriptionLength, int segmentTopIndex, int segmentBottomIndex, 
-                                                in BlobBuilderArray<float3>                          localVertices,
-                                                in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                in BlobBuilderArray<float3>                       localVertices,
+                                                in BlobAssetReference<InternalChiselSurfaceArray> internalSurfaceArrayBlob,
                                                 in BlobBuilder builder, ref BrushMeshBlob root,
-                                                out BlobBuilderArray<BrushMeshBlob.Polygon>    polygons,
-                                                out BlobBuilderArray<BrushMeshBlob.HalfEdge>   halfEdges)
+                                                out BlobBuilderArray<BrushMeshBlob.Polygon>  polygons,
+                                                out BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges)
         {
             CreateExtrudedSubMesh(segments, (int*)segmentDescriptionIndices.GetUnsafePtr(), segmentDescriptionLength, segmentTopIndex, segmentBottomIndex,
-                                                        in localVertices, in surfaceDefinitionBlob, in builder, ref root, out polygons, out halfEdges);
+                                                        in localVertices, in internalSurfaceArrayBlob, in builder, ref root, out polygons, out halfEdges);
         }
 
         static unsafe void CreateExtrudedSubMesh(int segments, int* segmentDescriptionIndices, int segmentDescriptionLength, int segmentTopIndex, int segmentBottomIndex, 
-                                                 in BlobBuilderArray<float3>                          localVertices,
-                                                 in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                 in BlobBuilderArray<float3>                       localVertices,
+                                                 in BlobAssetReference<InternalChiselSurfaceArray> internalSurfaceArrayBlob,
                                                  in BlobBuilder builder, ref BrushMeshBlob root,
-                                                 out BlobBuilderArray<BrushMeshBlob.Polygon>    polygons,
-                                                 out BlobBuilderArray<BrushMeshBlob.HalfEdge>   halfEdges)
+                                                 out BlobBuilderArray<BrushMeshBlob.Polygon>  polygons,
+                                                 out BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges)
         {
-            ref var surfaceDefinition = ref surfaceDefinitionBlob.Value;
+            ref var surfaceArray = ref internalSurfaceArrayBlob.Value;
 
             // TODO: vertex reverse winding when it's not clockwise
             // TODO: handle duplicate vertices, remove them or avoid them being created in the first place (maybe use indices?)
@@ -381,8 +381,8 @@ namespace Chisel.Core
 
             polygons = builder.Allocate(ref root.polygons, polygonCount);
 
-            var surfaceTop      = surfaceDefinition.surfaces[segmentTopIndex];
-            var surfaceBottom   = surfaceDefinition.surfaces[segmentBottomIndex];
+            var surfaceTop      = surfaceArray.surfaces[segmentTopIndex];
+            var surfaceBottom   = surfaceArray.surfaces[segmentBottomIndex];
             
             polygons[0] = new BrushMeshBlob.Polygon { firstEdge = 0,        edgeCount = segments, descriptionIndex = segmentTopIndex, surface = surfaceTop };
             polygons[1] = new BrushMeshBlob.Polygon { firstEdge = segments, edgeCount = segments, descriptionIndex = segmentBottomIndex, surface = surfaceBottom };
@@ -395,7 +395,7 @@ namespace Chisel.Core
                 {
                     case SegmentTopology.Quad:
                     {
-                        polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surfaceArray.surfaces[descriptionIndex] };
                         surfaceID++;
                         break;
                     }
@@ -405,8 +405,8 @@ namespace Chisel.Core
                         var smoothingGroup = surfaceID + 1; // TODO: create an unique smoothing group for faceted surfaces that are split in two, 
                                                             //			unless there's already a smoothing group for this edge; then use that
 
-                        polygons[surfaceID + 0] = new BrushMeshBlob.Polygon { firstEdge = firstEdge,     edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
-                        polygons[surfaceID + 1] = new BrushMeshBlob.Polygon { firstEdge = firstEdge + 3, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID + 0] = new BrushMeshBlob.Polygon { firstEdge = firstEdge,     edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceArray.surfaces[descriptionIndex] };
+                        polygons[surfaceID + 1] = new BrushMeshBlob.Polygon { firstEdge = firstEdge + 3, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceArray.surfaces[descriptionIndex] };
                         surfaceID += 2;
                         break;
                     }
@@ -414,8 +414,8 @@ namespace Chisel.Core
                     case SegmentTopology.TrianglePositive:
                     {
                         Debug.Assert(surfaceID < polygons.Length);
-                        Debug.Assert(descriptionIndex < surfaceDefinition.surfaces.Length);
-                        polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        Debug.Assert(descriptionIndex < surfaceArray.surfaces.Length);
+                        polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceArray.surfaces[descriptionIndex] };
                         surfaceID++;
                         break;
                     }
@@ -671,7 +671,7 @@ namespace Chisel.Core
 
         public static unsafe bool CreateExtrudedSubMesh([ReadOnly] NativeArray<float3> sideVertices, float3 extrusion,
                                                         [ReadOnly] NativeArray<int> segmentDescriptionIndices, 
-                                                        ref NativeChiselSurfaceDefinition surfaceDefinition,
+                                                        ref InternalChiselSurfaceArray internalSurfaceArray,
                                                         in BlobBuilder builder, ref BrushMeshBlob root,
                                                         out BlobBuilderArray<BrushMeshBlob.Polygon>    polygons,
                                                         out BlobBuilderArray<BrushMeshBlob.HalfEdge>   halfEdges,
@@ -762,8 +762,8 @@ namespace Chisel.Core
             
             var surfaceIndex0 = (segmentDescriptionIndices == null || 0 >= segmentDescriptionIndices.Length) ? 0 : (segmentDescriptionIndices[0]);
             var surfaceIndex1 = (segmentDescriptionIndices == null || 1 >= segmentDescriptionIndices.Length) ? 1 : (segmentDescriptionIndices[1]);
-            var surface0 = surfaceDefinition.surfaces[surfaceIndex0];
-            var surface1 = surfaceDefinition.surfaces[surfaceIndex1];
+            var surface0 = internalSurfaceArray.surfaces[surfaceIndex0];
+            var surface1 = internalSurfaceArray.surfaces[surfaceIndex1];
 
             polygons[0] = new BrushMeshBlob.Polygon { firstEdge =        0, edgeCount = segments, descriptionIndex = surfaceIndex0, surface = surface0 };
             polygons[1] = new BrushMeshBlob.Polygon { firstEdge = segments, edgeCount = segments, descriptionIndex = surfaceIndex1, surface = surface1 };
@@ -774,15 +774,15 @@ namespace Chisel.Core
                 var firstEdge		 = edgeIndices[(s * 2) + 0] - 1;
                 if (isSegmentConvex[s] == 0)
                 {
-                    polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                    polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 4, descriptionIndex = descriptionIndex, surface = internalSurfaceArray.surfaces[descriptionIndex] };
                     surfaceID++;
                 } else
                 {
                     var smoothingGroup = surfaceID + 1; // TODO: create an unique smoothing group for faceted surfaces that are split in two, 
                                                         //			unless there's already a smoothing group for this edge; then use that
 
-                    polygons[surfaceID + 0] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
-                    polygons[surfaceID + 1] = new BrushMeshBlob.Polygon { firstEdge = firstEdge + 3, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                    polygons[surfaceID + 0] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 3, descriptionIndex = descriptionIndex, surface = internalSurfaceArray.surfaces[descriptionIndex] };
+                    polygons[surfaceID + 1] = new BrushMeshBlob.Polygon { firstEdge = firstEdge + 3, edgeCount = 3, descriptionIndex = descriptionIndex, surface = internalSurfaceArray.surfaces[descriptionIndex] };
                     surfaceID += 2;
                 }
             }
@@ -1106,12 +1106,12 @@ namespace Chisel.Core
         /// If you do not know the size of the resulting brush beforehand, this can also be oversized. For example +-4096 world units from the world center.
         /// If possible, perform your operations near the center of the world for optimal accuracy.</para>
         /// </summary>
-        public static void CreateFromPlanes(float4[] planes, Bounds bounds, ref ChiselSurfaceDefinition surfaceDefinition, out BrushMesh brushMesh)
+        public static void CreateFromPlanes(float4[] planes, Bounds bounds, ref ChiselSurfaceArray surfaceArray, out BrushMesh brushMesh)
         {
             Debug.Assert(planes != null && planes.Length >= 4);
 
             // create a box brush with the size of the specified bounds.
-            surfaceDefinition.EnsureSize(planes.Length);
+            surfaceArray.EnsureSize(planes.Length);
             CreateBox(bounds.min, bounds.max, out brushMesh);
 
             for (int p = 0; p < brushMesh.polygons.Length; p++)
@@ -1128,7 +1128,7 @@ namespace Chisel.Core
         /// The brush geometry is not centered unless your points are, use <seealso cref="BrushMesh.CenterAndSnapPlanes"/> to center and position the game object to match.
         /// <para>If possible, place your points near the center of the world for optimal accuracy.</para>
         /// </summary>
-        public static void CreateFromPoints(Vector3[] points, ref ChiselSurfaceDefinition surfaceDefinition, out BrushMesh brushMesh)
+        public static void CreateFromPoints(Vector3[] points, ref ChiselSurfaceArray surfaceArray, out BrushMesh brushMesh)
         {
             Debug.Assert(points != null && points.Length >= 4);
 
@@ -1142,7 +1142,7 @@ namespace Chisel.Core
             convexHullCalculator.GenerateHull(points, ref planes, out Bounds bounds);
 
             // create a brush out of the convex hull.
-            CreateFromPlanes(planes.ToArray(), bounds, ref surfaceDefinition, out brushMesh);
+            CreateFromPlanes(planes.ToArray(), bounds, ref surfaceArray, out brushMesh);
         }
     }
 }

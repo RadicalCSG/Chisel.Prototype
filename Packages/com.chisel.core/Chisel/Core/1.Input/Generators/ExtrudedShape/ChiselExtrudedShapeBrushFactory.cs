@@ -59,7 +59,7 @@ namespace Chisel.Core
                                                         in UnsafeList<SegmentVertex>    polygonVerticesArray, 
                                                         in UnsafeList<int>              polygonVerticesSegments,
                                                         in UnsafeList<float4x4>         pathMatrices,
-                                                        in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                        in BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob,
                                                         Allocator allocator)
         {
             // TODO: make each extruded quad split into two triangles when it's not a perfect plane,

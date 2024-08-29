@@ -53,12 +53,12 @@ namespace Chisel.Components
         public const int kDebugHelperCount = 6;
         public static readonly string[] kGeneratedDebugRendererNames = new string[kDebugHelperCount]
         {
-            "‹[debug-Discarded]›",                                  // LayerUsageFlags.None
-            "‹[debug-CastShadows]›",                                // LayerUsageFlags.RenderableCastShadows
-            "‹[debug-ShadowOnly]›",                                 // LayerUsageFlags.CastShadows
-            "‹[debug-ReceiveShadows]›",                             // LayerUsageFlags.RenderableReceiveShadows
-            "‹[debug-Collidable]›",                                 // LayerUsageFlags.Collidable
-            "‹[debug-Culled]›"                                      // LayerUsageFlags.Culled
+            "‹[debug-Discarded]›",                                  // SurfaceDestinationFlags.None
+            "‹[debug-CastShadows]›",                                // SurfaceDestinationFlags.RenderableCastShadows
+            "‹[debug-ShadowOnly]›",                                 // SurfaceDestinationFlags.CastShadows
+            "‹[debug-ReceiveShadows]›",                             // SurfaceDestinationFlags.RenderableReceiveShadows
+            "‹[debug-Collidable]›",                                 // SurfaceDestinationFlags.Collidable
+            "‹[debug-Culled]›"                                      // SurfaceDestinationFlags.Culled
         };
         public static readonly DrawModeFlags[] kGeneratedDebugShowFlags = new DrawModeFlags[kDebugHelperCount]
         {
@@ -99,21 +99,21 @@ namespace Chisel.Components
             var containerTransform  = container.transform;
             var colliderContainer   = ChiselObjectUtility.CreateGameObject(kGeneratedMeshColliderName, containerTransform, gameObjectState);
 
-            Debug.Assert((int)LayerUsageFlags.Renderable     == 1);
-            Debug.Assert((int)LayerUsageFlags.CastShadows    == 2);
-            Debug.Assert((int)LayerUsageFlags.ReceiveShadows == 4);
-            Debug.Assert((int)LayerUsageFlags.RenderReceiveCastShadows == (1|2|4));
+            Debug.Assert((int)SurfaceDestinationFlags.Renderable     == 1);
+            Debug.Assert((int)SurfaceDestinationFlags.CastShadows    == 2);
+            Debug.Assert((int)SurfaceDestinationFlags.ReceiveShadows == 4);
+            Debug.Assert((int)SurfaceDestinationFlags.RenderReceiveCastShadows == (1|2|4));
 
             var renderables = new ChiselRenderObjects[]
             {
                 new ChiselRenderObjects() { invalid = true },
-                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[1], containerTransform, gameObjectState, LayerUsageFlags.Renderable                               ),
-                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[2], containerTransform, gameObjectState, LayerUsageFlags.CastShadows                              ),
-                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[3], containerTransform, gameObjectState, LayerUsageFlags.Renderable | LayerUsageFlags.CastShadows ),
+                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[1], containerTransform, gameObjectState, SurfaceDestinationFlags.Renderable                               ),
+                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[2], containerTransform, gameObjectState, SurfaceDestinationFlags.CastShadows                              ),
+                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[3], containerTransform, gameObjectState, SurfaceDestinationFlags.Renderable | SurfaceDestinationFlags.CastShadows ),
                 new ChiselRenderObjects() { invalid = true },
-                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[5], containerTransform, gameObjectState, LayerUsageFlags.Renderable |                               LayerUsageFlags.ReceiveShadows),
+                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[5], containerTransform, gameObjectState, SurfaceDestinationFlags.Renderable |                               SurfaceDestinationFlags.ReceiveShadows),
                 new ChiselRenderObjects() { invalid = true },
-                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[7], containerTransform, gameObjectState, LayerUsageFlags.Renderable | LayerUsageFlags.CastShadows | LayerUsageFlags.ReceiveShadows),
+                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[7], containerTransform, gameObjectState, SurfaceDestinationFlags.Renderable | SurfaceDestinationFlags.CastShadows | SurfaceDestinationFlags.ReceiveShadows),
             };
 
             var meshRenderers = new MeshRenderer[]
@@ -405,7 +405,7 @@ namespace Chisel.Components
                 {
                     if (renderables[i] == null || renderables[i].invalid)
                         continue;
-                    bool isRenderable = (renderables[i].query & LayerUsageFlags.Renderable) == LayerUsageFlags.Renderable;
+                    bool isRenderable = (renderables[i].query & SurfaceDestinationFlags.Renderable) == SurfaceDestinationFlags.Renderable;
                     var renderableContainer = renderables[i].container;
                     ChiselObjectUtility.UpdateContainerFlags(renderableContainer, gameObjectState, isRenderable: isRenderable);
                     ChiselObjectUtility.ResetTransform(renderableContainer.transform, requiredParent: containerTransform);
@@ -423,14 +423,14 @@ namespace Chisel.Components
                 Profiler.EndSample();
             }
 
-            Debug.Assert(LayerParameterIndex.LayerParameter1 < LayerParameterIndex.LayerParameter2);
-            Debug.Assert((LayerParameterIndex.LayerParameter1 + 1) == LayerParameterIndex.LayerParameter2);
+            Debug.Assert(SurfaceParameterIndex.Parameter1 < SurfaceParameterIndex.Parameter2);
+            Debug.Assert((SurfaceParameterIndex.Parameter1 + 1) == SurfaceParameterIndex.Parameter2);
 
             dependencies.Complete();
 
             Debug.Assert(!vertexBufferContents.meshDescriptions.IsCreated ||
                          vertexBufferContents.meshDescriptions.Length == 0 ||
-                         vertexBufferContents.meshDescriptions[0].meshQuery.LayerParameterIndex >= LayerParameterIndex.None);
+                         vertexBufferContents.meshDescriptions[0].meshQuery.LayerParameterIndex >= SurfaceParameterIndex.None);
 
 
             Profiler.BeginSample("Init");
@@ -463,7 +463,7 @@ namespace Chisel.Components
                 renderObjectUpdates.Add(new ChiselRenderObjectUpdate
                 {
                     meshIndex           = debugHelperMeshUpdate.meshIndex,
-                    materialOverride    = ChiselMaterialManager.HelperMaterials[debugHelperMeshUpdate.objectIndex],
+                    materialOverride    = ChiselDefaultMaterials.HelperMaterials[debugHelperMeshUpdate.objectIndex],
                     instance            = instance,
                     model               = model
                 });

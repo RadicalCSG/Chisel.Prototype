@@ -7,8 +7,8 @@
         "Unity.Collections",
         "Unity.Mathematics",
         "Unity.Mathematics.Extensions",
-        "com.scene.handle.extensions.runtime",
-        "com.chisel.core"
+        "com.chisel.core",
+        "AssetMetadataRuntime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

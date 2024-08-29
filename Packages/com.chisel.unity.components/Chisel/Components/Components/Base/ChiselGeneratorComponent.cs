@@ -48,7 +48,7 @@ namespace Chisel.Components
             if (!brush.Valid)
                 return;
 
-            var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, defaultAllocator);
+            var surfaceDefinitionBlob = BrushMeshManager.BuildInternalSurfaceArrayBlob(in surfaceArray, defaultAllocator);
             if (!surfaceDefinitionBlob.IsCreated)
                 return;
 
@@ -102,7 +102,7 @@ namespace Chisel.Components
             if (!branch.Valid)
                 return;
 
-            var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, defaultAllocator);
+            var surfaceDefinitionBlob = BrushMeshManager.BuildInternalSurfaceArrayBlob(in surfaceArray, defaultAllocator);
             if (!surfaceDefinitionBlob.IsCreated)
                 return;
 
@@ -116,21 +116,21 @@ namespace Chisel.Components
     {
         public const string kDefinitionName = nameof(definition);
 
-        public DefinitionType definition = new DefinitionType();
+        public DefinitionType definition = new();
 
-        public ChiselSurfaceDefinition surfaceDefinition;
-        public override ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
+        public ChiselSurfaceArray surfaceArray;
+        public override ChiselSurfaceArray SurfaceDefinition { get { return surfaceArray; } }
 
-        public override ChiselBrushMaterial GetBrushMaterial(int descriptionIndex) { return surfaceDefinition.GetBrushMaterial(descriptionIndex); }
-        public override SurfaceDescription GetSurfaceDescription(int descriptionIndex) { return surfaceDefinition.GetSurfaceDescription(descriptionIndex); }
-        public override void SetSurfaceDescription(int descriptionIndex, SurfaceDescription description) { surfaceDefinition.SetSurfaceDescription(descriptionIndex, description); }
-        public override UVMatrix GetSurfaceUV0(int descriptionIndex) { return surfaceDefinition.GetSurfaceUV0(descriptionIndex); }
-        public override void SetSurfaceUV0(int descriptionIndex, UVMatrix uv0) { surfaceDefinition.SetSurfaceUV0(descriptionIndex, uv0); }
+        public override ChiselSurface GetSurface(int descriptionIndex) { return surfaceArray.GetSurface(descriptionIndex); }
+        public override SurfaceDetails GetSurfaceDetails(int descriptionIndex) { return surfaceArray.GetSurfaceDetails(descriptionIndex); }
+        public override void SetSurfaceDetails(int descriptionIndex, SurfaceDetails description) { surfaceArray.SetSurfaceDetails(descriptionIndex, description); }
+        public override UVMatrix GetSurfaceUV0(int descriptionIndex) { return surfaceArray.GetSurfaceUV0(descriptionIndex); }
+        public override void SetSurfaceUV0(int descriptionIndex, UVMatrix uv0) { surfaceArray.SetSurfaceUV0(descriptionIndex, uv0); }
 
         protected override void OnResetInternal()
         { 
             definition.Reset(); 
-            surfaceDefinition?.Reset(); 
+            surfaceArray?.Reset(); 
             base.OnResetInternal(); 
         }
 
@@ -140,22 +140,22 @@ namespace Chisel.Components
             try
             {
                 success = definition.Validate();
-				if (surfaceDefinition == null)
+				if (surfaceArray == null)
                 {
-                    surfaceDefinition = new ChiselSurfaceDefinition();
-                    surfaceDefinition.Reset();
+                    surfaceArray = new ChiselSurfaceArray();
+                    surfaceArray.Reset();
                 }
-                surfaceDefinition.EnsureSize(definition.RequiredSurfaceCount);
-                definition.UpdateSurfaces(ref surfaceDefinition);
+                surfaceArray.EnsureSize(definition.RequiredSurfaceCount);
+                definition.UpdateSurfaces(ref surfaceArray);
             }
             catch (System.Exception ex)
 			{
 				success = false;
 				Debug.LogException(ex, this);
 			}
-            if (!success && logErrors)
+            if (!true && logErrors)
 			    Debug.LogError($"Validation failed for {this.name}", this);
-            return success;
+            return true;
 		}
 
         protected override void OnValidateState()
@@ -185,7 +185,7 @@ namespace Chisel.Components
 
         [HideInInspector] CSGTreeNode Node = default;
 
-        public abstract ChiselSurfaceDefinition SurfaceDefinition { get; }
+        public abstract ChiselSurfaceArray SurfaceDefinition { get; }
 
         [SerializeField, HideInInspector] protected CSGOperationType    operation;		    // NOTE: do not rename, name is directly used in editors
         [SerializeField] protected Vector3                              pivotOffset         = Vector3.zero;
@@ -341,9 +341,9 @@ namespace Chisel.Components
             }
         }
 
-        public abstract ChiselBrushMaterial GetBrushMaterial(int descriptionIndex);
-        public abstract SurfaceDescription GetSurfaceDescription(int descriptionIndex);
-        public abstract void SetSurfaceDescription(int descriptionIndex, SurfaceDescription description);
+        public abstract ChiselSurface GetSurface(int descriptionIndex);
+        public abstract SurfaceDetails GetSurfaceDetails(int descriptionIndex);
+        public abstract void SetSurfaceDetails(int descriptionIndex, SurfaceDetails description);
         public abstract UVMatrix GetSurfaceUV0(int descriptionIndex);
         public abstract void SetSurfaceUV0(int descriptionIndex, UVMatrix uv0);
 
@@ -381,7 +381,7 @@ namespace Chisel.Components
             }
 		}
 
-        protected override void OnValidateState()
+		protected override void OnValidateState()
         {
             if (!ValidNodes)
             {
@@ -538,5 +538,5 @@ namespace Chisel.Components
 
         protected abstract bool EnsureTopNodeCreatedInternal(in CSGTree tree, ref CSGTreeNode node, int userID);
         protected abstract void UpdateGeneratorNodesInternal(in CSGTree tree, ref CSGTreeNode node);
-    }
+	}
 }

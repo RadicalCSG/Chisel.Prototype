@@ -64,9 +64,11 @@ namespace Chisel.Core
             // NOTE: doesn't work well for self-intersecting polygons
             var lastEdge	= polygon.firstEdge + polygon.edgeCount;
             var normal		= double3.zero;
-            var prevVertex	= (double3)vertices[halfEdges[lastEdge - 1].vertexIndex];
+			var prevVertex	= (double3)vertices[halfEdges[lastEdge - 1].vertexIndex];
             for (int n = polygon.firstEdge; n < lastEdge; n++)
-            {
+			{
+				//Debug.Assert(n >= 0 && n < halfEdges.Length, $"n ({n}) >= 0 && n ({n}) < halfEdges.Length ({halfEdges.Length})");
+				//Debug.Assert(halfEdges[n].vertexIndex >= 0 && halfEdges[n].vertexIndex < vertices.Length, $"halfEdges[{n}].vertexIndex ({halfEdges[n].vertexIndex}) >= 0 && halfEdges[{n}].vertexIndex ({halfEdges[n].vertexIndex}) < vertices.Length ({vertices.Length})");
                 var currVertex = (double3)vertices[halfEdges[n].vertexIndex];
                 normal.x = normal.x + ((prevVertex.y - currVertex.y) * (prevVertex.z + currVertex.z));
                 normal.y = normal.y + ((prevVertex.z - currVertex.z) * (prevVertex.x + currVertex.x));

@@ -29,13 +29,13 @@ namespace Chisel.Core
                                                                                          float3 vertex2,
                                                                                          float3 vertex3,
                                                                                          float3 vertex4,
-                                                                                         in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
+                                                                                         in BlobAssetReference<InternalChiselSurfaceArray> surfaceArray, 
                                                                                          Allocator allocator)
         {
-            if (surfaceDefinition == BlobAssetReference<NativeChiselSurfaceDefinition>.Null)
+            if (surfaceArray == BlobAssetReference<InternalChiselSurfaceArray>.Null)
                 return BlobAssetReference<BrushMeshBlob>.Null;
 
-            ref var surfaces = ref surfaceDefinition.Value.surfaces;
+            ref var surfaces = ref surfaceArray.Value.surfaces;
             if (surfaces.Length < 5)
                 return BlobAssetReference<BrushMeshBlob>.Null;
 
@@ -215,13 +215,13 @@ namespace Chisel.Core
                                                                                              float3 vertex1,
                                                                                              float3 vertex2,
                                                                                              float3 vertex3,
-                                                                                             in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
+                                                                                             in BlobAssetReference<InternalChiselSurfaceArray> surfaceArray, 
                                                                                              Allocator allocator)
         {
-            if (surfaceDefinition == BlobAssetReference<NativeChiselSurfaceDefinition>.Null)
+            if (surfaceArray == BlobAssetReference<InternalChiselSurfaceArray>.Null)
                 return BlobAssetReference<BrushMeshBlob>.Null;
 
-            ref var surfaces = ref surfaceDefinition.Value.surfaces;
+            ref var surfaces = ref surfaceArray.Value.surfaces;
             if (surfaces.Length < 5)
                 return BlobAssetReference<BrushMeshBlob>.Null;
 
@@ -384,13 +384,13 @@ namespace Chisel.Core
                                                                                  float3 vertex3,
                                                                                  float3 vertex4,
                                                                                  float3 vertex5,
-                                                                                 in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
+                                                                                 in BlobAssetReference<InternalChiselSurfaceArray> surfaceArray, 
                                                                                  Allocator allocator)
         {
-            if (surfaceDefinition == BlobAssetReference<NativeChiselSurfaceDefinition>.Null)
+            if (surfaceArray == BlobAssetReference<InternalChiselSurfaceArray>.Null)
                 return BlobAssetReference<BrushMeshBlob>.Null;
 
-            ref var surfaces = ref surfaceDefinition.Value.surfaces;
+            ref var surfaces = ref surfaceArray.Value.surfaces;
             if (surfaces.Length < 5)
                 return BlobAssetReference<BrushMeshBlob>.Null;
 

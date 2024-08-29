@@ -18,7 +18,7 @@ namespace Chisel.Components
                 return MeshQuery.CollisionOnly;
         }
 
-        public static MeshQuery[] GetVisibleQueries(MeshQuery[] queryArray, LayerUsageFlags visibleLayerFlags)
+        public static MeshQuery[] GetVisibleQueries(MeshQuery[] queryArray, SurfaceDestinationFlags visibleLayerFlags)
         {
             var queryList = queryArray.ToList();
             for (int n = queryList.Count - 1; n >= 0; n--)

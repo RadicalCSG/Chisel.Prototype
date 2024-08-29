@@ -18,7 +18,7 @@ namespace Chisel.Core
                                                   ref Int32[]       visibleOuterLines)
         {
             ref var brushOutline = ref brush.Outline;
-            if (brushOutline.vertices.Length < 3)
+            if (brushOutline.vertices.Length < BrushMesh.kMinimumVertices)
             {
                 //UnityEngine.Debug.Log($"{brushOutline.vertices.Length} {brushOutline.surfaceVisibleOuterLines.Length} {brushOutline.visibleOuterLines.Length} {brushOutline.hash}");
                 return false;
@@ -36,7 +36,7 @@ namespace Chisel.Core
                                                     ref Int32[]     visibleOuterLines)
         {
             ref var brushOutline = ref brush.Outline;
-            if (brushOutline.vertices.Length < 3)
+            if (brushOutline.vertices.Length < BrushMesh.kMinimumVertices)
                 return false;
 
             var surfaceOutlineRanges = brushOutline.surfaceVisibleOuterLineRanges;

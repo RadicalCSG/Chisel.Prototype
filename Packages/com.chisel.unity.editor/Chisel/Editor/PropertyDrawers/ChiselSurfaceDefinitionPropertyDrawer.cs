@@ -5,13 +5,13 @@ using UnityEditor;
 namespace Chisel.Editors
 {
     
-    [CustomPropertyDrawer(typeof(ChiselSurfaceDefinition))]
+    [CustomPropertyDrawer(typeof(ChiselSurfaceArray))]
     public sealed class ChiselSurfaceDefinitionPropertyDrawer : PropertyDrawer
     {
-        // TODO: make these shared resources since this name is used in several places (with identical context)
-        static readonly GUIContent  kSurfacesContent        = new GUIContent("Surfaces");
-        const string                kSurfacePropertyName    = "Surface {0}";
-        static GUIContent           surfacePropertyContent  = new GUIContent();
+		// TODO: make these shared resources since this name is used in several places (with identical context)
+		private static readonly GUIContent  kSurfacesContent        = new("Surfaces");
+        private static readonly GUIContent  kSurfacePropertyContent = new();
+		private const string                kSurfacePropertyName    = "Surface {0}";
 
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -32,7 +32,7 @@ namespace Chisel.Editors
                 return;
             }
 
-            var surfacesProp = property.FindPropertyRelative(nameof(ChiselSurfaceDefinition.surfaces));
+            var surfacesProp = property.FindPropertyRelative(nameof(ChiselSurfaceArray.surfaces));
 
             EditorGUI.BeginProperty(position, label, surfacesProp);
             if (!surfacesProp.serializedObject.isEditingMultipleObjects && !property.hasMultipleDifferentValues && !ChiselNodeEditorBase.InSceneSettingsContext)
@@ -55,9 +55,9 @@ namespace Chisel.Editors
                             SerializedProperty elementProperty;
                             for (int i = 0; i < surfacesProp.arraySize; i++)
                             {
-                                surfacePropertyContent.text = string.Format(kSurfacePropertyName, (i + 1));
+                                kSurfacePropertyContent.text = string.Format(kSurfacePropertyName, (i + 1));
                                 elementProperty = surfacesProp.GetArrayElementAtIndex(i);
-                                EditorGUILayout.PropertyField(elementProperty, surfacePropertyContent, true);
+                                EditorGUILayout.PropertyField(elementProperty, kSurfacePropertyContent, true);
                             }
                         }
                         finally

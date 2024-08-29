@@ -25,7 +25,7 @@ namespace Chisel.Core
                                                    float    rotation, 
                                                    int      sides, 
                                                    bool     fitToBounds, 
-                                                   in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                   in BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob,
                                                    out BlobAssetReference<BrushMeshBlob> brushMesh,
                                                    Allocator allocator)
         {
@@ -40,7 +40,7 @@ namespace Chisel.Core
                                                          float                  rotation, 
                                                          int                    segments, 
                                                          bool                   fitToBounds, 
-                                                         in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                         in BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob,
                                                          out BlobAssetReference<BrushMeshBlob>                brushMesh,
                                                          Allocator                                            allocator)
         {
@@ -195,7 +195,7 @@ namespace Chisel.Core
 
         static void CreateConeSubMesh(int segments, 
                                       in BlobBuilderArray<float3>                           localVertices, 
-                                      in BlobAssetReference<NativeChiselSurfaceDefinition>  surfaceDefinitionBlob, 
+                                      in BlobAssetReference<InternalChiselSurfaceArray>  surfaceDefinitionBlob, 
                                       in BlobBuilder builder, ref BrushMeshBlob root,
                                       out BlobBuilderArray<BrushMeshBlob.Polygon>           polygons,
                                       out BlobBuilderArray<BrushMeshBlob.HalfEdge>          halfEdges)

@@ -31,7 +31,7 @@ namespace Chisel.Editors
 
             NamedItemsAttribute namedItems = attribute as NamedItemsAttribute;
 
-            if (surfacesArrayProperty.type != nameof(ChiselSurfaceDefinition))
+            if (surfacesArrayProperty.type != nameof(ChiselSurfaceArray))
             {
                 Debug.Assert(false);
                 return;

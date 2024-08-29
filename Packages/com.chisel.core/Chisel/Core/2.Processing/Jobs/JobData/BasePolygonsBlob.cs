@@ -18,25 +18,26 @@ namespace Chisel.Core
     // Note: Stored in BlobAsset at runtime/editor-time
     struct BasePolygon
     {
-        public IndexOrder       nodeIndexOrder;
-        public SurfaceInfo      surfaceInfo;
-        public int              startEdgeIndex;
-        public int              endEdgeIndex;
+        public IndexOrder  nodeIndexOrder;
+        public SurfaceInfo surfaceInfo;
+        public int         startEdgeIndex;
+        public int         endEdgeIndex;
     }
 
     // Note: Stored in BlobAsset at runtime/editor-time
-    struct BaseSurface
-    {
-        public SurfaceLayers    layers;
-        public float4           localPlane;
-        public UVMatrix         UV0;
+    struct BaseSurface // TODO: what is the difference with InternalChiselSurface?
+	{
+		public SurfaceDestinationFlags      destinationFlags;
+		public SurfaceDestinationParameters destinationParameters;
+        public UVMatrix UV0;
+        public float4   localPlane;
     }
 
     struct BasePolygonsBlob
     {
-        public BlobArray<BasePolygon>   polygons;
-        public BlobArray<Edge>          edges;
-        public BlobArray<float3>        vertices;
-        public BlobArray<BaseSurface>   surfaces;
+        public BlobArray<BasePolygon> polygons;
+        public BlobArray<Edge>        edges;
+        public BlobArray<float3>      vertices;
+        public BlobArray<BaseSurface> surfaces;
     }
 }

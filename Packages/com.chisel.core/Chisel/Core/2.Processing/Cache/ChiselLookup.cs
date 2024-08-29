@@ -12,11 +12,11 @@ namespace Chisel.Core
     {
         public class Data
         {
-            public JobHandle                                lastJobHandle;
+            public JobHandle                            lastJobHandle;
 
-            public NativeList<CompactNodeID>                brushIDValues;
-            public NativeArray<ChiselLayerParameters>       parameters;
-            public NativeParallelHashSet<int>                       allKnownBrushMeshIndices;
+            public NativeList<CompactNodeID>            brushIDValues;
+            public NativeArray<ChiselLayerParameters>   parameters;
+            public NativeParallelHashSet<int>           allKnownBrushMeshIndices;
 
             public NativeList<BlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
             public NativeList<BlobAssetReference<RoutingTable>>                 routingTableCache;
@@ -49,7 +49,7 @@ namespace Chisel.Core
                 transformationCache         = new NativeList<NodeTransformations>(1000, Allocator.Persistent);
                 brushRenderBufferCache      = new NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
 
-                parameters                  = new NativeArray<ChiselLayerParameters>(SurfaceLayers.ParameterCount, Allocator.Persistent);
+                parameters                  = new NativeArray<ChiselLayerParameters>(SurfaceDestinationParameters.ParameterCount, Allocator.Persistent);
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     var parameter = parameters[i];

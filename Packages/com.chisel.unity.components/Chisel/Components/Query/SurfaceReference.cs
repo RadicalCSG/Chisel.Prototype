@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace Chisel.Components
 {
+    // Reference to a surface. Used for things like queries and selection.
     [Serializable]
     public sealed class SurfaceReference : IEquatable<SurfaceReference>, IEqualityComparer<SurfaceReference>
     {
@@ -26,14 +27,14 @@ namespace Chisel.Components
         }
 
 
-        public ChiselBrushMaterial BrushMaterial
+        public ChiselSurface Surface
         {
             get
             {
                 if (!node)
                     return null;
 
-                return node.GetBrushMaterial(descriptionIndex);
+                return node.GetSurface(descriptionIndex);
             }
         }
 
@@ -45,25 +46,25 @@ namespace Chisel.Components
                 if (!node)
                     return null;
 
-                var brushMaterial = node.GetBrushMaterial(descriptionIndex);
-                if (brushMaterial == null)
-                    return null;
+                var surface = Surface;
+				if (surface == null)
+					return null;
 
-                return brushMaterial.RenderMaterial;
+                return surface.RenderMaterial;
             }
             set
             {
                 if (!node)
                     return;
 
-                var brushMaterial = node.GetBrushMaterial(descriptionIndex);
-                if (brushMaterial == null)
+				var surface = Surface;
+                if (surface == null)
                     return;
 
-                if (brushMaterial.RenderMaterial == value)
+                if (surface.RenderMaterial == value)
                     return;
 
-                brushMaterial.RenderMaterial = value;
+				surface.RenderMaterial = value;
                 node.SetDirty();
             }
         }
@@ -88,25 +89,25 @@ namespace Chisel.Components
             }
         }
 
-        public SurfaceDescription SurfaceDescription
-        {
+        public SurfaceDetails SurfaceDetails
+		{
             get
             {
                 if (!node)
-                    return SurfaceDescription.Default;
+                    return SurfaceDetails.Default;
 
-                return node.GetSurfaceDescription(descriptionIndex);
+                return node.GetSurfaceDetails(descriptionIndex);
             }
             set
             {
                 if (!node)
                     return;
-                node.SetSurfaceDescription(descriptionIndex, value);
+                node.SetSurfaceDetails(descriptionIndex, value);
                 node.SetDirty();
             }
         }
 
-        public BlobAssetReference<BrushMeshBlob> BrushMesh
+        public BlobAssetReference<BrushMeshBlob> BrushMeshBlob
         {
             get
             {

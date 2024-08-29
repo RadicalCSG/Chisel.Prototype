@@ -1,9 +1,9 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Chisel.Core
 {
     public sealed partial class BrushMesh
-    {
+	{
         public bool Validate(bool logErrors = false)
         {
             if (!ValidateData(out var errorMessage))
@@ -21,7 +21,11 @@ namespace Chisel.Core
             return true;
         }
 
-        static System.Text.StringBuilder errorMessageBuilder = new System.Text.StringBuilder();
+        public const uint kMinimumVertices = 4;
+		public const uint kMinimumPolygons = 3;
+		public const uint kMinimumHalfEdges = 3 * 3;
+
+		static System.Text.StringBuilder errorMessageBuilder = new System.Text.StringBuilder();
 		public bool ValidateData(out string errorMessage)
         {
             errorMessage = null;
@@ -46,21 +50,21 @@ namespace Chisel.Core
                 return false;
             }
 
-			if (vertices.Length < 5)
+			if (vertices.Length < kMinimumVertices)
 			{
-				errorMessage = $"BrushMesh must have at least 5 vertices, but has {vertices.Length} vertices";
+				errorMessage = $"BrushMesh must have at least {kMinimumVertices} vertices, but has {vertices.Length} vertices";
 				return false;
 			}
 
-			if (polygons.Length < 4)
+			if (polygons.Length < kMinimumPolygons)
 			{
-				errorMessage = $"BrushMesh must have at least 4 polygons, but has {polygons.Length} polygons";
+				errorMessage = $"BrushMesh must have at least {kMinimumPolygons} polygons, but has {polygons.Length} polygons";
 				return false;
 			}
 
-			if (halfEdges.Length < 3 * 4)
+			if (halfEdges.Length < kMinimumHalfEdges)
 			{
-				errorMessage = $"BrushMesh must have at least 12 halfedges, but has {halfEdges.Length} halfedges";
+				errorMessage = $"BrushMesh must have at least {kMinimumHalfEdges} halfedges, but has {halfEdges.Length} halfedges";
 				return false;
 			}
 

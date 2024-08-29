@@ -206,7 +206,7 @@ namespace Chisel.Components
         [HideInInspector] public ChiselGeneratedObjects generated;
 
 
-        public override void OnInitialize()
+		public override void OnInitialize()
         {
             base.OnInitialize();
             if (generated != null &&

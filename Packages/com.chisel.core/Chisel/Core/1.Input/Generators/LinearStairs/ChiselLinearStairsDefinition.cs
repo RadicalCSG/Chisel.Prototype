@@ -143,7 +143,7 @@ namespace Chisel.Core
             return description.subMeshCount;
         }
 
-        public bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
+        public bool GenerateNodes(BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
             var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
             try
@@ -205,26 +205,22 @@ namespace Chisel.Core
         public int RequiredSurfaceCount { get { return (int)SurfaceSides.TotalSides; } }
 
         [BurstDiscard]
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
+        public readonly void UpdateSurfaces(ref ChiselSurfaceArray surfaceDefinition)
         {
-            UnityEngine.Material        defaultFloorMaterial = null;
-            UnityEngine.Material        defaultWallMaterial = null;
-            UnityEngine.PhysicMaterial  defaultPhysicsMaterial = null;
-
             var surfaces = surfaceDefinition.surfaces;
-            if (surfaces[(int)SurfaceSides.Top   ].brushMaterial == null) surfaces[(int)SurfaceSides.Top   ].brushMaterial = ChiselBrushMaterial.CreateInstance(defaultFloorMaterial ??= ChiselMaterialManager.DefaultFloorMaterial, defaultPhysicsMaterial ??= ChiselMaterialManager.DefaultPhysicsMaterial);
-            if (surfaces[(int)SurfaceSides.Bottom].brushMaterial == null) surfaces[(int)SurfaceSides.Bottom].brushMaterial = ChiselBrushMaterial.CreateInstance(defaultFloorMaterial ??= ChiselMaterialManager.DefaultFloorMaterial, defaultPhysicsMaterial ??= ChiselMaterialManager.DefaultPhysicsMaterial);
-            if (surfaces[(int)SurfaceSides.Left  ].brushMaterial == null) surfaces[(int)SurfaceSides.Left  ].brushMaterial = ChiselBrushMaterial.CreateInstance(defaultWallMaterial ??= ChiselMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial ??= ChiselMaterialManager.DefaultPhysicsMaterial);
-            if (surfaces[(int)SurfaceSides.Right ].brushMaterial == null) surfaces[(int)SurfaceSides.Right ].brushMaterial = ChiselBrushMaterial.CreateInstance(defaultWallMaterial ??= ChiselMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial ??= ChiselMaterialManager.DefaultPhysicsMaterial);
-            if (surfaces[(int)SurfaceSides.Front ].brushMaterial == null) surfaces[(int)SurfaceSides.Front ].brushMaterial = ChiselBrushMaterial.CreateInstance(defaultWallMaterial ??= ChiselMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial ??= ChiselMaterialManager.DefaultPhysicsMaterial);
-            if (surfaces[(int)SurfaceSides.Back  ].brushMaterial == null) surfaces[(int)SurfaceSides.Back  ].brushMaterial = ChiselBrushMaterial.CreateInstance(defaultWallMaterial ??= ChiselMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial ??= ChiselMaterialManager.DefaultPhysicsMaterial);
-            if (surfaces[(int)SurfaceSides.Tread ].brushMaterial == null) surfaces[(int)SurfaceSides.Tread ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultTreadMaterial, defaultPhysicsMaterial);
-            if (surfaces[(int)SurfaceSides.Step  ].brushMaterial == null) surfaces[(int)SurfaceSides.Step  ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultStepMaterial,  defaultPhysicsMaterial);
+            if (!surfaces[(int)SurfaceSides.Top   ].HasMaterial) surfaces[(int)SurfaceSides.Top   ].SetMaterial(ChiselDefaultMaterials.DefaultFloorMaterial);
+            if (!surfaces[(int)SurfaceSides.Bottom].HasMaterial) surfaces[(int)SurfaceSides.Bottom].SetMaterial(ChiselDefaultMaterials.DefaultFloorMaterial);
+            if (!surfaces[(int)SurfaceSides.Left  ].HasMaterial) surfaces[(int)SurfaceSides.Left  ].SetMaterial(ChiselDefaultMaterials.DefaultWallMaterial);
+            if (!surfaces[(int)SurfaceSides.Right ].HasMaterial) surfaces[(int)SurfaceSides.Right ].SetMaterial(ChiselDefaultMaterials.DefaultWallMaterial);
+            if (!surfaces[(int)SurfaceSides.Front ].HasMaterial) surfaces[(int)SurfaceSides.Front ].SetMaterial(ChiselDefaultMaterials.DefaultWallMaterial);
+            if (!surfaces[(int)SurfaceSides.Back  ].HasMaterial) surfaces[(int)SurfaceSides.Back  ].SetMaterial(ChiselDefaultMaterials.DefaultWallMaterial);
+            if (!surfaces[(int)SurfaceSides.Tread ].HasMaterial) surfaces[(int)SurfaceSides.Tread ].SetMaterial(ChiselDefaultMaterials.DefaultTreadMaterial);
+            if (!surfaces[(int)SurfaceSides.Step  ].HasMaterial) surfaces[(int)SurfaceSides.Step  ].SetMaterial(ChiselDefaultMaterials.DefaultStepMaterial);
 
             for (int i = 0; i < surfaceDefinition.surfaces.Length; i++)
             {
-                if (surfaceDefinition.surfaces[i].brushMaterial == null)
-                    surfaceDefinition.surfaces[i].brushMaterial = ChiselBrushMaterial.CreateInstance(defaultWallMaterial ??= ChiselMaterialManager.DefaultWallMaterial, defaultPhysicsMaterial ??= ChiselMaterialManager.DefaultPhysicsMaterial);
+                if (!surfaceDefinition.surfaces[i].HasMaterial)
+                    surfaceDefinition.surfaces[i].SetMaterial(ChiselDefaultMaterials.DefaultWallMaterial);
             }
         }
         #endregion

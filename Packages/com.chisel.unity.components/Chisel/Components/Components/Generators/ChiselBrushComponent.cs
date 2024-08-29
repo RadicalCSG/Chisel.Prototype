@@ -1,4 +1,4 @@
-using Chisel.Core;
+﻿using Chisel.Core;
 using UnityEngine;
 
 namespace Chisel.Components
@@ -37,7 +37,7 @@ namespace Chisel.Components
 			if (!OnValidateDefinition())
 				return false;
 
-            var brush = (CSGTreeBrush)node;
+			var brush = (CSGTreeBrush)node;
             if (!brush.Valid)
                 node = GenerateTopNode(in tree, brush, userID, operation);
             return true;

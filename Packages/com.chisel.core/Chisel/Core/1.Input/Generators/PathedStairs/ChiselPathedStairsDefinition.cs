@@ -44,7 +44,7 @@ namespace Chisel.Core
                                                             stairs.sideWidth, stairs.sideHeight, stairs.sideDepth);
         }
 
-        public bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
+        public bool GenerateNodes(BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
             var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp);
             try
@@ -90,7 +90,7 @@ namespace Chisel.Core
         public int RequiredSurfaceCount { get { return stairs.RequiredSurfaceCount; } }
 
         [BurstDiscard]
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void UpdateSurfaces(ref ChiselSurfaceArray surfaceDefinition)
         {
             stairs.UpdateSurfaces(ref surfaceDefinition);
         }

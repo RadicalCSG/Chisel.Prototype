@@ -9,14 +9,15 @@
     "BSP",
     "Boolean"
   ],
-  "unity": "2022.1",
-  "version": "0.1.0-preview",
-    "dependencies": {
-        "com.unity.burst": "1.8.16",
+  "unity": "2023.3",
+  "version": "0.2.0-preview",
+  "dependencies": {
+        "com.unity.burst": "1.8.17",
         "com.unity.entities": "1.2.3",
         "com.unity.collections": "2.4.2",
         "com.unity.mathematics": "1.3.1",
-        "com.unity.profiling.core": "1.0.2"
-    },
+        "com.unity.profiling.core": "1.0.2",
+        "com.custom_asset_metadata": "1.1.0"
+  },
   "type": "library"
 }

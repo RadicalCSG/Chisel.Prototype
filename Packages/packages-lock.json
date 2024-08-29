@@ -1,15 +1,26 @@
 {
   "dependencies": {
+    "com.aeternumgames.chisel.import.source": {
+      "version": "file:com.oolaboratories.chisel.import.source",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.mathematics": "1.1.0",
+        "com.chisel.core": "0.1.0-preview",
+        "com.chisel.unity.components": "0.1.0-preview"
+      }
+    },
     "com.chisel.core": {
       "version": "file:com.chisel.core",
       "depth": 0,
       "source": "embedded",
       "dependencies": {
-        "com.unity.burst": "1.8.16",
+        "com.unity.burst": "1.8.17",
         "com.unity.entities": "1.2.3",
         "com.unity.collections": "2.4.2",
         "com.unity.mathematics": "1.3.1",
-        "com.unity.profiling.core": "1.0.2"
+        "com.unity.profiling.core": "1.0.2",
+        "com.custom_asset_metadata": "1.1.0"
       }
     },
     "com.chisel.unity.components": {
@@ -17,12 +28,13 @@
       "depth": 0,
       "source": "embedded",
       "dependencies": {
-        "com.unity.burst": "1.8.16",
+        "com.unity.burst": "1.8.17",
         "com.unity.entities": "1.2.3",
         "com.unity.collections": "2.4.2",
         "com.unity.mathematics": "1.3.1",
         "com.unity.profiling.core": "1.0.2",
-        "com.chisel.core": "0.1.0-preview"
+        "com.custom_asset_metadata": "1.1.0",
+        "com.chisel.core": "0.2.0-preview"
       }
     },
     "com.chisel.unity.editor": {
@@ -30,17 +42,25 @@
       "depth": 0,
       "source": "embedded",
       "dependencies": {
-        "com.unity.burst": "1.8.16",
+        "com.unity.burst": "1.8.17",
         "com.unity.entities": "1.2.3",
         "com.unity.collections": "2.4.2",
         "com.unity.mathematics": "1.3.1",
         "com.unity.profiling.core": "1.0.2",
-        "com.chisel.core": "0.1.0-preview",
-        "com.chisel.unity.components": "0.1.0-preview"
+        "com.chisel.core": "0.2.0-preview",
+        "com.chisel.unity.components": "0.2.0-preview",
+        "com.custom_asset_metadata": "1.1.0"
       }
     },
+    "com.custom_asset_metadata": {
+      "version": "https://github.com/LogicalError/CustomAssetMetadata.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "2ccf70f8a3bee5f59ab802496e0214ccd8fd759f"
+    },
     "com.unity.burst": {
-      "version": "1.8.16",
+      "version": "1.8.17",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -55,8 +75,8 @@
       "source": "registry",
       "dependencies": {
         "com.unity.burst": "1.8.13",
-        "com.unity.nuget.mono-cecil": "1.11.4",
         "com.unity.test-framework": "1.4.3",
+        "com.unity.nuget.mono-cecil": "1.11.4",
         "com.unity.test-framework.performance": "3.0.3"
       },
       "url": "https://packages.unity.com"
@@ -67,17 +87,17 @@
       "source": "registry",
       "dependencies": {
         "com.unity.burst": "1.8.13",
-        "com.unity.serialization": "3.1.1",
         "com.unity.collections": "2.4.2",
         "com.unity.mathematics": "1.3.1",
-        "com.unity.modules.assetbundle": "1.0.0",
         "com.unity.modules.audio": "1.0.0",
+        "com.unity.serialization": "3.1.1",
+        "com.unity.profiling.core": "1.0.2",
+        "com.unity.nuget.mono-cecil": "1.11.4",
+        "com.unity.modules.assetbundle": "1.0.0",
         "com.unity.modules.unityanalytics": "1.0.0",
         "com.unity.modules.unitywebrequest": "1.0.0",
-        "com.unity.test-framework.performance": "3.0.3",
-        "com.unity.nuget.mono-cecil": "1.11.4",
         "com.unity.scriptablebuildpipeline": "1.20.2",
-        "com.unity.profiling.core": "1.0.2"
+        "com.unity.test-framework.performance": "3.0.3"
       },
       "url": "https://packages.unity.com"
     },
@@ -153,8 +173,8 @@
       "depth": 1,
       "source": "registry",
       "dependencies": {
-        "com.unity.collections": "2.1.4",
-        "com.unity.burst": "1.7.2"
+        "com.unity.burst": "1.7.2",
+        "com.unity.collections": "2.1.4"
       },
       "url": "https://packages.unity.com"
     },

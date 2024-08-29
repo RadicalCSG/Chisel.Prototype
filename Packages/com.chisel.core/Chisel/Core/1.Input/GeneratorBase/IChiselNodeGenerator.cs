@@ -9,17 +9,17 @@ namespace Chisel.Core
         int RequiredSurfaceCount { get; }
         void Reset();
         bool Validate();
-        void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition);
+        void UpdateSurfaces(ref ChiselSurfaceArray surfaceArray);
         void OnEdit(IChiselHandles handles);
 		void GetMessages(IChiselMessageHandler messages);
     }
 
     public interface IBrushGenerator
     {
-		BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator);
+		BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<InternalChiselSurfaceArray> internalSurfaceArrayBlob, Allocator allocator);
         void Reset();
         int RequiredSurfaceCount { get; }
-        void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition);
+        void UpdateSurfaces(ref ChiselSurfaceArray surfaceArray);
         bool Validate();
 		void GetMessages(IChiselMessageHandler messages);
     }
@@ -35,9 +35,9 @@ namespace Chisel.Core
 
         public virtual void Reset() { settings.Reset(); }
 
-        public virtual void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) 
+        public virtual void UpdateSurfaces(ref ChiselSurfaceArray surfaceArray) 
         {
-            settings.UpdateSurfaces(ref surfaceDefinition);
+            settings.UpdateSurfaces(ref surfaceArray);
         }
 
         public virtual bool Validate()
@@ -97,12 +97,12 @@ namespace Chisel.Core
     public interface IBranchGenerator
     {
         int PrepareAndCountRequiredBrushMeshes();
-        bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator);
+        bool GenerateNodes(BlobAssetReference<InternalChiselSurfaceArray> internalSurfaceArrayBlob, NativeList<GeneratedNode> nodes, Allocator allocator);
         void Dispose();
 
         void Reset();
         int RequiredSurfaceCount { get; }
-        void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition);
+        void UpdateSurfaces(ref ChiselSurfaceArray surfaceArray);
         bool Validate();
         void GetWarningMessages(IChiselMessageHandler messages);
     }
@@ -119,9 +119,9 @@ namespace Chisel.Core
         public virtual void Reset()     { settings.Reset(); }
         public virtual bool Validate()  { return settings.Validate(); }
 
-        public virtual void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
+        public virtual void UpdateSurfaces(ref ChiselSurfaceArray surfaceArray)
         {
-            settings.UpdateSurfaces(ref surfaceDefinition);
+            settings.UpdateSurfaces(ref surfaceArray);
         }
 
         public virtual void GetMessages(IChiselMessageHandler messages)

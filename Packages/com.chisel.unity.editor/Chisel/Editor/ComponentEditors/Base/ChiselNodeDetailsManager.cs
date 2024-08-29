@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using System;
@@ -85,7 +85,7 @@ namespace Chisel.Editors
             public void Clear() { warningStringBuilder.Clear(); }
             public int Length { get { return warningStringBuilder.Length; } }
             public override string ToString() { return warningStringBuilder.ToString(); }
-        }
+		}
 
         static HierarchyMessageHandler hierarchyMessageHandler = new HierarchyMessageHandler();
 

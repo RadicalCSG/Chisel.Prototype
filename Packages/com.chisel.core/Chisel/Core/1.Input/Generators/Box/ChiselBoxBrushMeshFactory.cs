@@ -41,7 +41,7 @@ namespace Chisel.Core
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CreateBox(float3 min, float3 max, 
-                                     in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
+                                     in BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinition, 
                                      out BlobAssetReference<BrushMeshBlob> brushMesh,
                                      Allocator allocator)
         {
@@ -72,10 +72,10 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BlobAssetReference<BrushMeshBlob> CreateBox(float3 vertex0, float3 vertex1, float3 vertex2, float3 vertex3,
                                                                   float3 vertex4, float3 vertex5, float3 vertex6, float3 vertex7,
-                                                                  in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
+                                                                  in BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinition, 
                                                                   Allocator allocator)
         {
-            if (surfaceDefinition == BlobAssetReference<NativeChiselSurfaceDefinition>.Null)
+            if (surfaceDefinition == BlobAssetReference<InternalChiselSurfaceArray>.Null)
                 return BlobAssetReference<BrushMeshBlob>.Null;
 
             ref var surfaces = ref surfaceDefinition.Value.surfaces;

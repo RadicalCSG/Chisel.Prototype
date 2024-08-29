@@ -28,7 +28,7 @@ namespace Chisel.Components
                 return (this != null) && !invalid;
             }
         }
-        public LayerUsageFlags  query;
+        public SurfaceDestinationFlags  query;
         public GameObject       container;
         public Mesh             sharedMesh;
 #if UNITY_EDITOR
@@ -48,7 +48,7 @@ namespace Chisel.Components
         [NonSerialized] public float uvLightmapUpdateTime;
 
         internal ChiselRenderObjects() { }
-        public static ChiselRenderObjects Create(string name, Transform parent, GameObjectState state, LayerUsageFlags query, bool debugHelperRenderer = false)
+        public static ChiselRenderObjects Create(string name, Transform parent, GameObjectState state, SurfaceDestinationFlags query, bool debugHelperRenderer = false)
         {
             var renderContainer = ChiselObjectUtility.CreateGameObject(name, parent, state, debugHelperRenderer: debugHelperRenderer);
             var meshFilter      = renderContainer.AddComponent<MeshFilter>();
@@ -153,13 +153,13 @@ namespace Chisel.Components
             meshFilter.sharedMesh       = sharedMesh;
             if (!debugHelperRenderer)
             { 
-                meshRenderer.receiveShadows	= ((query & LayerUsageFlags.ReceiveShadows) == LayerUsageFlags.ReceiveShadows);
-                switch (query & (LayerUsageFlags.Renderable | LayerUsageFlags.CastShadows))
+                meshRenderer.receiveShadows	= ((query & SurfaceDestinationFlags.ReceiveShadows) == SurfaceDestinationFlags.ReceiveShadows);
+                switch (query & (SurfaceDestinationFlags.Renderable | SurfaceDestinationFlags.CastShadows))
                 {
-                    case LayerUsageFlags.None:				meshRenderer.enabled = false; break;
-                    case LayerUsageFlags.Renderable:		meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;			break;
-                    case LayerUsageFlags.CastShadows:		meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;   break;
-                    case LayerUsageFlags.RenderCastShadows:	meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;			break;
+                    case SurfaceDestinationFlags.None:				meshRenderer.enabled = false; break;
+                    case SurfaceDestinationFlags.Renderable:		meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;			break;
+                    case SurfaceDestinationFlags.CastShadows:		meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;   break;
+                    case SurfaceDestinationFlags.RenderCastShadows:	meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;			break;
                 }
 
 #if UNITY_EDITOR
@@ -331,7 +331,7 @@ namespace Chisel.Components
                     for (int i = 0; i < desiredCapacity; i++)
                     {
                         var meshDescription = vertexBufferContents.meshDescriptions[startIndex + i];
-                        var renderMaterial  = ChiselMaterialManager.Instance.GetMaterial(meshDescription.surfaceParameter);
+                        var renderMaterial  = ChiselMaterialManager.GetMaterial(meshDescription.surfaceParameter);
                         //ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(meshDescription.surfaceParameter);
 
                         instance.renderMaterials[i] = renderMaterial;

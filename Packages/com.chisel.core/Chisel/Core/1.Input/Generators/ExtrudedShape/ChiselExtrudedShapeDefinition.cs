@@ -36,7 +36,7 @@ namespace Chisel.Core
             return polygonVerticesSegments.Length;
         }
 
-        public bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
+        public bool GenerateNodes(BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
             // TODO: maybe just not bother with pathblob and just convert to path-matrices directly?
             using (var pathMatrices = pathBlob.Value.GetUnsafeMatrices(Allocator.Temp))
@@ -89,7 +89,7 @@ namespace Chisel.Core
         public int RequiredSurfaceCount { get { return 2 + (curveBlob.IsCreated ? curveBlob.Value.controlPoints.Length : 3); } }
 
         [BurstDiscard]
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        public void UpdateSurfaces(ref ChiselSurfaceArray surfaceDefinition) { }
         #endregion
         
         #region Validation

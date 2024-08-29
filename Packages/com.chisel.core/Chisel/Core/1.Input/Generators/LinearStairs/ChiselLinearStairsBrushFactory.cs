@@ -9,7 +9,7 @@ namespace Chisel.Core
     public sealed partial class BrushMeshFactory
     {
         // TODO: Fix all overlapping brushes
-        internal static bool GenerateLinearStairsSubMeshes(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, int subMeshOffset, in LineairStairsData description, in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        internal static bool GenerateLinearStairsSubMeshes(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, int subMeshOffset, in LineairStairsData description, in BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob, Allocator allocator)
         {
             // TODO: properly assign all materials
 
@@ -152,7 +152,7 @@ namespace Chisel.Core
             return true;
         }
 
-        static BlobAssetReference<BrushMeshBlob> CreateExtrudedSubMeshBlob([ReadOnly] NativeArray<float3> vertices, float3 extrusion, [ReadOnly] NativeArray<int> indices, ref NativeChiselSurfaceDefinition surfaceDefinition, Allocator allocator)
+        static BlobAssetReference<BrushMeshBlob> CreateExtrudedSubMeshBlob([ReadOnly] NativeArray<float3> vertices, float3 extrusion, [ReadOnly] NativeArray<int> indices, ref InternalChiselSurfaceArray surfaceDefinition, Allocator allocator)
         {
             using (var builder = new BlobBuilder(Allocator.Temp))
             {
@@ -181,7 +181,7 @@ namespace Chisel.Core
             }
         }
 
-        private static void GenerateStairsSide(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, int startIndex, int stepCount, float minX, float maxX, StairsSideType sideType, in LineairStairsData description, ref NativeChiselSurfaceDefinition surfaceDefinition, in LinearStairsSideData side, Allocator allocator)
+        private static void GenerateStairsSide(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, int startIndex, int stepCount, float minX, float maxX, StairsSideType sideType, in LineairStairsData description, ref InternalChiselSurfaceArray surfaceDefinition, in LinearStairsSideData side, Allocator allocator)
         {
             var min = new float3(minX, description.bounds.Max.y - description.treadHeight - description.stepHeight, description.bounds.Min.z + description.stepDepthOffset);
             var max = new float3(maxX, description.bounds.Max.y - description.treadHeight                         , description.bounds.Min.z + description.stepDepthOffset + description.stepDepth);

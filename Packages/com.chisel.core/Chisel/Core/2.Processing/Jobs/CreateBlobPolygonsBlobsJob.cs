@@ -269,9 +269,10 @@ namespace Chisel.Core
                 ref var localPlane = ref localPlanes[validPolygons[i].basePlaneIndex];
                 surfaceArray[i] = new BaseSurface
                 {
-                    layers      = polygon.surface.layerDefinition,
-                    localPlane  = localPlane,
-                    UV0         = polygon.surface.surfaceDescription.UV0
+                    destinationFlags      = polygon.surface.destinationFlags,
+                    destinationParameters = polygon.surface.parameters,
+                    UV0                   = polygon.surface.details.UV0,
+                    localPlane            = localPlane
                 };
             }
             var basePolygonsBlob = builder.CreateBlobAssetReference<BasePolygonsBlob>(Allocator.Persistent);

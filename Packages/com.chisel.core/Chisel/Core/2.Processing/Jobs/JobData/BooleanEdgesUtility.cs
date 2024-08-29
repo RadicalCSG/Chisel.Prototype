@@ -171,8 +171,8 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static bool AreLoopsOverlapping([NoAlias, ReadOnly] in UnsafeList<Edge> polygon1, [NoAlias, ReadOnly] in UnsafeList<Edge> polygon2)
         {
-            if (polygon1.Length < 3 ||
-                polygon2.Length < 3)
+            if (polygon1.Length < BrushMesh.kMinimumPolygons ||
+                polygon2.Length < BrushMesh.kMinimumPolygons)
                 return false;
 
             if (polygon1.Length != polygon2.Length)

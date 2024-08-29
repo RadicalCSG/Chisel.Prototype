@@ -9,7 +9,7 @@ namespace Chisel.Core
     public sealed partial class BrushMeshFactory
     {
         public static bool GenerateHemisphere(float3 diameterXYZ, float rotation, int horzSegments, int vertSegments, 
-                                              in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                              in BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob,
                                               out BlobAssetReference<BrushMeshBlob> brushMesh,
                                               Allocator allocator)
         {

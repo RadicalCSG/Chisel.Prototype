@@ -289,8 +289,8 @@ namespace Chisel.Core
 
             int descriptionIndex = 0;
             //var contentsIndex = 0;
-            if (subMeshCounts[0].meshQuery.LayerParameterIndex == LayerParameterIndex.None ||
-                subMeshCounts[0].meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
+            if (subMeshCounts[0].meshQuery.LayerParameterIndex == SurfaceParameterIndex.None ||
+                subMeshCounts[0].meshQuery.LayerParameterIndex == SurfaceParameterIndex.RenderMaterial)
             {
                 var prevQuery = subMeshCounts[0].meshQuery;
                 var startIndex = 0;
@@ -298,8 +298,8 @@ namespace Chisel.Core
                 {
                     var subMeshCount = subMeshCounts[descriptionIndex];
                     // Exit when layerParameterIndex is no longer LayerParameter1/None
-                    if (subMeshCount.meshQuery.LayerParameterIndex != LayerParameterIndex.None &&
-                        subMeshCount.meshQuery.LayerParameterIndex != LayerParameterIndex.RenderMaterial)
+                    if (subMeshCount.meshQuery.LayerParameterIndex != SurfaceParameterIndex.None &&
+                        subMeshCount.meshQuery.LayerParameterIndex != SurfaceParameterIndex.RenderMaterial)
                         break;
 
                     var currQuery = subMeshCount.meshQuery;
@@ -352,9 +352,9 @@ namespace Chisel.Core
                 
 
             if (descriptionIndex < subMeshCounts.Length &&
-                subMeshCounts[descriptionIndex].meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)
+                subMeshCounts[descriptionIndex].meshQuery.LayerParameterIndex == SurfaceParameterIndex.PhysicsMaterial)
             {
-                Debug.Assert(subMeshCounts[subMeshCounts.Length - 1].meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial);
+                Debug.Assert(subMeshCounts[subMeshCounts.Length - 1].meshQuery.LayerParameterIndex == SurfaceParameterIndex.PhysicsMaterial);
 
                 // Loop through all subMeshCounts with LayerParameter2, and create collider meshes from them
                 for (int i = 0; descriptionIndex < subMeshCounts.Length; descriptionIndex++, i++)
@@ -362,7 +362,7 @@ namespace Chisel.Core
                     var subMeshCount = subMeshCounts[descriptionIndex];
 
                     // Exit when layerParameterIndex is no longer LayerParameter2
-                    if (subMeshCount.meshQuery.LayerParameterIndex != LayerParameterIndex.PhysicsMaterial)
+                    if (subMeshCount.meshQuery.LayerParameterIndex != SurfaceParameterIndex.PhysicsMaterial)
                         break;
 
                     subMeshSections.AddNoResize(new SubMeshSection
@@ -397,8 +397,8 @@ namespace Chisel.Core
             for (int i = 0; i < subMeshSections.Length; i++)
             {
                 var section             = subMeshSections[i];
-                if (section.meshQuery.LayerParameterIndex != LayerParameterIndex.None &&
-                    section.meshQuery.LayerParameterIndex != LayerParameterIndex.RenderMaterial)
+                if (section.meshQuery.LayerParameterIndex != SurfaceParameterIndex.None &&
+                    section.meshQuery.LayerParameterIndex != SurfaceParameterIndex.RenderMaterial)
                     continue;
 
                 var totalIndexCount = section.totalIndexCount;
@@ -465,15 +465,15 @@ namespace Chisel.Core
     public struct AssignMeshesJob : IJob
     {
         public const int kDebugHelperCount = 6;
-        public struct DebugRenderFlags { public LayerUsageFlags Item1; public LayerUsageFlags Item2; };
+        public struct DebugRenderFlags { public SurfaceDestinationFlags Item1; public SurfaceDestinationFlags Item2; };
         public static readonly DebugRenderFlags[] kGeneratedDebugRendererFlags = new DebugRenderFlags[kDebugHelperCount]
         {
-            new DebugRenderFlags{ Item1 = LayerUsageFlags.None                  , Item2 = LayerUsageFlags.Renderable },              // is explicitly set to "not visible"
-            new DebugRenderFlags{ Item1 = LayerUsageFlags.RenderCastShadows     , Item2 = LayerUsageFlags.RenderCastShadows },       // casts Shadows and is renderered
-            new DebugRenderFlags{ Item1 = LayerUsageFlags.CastShadows           , Item2 = LayerUsageFlags.RenderCastShadows },       // casts Shadows and is NOT renderered (shadowOnly)
-            new DebugRenderFlags{ Item1 = LayerUsageFlags.RenderReceiveShadows  , Item2 = LayerUsageFlags.RenderReceiveShadows },    // any surface that receives shadows (must be rendered)
-            new DebugRenderFlags{ Item1 = LayerUsageFlags.Collidable            , Item2 = LayerUsageFlags.Collidable },              // collider surfaces
-            new DebugRenderFlags{ Item1 = LayerUsageFlags.Culled                , Item2 = LayerUsageFlags.Culled }                   // all surfaces removed by the CSG algorithm
+            new DebugRenderFlags{ Item1 = SurfaceDestinationFlags.None                  , Item2 = SurfaceDestinationFlags.Renderable },              // is explicitly set to "not visible"
+            new DebugRenderFlags{ Item1 = SurfaceDestinationFlags.RenderCastShadows     , Item2 = SurfaceDestinationFlags.RenderCastShadows },       // casts Shadows and is renderered
+            new DebugRenderFlags{ Item1 = SurfaceDestinationFlags.CastShadows           , Item2 = SurfaceDestinationFlags.RenderCastShadows },       // casts Shadows and is NOT renderered (shadowOnly)
+            new DebugRenderFlags{ Item1 = SurfaceDestinationFlags.RenderReceiveShadows  , Item2 = SurfaceDestinationFlags.RenderReceiveShadows },    // any surface that receives shadows (must be rendered)
+            new DebugRenderFlags{ Item1 = SurfaceDestinationFlags.Collidable            , Item2 = SurfaceDestinationFlags.Collidable },              // collider surfaces
+            new DebugRenderFlags{ Item1 = SurfaceDestinationFlags.Culled                , Item2 = SurfaceDestinationFlags.Culled }                   // all surfaces removed by the CSG algorithm
         };
 
         // Read
@@ -492,7 +492,7 @@ namespace Chisel.Core
 
 
         [BurstDiscard]
-        public static void InvalidQuery(LayerUsageFlags query, LayerUsageFlags mask)
+        public static void InvalidQuery(SurfaceDestinationFlags query, SurfaceDestinationFlags mask)
         {
             Debug.Assert(false, $"Invalid helper query used (query: {query}, mask: {mask})");
         }
@@ -508,7 +508,7 @@ namespace Chisel.Core
                 for (int i = 0; i < subMeshSections.Length; i++)
                 {
                     var subMeshSection = subMeshSections[i];
-                    if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.None)
+                    if (subMeshSection.meshQuery.LayerParameterIndex == SurfaceParameterIndex.None)
                     {
                         int helperIndex = -1;
                         var query   = subMeshSection.meshQuery.LayerQuery;
@@ -541,9 +541,9 @@ namespace Chisel.Core
                         meshUpdates.Add(meshUpdate);
                         meshIndex++; 
                     } else
-                    if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
+                    if (subMeshSection.meshQuery.LayerParameterIndex == SurfaceParameterIndex.RenderMaterial)
                     {
-                        var renderIndex = (int)(subMeshSection.meshQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows);
+                        var renderIndex = (int)(subMeshSection.meshQuery.LayerQuery & SurfaceDestinationFlags.RenderReceiveCastShadows);
                         var meshUpdate = new ChiselMeshUpdate
                         {
                             contentsIndex       = i,
@@ -557,7 +557,7 @@ namespace Chisel.Core
                         meshUpdates.Add(meshUpdate);
                         meshIndex++;
                     } else
-                    if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)
+                    if (subMeshSection.meshQuery.LayerParameterIndex == SurfaceParameterIndex.PhysicsMaterial)
                         colliderCount++;
                 }
             }
@@ -570,7 +570,7 @@ namespace Chisel.Core
                 for (int i = 0; i < subMeshSections.Length; i++)
                 {
                     var subMeshSection = subMeshSections[i];
-                    if (subMeshSection.meshQuery.LayerParameterIndex != LayerParameterIndex.PhysicsMaterial)
+                    if (subMeshSection.meshQuery.LayerParameterIndex != SurfaceParameterIndex.PhysicsMaterial)
                         continue;
 
                     var surfaceParameter = meshDescriptions[subMeshSection.startIndex].surfaceParameter;

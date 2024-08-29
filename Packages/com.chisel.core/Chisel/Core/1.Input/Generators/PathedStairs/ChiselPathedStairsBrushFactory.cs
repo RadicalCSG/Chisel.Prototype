@@ -76,7 +76,7 @@ namespace Chisel.Core
                                                 float	            sideWidth,
                                                 float	            sideHeight,
                                                 float	            sideDepth,
-                                                in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                in BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob,
                                                 Allocator allocator)
         {
             var absDepth    = math.abs(bounds.Max.z - bounds.Min.z);
