@@ -119,7 +119,7 @@ namespace Chisel.Components
             };
         }
 
-        public static bool FindFirstWorldIntersection(List<ChiselIntersection> foundIntersections, Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers = ~0, LayerUsageFlags visibleLayerFlags = LayerUsageFlags.Renderable, bool ignoreBackfaced = false, bool ignoreCulled = false, GameObject[] ignore = null, GameObject[] filter = null)
+        public static bool FindFirstWorldIntersection(List<ChiselIntersection> foundIntersections, Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers = ~0, SurfaceDestinationFlags visibleLayerFlags = SurfaceDestinationFlags.Renderable, bool ignoreBackfaced = false, bool ignoreCulled = false, GameObject[] ignore = null, GameObject[] filter = null)
         {
             bool found = false;
 
@@ -234,7 +234,7 @@ namespace Chisel.Components
             return FindFirstWorldIntersection(model, worldRayStart, worldRayEnd, visibleLayers, null, null, out foundIntersection);
         }
         */
-        public static bool FindFirstWorldIntersection(ChiselModelComponent model, Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers, LayerUsageFlags visibleLayerFlags, GameObject[] ignore, GameObject[] filter, out ChiselIntersection foundIntersection)
+        public static bool FindFirstWorldIntersection(ChiselModelComponent model, Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers, SurfaceDestinationFlags visibleLayerFlags, GameObject[] ignore, GameObject[] filter, out ChiselIntersection foundIntersection)
         {
             foundIntersection = ChiselIntersection.None;
 
@@ -338,7 +338,7 @@ namespace Chisel.Components
             }
         }
         
-        public static bool GetNodesInFrustum(Frustum frustum, int visibleLayers, LayerUsageFlags visibleLayerFlags, ref HashSet<CSGTreeNode> rectFoundNodes)
+        public static bool GetNodesInFrustum(Frustum frustum, int visibleLayers, SurfaceDestinationFlags visibleLayerFlags, ref HashSet<CSGTreeNode> rectFoundNodes)
         {
             rectFoundNodes.Clear();
             var planes = new Plane[6];

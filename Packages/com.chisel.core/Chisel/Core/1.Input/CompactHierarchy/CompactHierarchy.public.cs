@@ -44,7 +44,7 @@ namespace Chisel.Core
         internal CompactHierarchyID(Int32 value, Int32 generation = 0) { this.value = value; this.generation = generation; }
 
         [EditorBrowsable(EditorBrowsableState.Never), BurstDiscard]
-        public override string ToString() { return $"HierarchyID = {value}, Generation = {generation}"; }
+        public override string ToString() { return $"(HierarchyID = {value}, Generation = {generation})"; }
 
         #region Comparison
         [EditorBrowsable(EditorBrowsableState.Never), MethodImpl(MethodImplOptions.AggressiveInlining)]

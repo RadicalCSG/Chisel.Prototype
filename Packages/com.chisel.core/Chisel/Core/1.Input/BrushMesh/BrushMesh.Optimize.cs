@@ -118,7 +118,7 @@ namespace Chisel.Core
             }
         }
 
-        public Vector3 CenterAndSnapPlanes(ref ChiselSurfaceDefinition surfaceDefinition)
+        public Vector3 CenterAndSnapPlanes(ref ChiselSurfaceArray surfaceArray)
         {
             Profiler.BeginSample("CenterAndSnapPlanes");
             /*
@@ -148,10 +148,10 @@ namespace Chisel.Core
             var translate = float4x4.Translate(center);
             for (int i = 0; i < polygons.Length; i++)
             {
-                ref var surface             = ref surfaceDefinition.surfaces[i];
+                ref var surface             = ref surfaceArray.surfaces[i];
 
                 var localSpaceToPlaneSpace  = MathExtensions.GenerateLocalToPlaneSpaceMatrix(planes[i]);
-                var originalUVMatrix        = surface.surfaceDescription.UV0.ToFloat4x4();
+                var originalUVMatrix        = surface.surfaceDetails.UV0.ToFloat4x4();
 
                 planes[i].w += math.dot(planes[i].xyz, center);
                 
@@ -162,7 +162,7 @@ namespace Chisel.Core
                                             translate),
                                             translatedPlaneSpaceToLocalSpace);
                 
-                surface.surfaceDescription.UV0 = new UVMatrix(newUVMatrix);
+                surface.surfaceDetails.UV0 = new UVMatrix(newUVMatrix);
             }
 
             for (int i = 0; i < vertices.Length; i++)

@@ -59,7 +59,7 @@ namespace Chisel.Components
         static readonly Dictionary<ChiselBrushComponent, int> rebuildBrushMeshes = new();
         static readonly List<CSGTreeBrush> rebuildTreeBrushes = new();
         static readonly List<BrushMesh> rebuildTreeBrushOutlines = new();
-        static readonly List<ChiselSurfaceDefinition> rebuildSurfaceDefinitions = new();
+        static readonly List<ChiselSurfaceArray> rebuildSurfaceDefinitions = new();
 
         static readonly HashSet<ChiselNode> updateTransformationNodes = new();
 
@@ -353,13 +353,13 @@ namespace Chisel.Components
             {
                 rebuildTreeBrushes[index] = brush;
                 rebuildTreeBrushOutlines[index] = component.definition.BrushOutline;
-                rebuildSurfaceDefinitions[index] = component.surfaceDefinition;
+                rebuildSurfaceDefinitions[index] = component.surfaceArray;
             } else
             {
                 rebuildBrushMeshes[component] = rebuildTreeBrushOutlines.Count;
                 rebuildTreeBrushes.Add(brush);
                 rebuildTreeBrushOutlines.Add(component.definition.BrushOutline);
-                rebuildSurfaceDefinitions.Add(component.surfaceDefinition);
+                rebuildSurfaceDefinitions.Add(component.surfaceArray);
             }
             rebuildTreeNodes.Add(component);
         }

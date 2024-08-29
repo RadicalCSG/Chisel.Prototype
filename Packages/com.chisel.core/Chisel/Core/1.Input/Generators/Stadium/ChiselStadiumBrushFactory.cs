@@ -11,7 +11,7 @@ namespace Chisel.Core
         public static bool GenerateStadium(float width, float height, float length,
                                                   float topLength,     int topSides,
                                                   float bottomLength,  int bottomSides, 
-                                                  in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                  in BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob,
                                                   out BlobAssetReference<BrushMeshBlob> brushMesh,
                                                   Allocator allocator)
         {

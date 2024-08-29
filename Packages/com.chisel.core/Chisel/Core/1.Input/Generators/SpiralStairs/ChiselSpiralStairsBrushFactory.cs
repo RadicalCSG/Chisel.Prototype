@@ -11,7 +11,7 @@ namespace Chisel.Core
         // TODO: create spiral sides support
         public static bool GenerateSpiralStairs(NativeList<BlobAssetReference<BrushMeshBlob>>        brushMeshes, 
                                                 ref ChiselSpiralStairs                               definition, 
-                                                in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                in BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob,
                                                 Allocator                                            allocator)
         {
             const bool fitToBounds = false;
@@ -73,8 +73,8 @@ namespace Chisel.Core
             var outerSides		= definition.outerSegments;
             var riserDepth		= definition.riserDepth;
 
-            using (var outerCylinderSurfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(outerSides + 2, Allocator.Temp))
-            using (var innerCylinderSurfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(innerSides + 2, Allocator.Temp))
+            using (var outerCylinderSurfaceDefinitionBlob = BrushMeshManager.BuildInternalSurfaceArrayBlob(outerSides + 2, Allocator.Temp))
+            using (var innerCylinderSurfaceDefinitionBlob = BrushMeshManager.BuildInternalSurfaceArrayBlob(innerSides + 2, Allocator.Temp))
             {
                 ref var outerCylinderSurfaces = ref outerCylinderSurfaceDefinitionBlob.Value.surfaces;
                 for (int i = 0; i < outerCylinderSurfaces.Length; i++)

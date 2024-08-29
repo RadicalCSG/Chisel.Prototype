@@ -78,7 +78,7 @@ namespace Chisel.Core
         #endregion
 
         #region Generate
-        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.GenerateCapsule(in this,
                                                   in surfaceDefinitionBlob,
@@ -94,7 +94,7 @@ namespace Chisel.Core
         public int RequiredSurfaceCount { get { return 2 + sides; } }
 
         [BurstDiscard]
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        public void UpdateSurfaces(ref ChiselSurfaceArray surfaceDefinition) { }
         #endregion
 
         #region Validation

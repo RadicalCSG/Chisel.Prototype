@@ -7,16 +7,17 @@ namespace Chisel.Core
 {
     struct ChiselSurfaceRenderBuffer
     {
-        public int              surfaceIndex;
-        public SurfaceLayers    surfaceLayers;
+        public int                          surfaceIndex;
+		public SurfaceDestinationFlags      destinationFlags;
+		public SurfaceDestinationParameters destinationParameters;
 
-        public int              vertexCount;
-        public int              indexCount;
+        public int    vertexCount;
+        public int    indexCount;
 
-        public uint             geometryHash;
-        public uint             surfaceHash;
+        public uint   geometryHash;
+        public uint   surfaceHash;
 
-        public float3           min, max;  
+        public float3 min, max;  
 
         public BlobArray<Int32>		    indices;
         public BlobArray<RenderVertex>	renderVertices;

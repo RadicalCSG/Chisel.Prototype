@@ -9,26 +9,14 @@ using WriteOnlyAttribute = Unity.Collections.WriteOnlyAttribute;
 
 namespace Chisel.Core
 {
-    public struct NativeChiselSurface
-    {
-        public static readonly NativeChiselSurface Default = new NativeChiselSurface
-        {
-            layerDefinition     = SurfaceLayers.Empty,
-            surfaceDescription  = SurfaceDescription.Default
-        };
-
-        public SurfaceLayers        layerDefinition;
-        public SurfaceDescription   surfaceDescription;
-    }    
-
     public struct BrushMeshBlob
     {
         public struct Polygon
         {
-            public Int32                firstEdge;
-            public Int32                edgeCount;
-            public Int32                descriptionIndex; // An ID that can be used to identify the material of a generator
-            public NativeChiselSurface  surface;
+            public Int32                 firstEdge;
+            public Int32                 edgeCount;
+            public Int32                 descriptionIndex; // An ID that can be used to identify the material of a generator
+            public InternalChiselSurface surface;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public override int GetHashCode() { unchecked { return (int)GetHashCode(ref this); } }

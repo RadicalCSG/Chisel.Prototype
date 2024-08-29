@@ -1,93 +1,11 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Mathematics;
 using UnityEngine;
 
 namespace Chisel.Core
 {
-    /// <summary>Flags that define how surfaces in a <see cref="Chisel.Core.BrushMesh"/> behave.</summary>
-    /// <seealso cref="Chisel.Core.BrushMesh.Polygon"/>
-    /// <seealso cref="Chisel.Core.BrushMesh"/>	
-    [Serializable, Flags]
-    public enum SurfaceFlags : byte
-    {
-        /// <summary>The surface has no flags set</summary>
-        None = 0,
-
-        /// <summary>When set, the surface texture coordinates are calculated in world-space instead of brush-space</summary>
-        TextureIsInWorldSpace = 1
-    }
-
-    // Separate struct so that we can create a property drawer for it
-    [Serializable, StructLayout(LayoutKind.Sequential)]
-    public struct SmoothingGroup
-    {
-        public UInt32 value;
-
-        public static implicit operator uint(SmoothingGroup smoothingGroup) { return smoothingGroup.value; }
-        public static implicit operator SmoothingGroup(uint smoothingGroup) { return new SmoothingGroup() { value = smoothingGroup }; }
-    }
-
-    /// <summary>Defines the surface of a <see cref="Chisel.Core.BrushMesh"/>.</summary>
-    /// <seealso cref="Chisel.Core.ChiselBrushMaterial"/>
-    /// <seealso cref="Chisel.Core.SurfaceDescription"/>
-    [Serializable]
-    public sealed class ChiselSurface
-    {
-        public const string kBrushMaterialName      = nameof(brushMaterial);
-        public const string kSurfaceDescriptionName = nameof(surfaceDescription);
-
-        public ChiselBrushMaterial  brushMaterial;
-        public SurfaceDescription   surfaceDescription;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                uint hash = HashExtensions.Hash(ref surfaceDescription);
-                hash = math.hash(new uint2(hash, (uint)brushMaterial.GetHashCode()));
-                return (int)hash;
-            }
-        }
-    }
-
-    /// <summary>Describes how the texture coordinates and normals are generated and if a surface is, for example, <see cref="Chisel.Core.LayerUsageFlags.Renderable"/> and/or <see cref="Chisel.Core.LayerUsageFlags.Collidable" /> etc.</summary>
-    /// <seealso cref="Chisel.Core.BrushMesh.Polygon"/>
-    /// <seealso cref="Chisel.Core.BrushMesh"/>
-    [Serializable]
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SurfaceDescription
-    {
-        public const string kSmoothingGroupName = nameof(smoothingGroup);
-        public const string kSurfaceFlagsName   = nameof(surfaceFlags);
-        public const string kUV0Name            = nameof(UV0);
-
-        /// <value>The current normal smoothing group, 0 means that the surface doesn't do any smoothing</value>
-        /// <remarks><note>This is only used when normals are set to be generated using the <see cref="Chisel.Core.VertexChannelFlags"/>.</note></remarks>
-        public SmoothingGroup   smoothingGroup;
-
-        /// <value>Surface specific flags</value>
-        [UnityEngine.HideInInspector]
-        public SurfaceFlags     surfaceFlags;
-
-        /// <value>2x4 matrix to calculate UV0 coordinates from vertex positions.</value>
-        /// <remarks><note>This is only used when uv0 channels are set to be generated using the <see cref="Chisel.Core.VertexChannelFlags"/>.</note></remarks>
-        public UVMatrix         UV0;
-
-
-        // .. more UVMatrices can be added when more UV channels are supported
-
-        public static SurfaceDescription Default = new SurfaceDescription()
-        {
-            smoothingGroup  = 0,
-            surfaceFlags    = CSGDefaults.SurfaceFlags,
-            UV0             = UVMatrix.centered
-        };
-    }
-
     /// <summary>Contains a shape that can be used to initialize and update a <see cref="Chisel.Core.CSGTreeBrush"/>.</summary>
     /// <remarks>See the [Brush Meshes](~/documentation/brushMesh.md) article for more information.
     /// <note>This struct is safe to serialize.</note>

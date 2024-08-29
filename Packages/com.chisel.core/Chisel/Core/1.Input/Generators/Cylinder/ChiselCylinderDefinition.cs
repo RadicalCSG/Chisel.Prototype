@@ -218,7 +218,7 @@ namespace Chisel.Core
         #endregion
 
         #region Generate
-        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob, Allocator allocator)
         {
             var topDiameter     = new float2(topDiameterX, topDiameterZ);
             var bottomDiameter  = new float2(bottomDiameterX, bottomDiameterZ);
@@ -255,13 +255,13 @@ namespace Chisel.Core
         public int RequiredSurfaceCount { get { return 2 + sides; } }
 
         [BurstDiscard]
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void UpdateSurfaces(ref ChiselSurfaceArray surfaceDefinition)
         {
             // Top plane
-            surfaceDefinition.surfaces[0].surfaceDescription.UV0 = UVMatrix.centered;
+            surfaceDefinition.surfaces[0].surfaceDetails.UV0 = UVMatrix.centered;
 
             // Bottom plane
-            surfaceDefinition.surfaces[1].surfaceDescription.UV0 = UVMatrix.centered;
+            surfaceDefinition.surfaces[1].surfaceDetails.UV0 = UVMatrix.centered;
 
             float radius = topDiameterX * 0.5f;
             float angle = (360.0f / sides);
@@ -274,8 +274,8 @@ namespace Chisel.Core
                 uv0.U.w = ((i - 2) + 0.5f) * sideLength;
                 // TODO: align with bottom
                 //uv0.V.w = 0.5f;
-                surfaceDefinition.surfaces[i].surfaceDescription.UV0 = uv0;
-                surfaceDefinition.surfaces[i].surfaceDescription.smoothingGroup = smoothingGroup;
+                surfaceDefinition.surfaces[i].surfaceDetails.UV0 = uv0;
+                surfaceDefinition.surfaces[i].surfaceDetails.smoothingGroup = smoothingGroup;
             }
         }
         #endregion

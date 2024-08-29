@@ -25,7 +25,7 @@ namespace Chisel.Core
 
 
         #region Generate
-        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.GenerateHemisphere(diameterXYZ,
                                                      rotation, // TODO: useless?
@@ -42,7 +42,7 @@ namespace Chisel.Core
         #region Surfaces
         public int RequiredSurfaceCount { get { return 6; } }
 
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        public void UpdateSurfaces(ref ChiselSurfaceArray surfaceDefinition) { }
         #endregion
 
         #region Validation

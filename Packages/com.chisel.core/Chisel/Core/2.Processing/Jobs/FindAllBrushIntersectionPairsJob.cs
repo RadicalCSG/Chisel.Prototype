@@ -420,6 +420,11 @@ namespace Chisel.Core
             var indexOrder  = allTreeBrushIndexOrders[index];
             int nodeOrder   = indexOrder.nodeOrder;
 
+            if (nodeOrder >= basePolygonCache.Length)
+            {
+                Debug.LogError("nodeOrder >= basePolygonCache.Length");
+            }
+
             {
                 var item = basePolygonCache[nodeOrder];
                 if (item.IsCreated)
@@ -436,7 +441,12 @@ namespace Chisel.Core
                 }
             }
 
-            {
+			if (nodeOrder >= brushesTouchedByBrushCache.Length)
+			{
+				Debug.LogError("nodeOrder >= brushesTouchedByBrushCache.Length");
+			}
+
+			{
                 var item = brushesTouchedByBrushCache[nodeOrder];
                 if (item.IsCreated)
                 { 

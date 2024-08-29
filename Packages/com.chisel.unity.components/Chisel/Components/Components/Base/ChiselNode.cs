@@ -32,15 +32,15 @@ namespace Chisel.Components
         }
 
         protected void OnEnable()
-        {
-            OnInitialize(); // Awake is not reliable, so we initialize here
+		{
+			OnInitialize(); // Awake is not reliable, so we initialize here
             ChiselNodeHierarchyManager.UpdateAvailability(this);
         }
 
         protected virtual void OnDisable()
-        {
-            // Note: cannot call OnCleanup here
-            ChiselNodeHierarchyManager.UpdateAvailability(this);
+		{
+			// Note: cannot call OnCleanup here
+			ChiselNodeHierarchyManager.UpdateAvailability(this);
         }
 
         protected void OnDestroy() 
@@ -49,8 +49,8 @@ namespace Chisel.Components
             OnCleanup();
         }
 
+		public void OnValidate() { OnValidateState(); }
 
-        public void OnValidate() { OnValidateState(); }
         protected virtual void OnValidateState() { SetDirty(); }
 
 		public abstract void GetMessages(IChiselMessageHandler messages);
@@ -150,5 +150,5 @@ namespace Chisel.Components
             }
             UpdateTransformation();
         }
-    }
+	}
 }

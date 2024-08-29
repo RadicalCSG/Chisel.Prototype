@@ -9,7 +9,7 @@ namespace Chisel.Core
     public sealed partial class BrushMeshFactory
     {
         public static bool GenerateCapsule(in ChiselCapsule                                   settings,
-                                           in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition,
+                                           in BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinition,
                                            out BlobAssetReference<BrushMeshBlob>                brushMesh,
                                            Allocator                                            allocator)
         {

@@ -75,7 +75,7 @@ namespace Chisel.Core
               
         public static bool GenerateTorus(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, 
                                                 in NativeArray<float3> vertices, int verticalSegments, int horizontalSegments,
-                                                in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                in BlobAssetReference<InternalChiselSurfaceArray> surfaceDefinitionBlob,
                                                 Allocator allocator)
         {
             var segmentIndices = new NativeArray<int>(2 + verticalSegments, Allocator.Temp);

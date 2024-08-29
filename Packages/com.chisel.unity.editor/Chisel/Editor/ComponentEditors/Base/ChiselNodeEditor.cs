@@ -816,12 +816,12 @@ namespace Chisel.Editors
 
         static Vector2 position = Vector2.zero;
 
-        protected override void OnEditSettingsGUI(SceneView sceneView)
+		protected override void OnEditSettingsGUI(SceneView sceneView)
         {
             if (Tools.current != Tool.Custom)
                 return;
 
-            GUILayoutUtility.GetRect(298, 0);
+			GUILayoutUtility.GetRect(298, 0);
 
             // TODO: figure out how to make this work with multiple (different) editors when selecting a combination of nodes
             using (var scope = new EditorGUILayout.ScrollViewScope(position, GUILayout.ExpandWidth(true), GUILayout.MaxHeight(150)))

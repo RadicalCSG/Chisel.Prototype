@@ -195,10 +195,11 @@ namespace Chisel.Core
 
                     loops.Add(surfaceLoopIndex);
                 }
-
-                var surfaceLayers           = baseSurfaces[surfaceIndex].layers;
-                var localSpacePlane         = baseSurfaces[surfaceIndex].localPlane;
-                var UV0                     = baseSurfaces[surfaceIndex].UV0;
+                
+                var destinationFlags      = baseSurfaces[surfaceIndex].destinationFlags;
+                var destinationParameters = baseSurfaces[surfaceIndex].destinationParameters;
+                var UV0                   = baseSurfaces[surfaceIndex].UV0;
+                var localSpacePlane       = baseSurfaces[surfaceIndex].localPlane;
 
 				// We need to convert our UV matrix from tree-space, to brush local-space, to plane-space
                 // since the vertices of the polygons, at this point, are in tree-space.
@@ -337,7 +338,8 @@ namespace Chisel.Core
                     max = math.max(max, surfaceColliderVertices[i]);
                 }
 
-                surfaceRenderBuffer.surfaceLayers = surfaceLayers;
+				surfaceRenderBuffer.destinationFlags      = destinationFlags;
+				surfaceRenderBuffer.destinationParameters = destinationParameters;
 
                 surfaceRenderBuffer.vertexCount = surfaceVerticesCount;
                 surfaceRenderBuffer.indexCount = surfaceIndexList.Length;
@@ -366,27 +368,27 @@ namespace Chisel.Core
                 var meshQuery       = meshQueries[t];
                 var layerQueryMask  = meshQuery.LayerQueryMask;
                 var layerQuery      = meshQuery.LayerQuery;
-                var surfaceParameterIndex = (meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1 && 
-                                             meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex) ?
+                var surfaceParameterIndex = (meshQuery.LayerParameterIndex >= SurfaceParameterIndex.Parameter1 && 
+                                             meshQuery.LayerParameterIndex <= SurfaceParameterIndex.MaxParameterIndex) ?
                                              (int)meshQuery.LayerParameterIndex - 1 : -1;
 
                 querySurfaceList.Clear();
 
                 for (int s = 0; s < surfaceRenderBuffers.Length; s++)
                 {
-                    var surfaceLayers       = surfaceRenderBuffers[s].surfaceLayers;
-                    var core_surface_flags  = surfaceLayers.layerUsage;
-                    if ((core_surface_flags & layerQueryMask) != layerQuery)
+					ref var renderBuffer = ref surfaceRenderBuffers[s];
+					var destinationFlags  = renderBuffer.destinationFlags;
+                    if ((destinationFlags & layerQueryMask) != layerQuery)
                         continue;
 
-                    querySurfaceList.AddNoResize(new ChiselQuerySurface
+					querySurfaceList.AddNoResize(new ChiselQuerySurface
                     {
-                        surfaceIndex        = surfaceRenderBuffers[s].surfaceIndex,
-                        surfaceParameter    = surfaceParameterIndex < 0 ? 0 : surfaceLayers.layerParameters[surfaceParameterIndex],
-                        vertexCount         = surfaceRenderBuffers[s].vertexCount,
-                        indexCount          = surfaceRenderBuffers[s].indexCount,
-                        surfaceHash         = surfaceRenderBuffers[s].surfaceHash,
-                        geometryHash        = surfaceRenderBuffers[s].geometryHash
+                        surfaceIndex        = renderBuffer.surfaceIndex,
+                        surfaceParameter    = surfaceParameterIndex < 0 ? 0 : renderBuffer.destinationParameters.parameters[surfaceParameterIndex],
+                        vertexCount         = renderBuffer.vertexCount,
+                        indexCount          = renderBuffer.indexCount,
+                        surfaceHash         = renderBuffer.surfaceHash,
+                        geometryHash        = renderBuffer.geometryHash
                     });
                 }
                 querySurfaceList.Sort(compareSortByBasePlaneIndex);

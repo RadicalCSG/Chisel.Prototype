@@ -20,25 +20,25 @@ namespace Chisel.Core
 
         // Read
         [NativeDisableUnsafePtrRestriction]
-        [NoAlias, ReadOnly] public CompactHierarchy*                            compactHierarchyPtr;
+        [NoAlias, ReadOnly] public CompactHierarchy*         compactHierarchyPtr;
         [NoAlias, ReadOnly] public NativeParallelHashMap<int, RefCountedBrushMeshBlob>  brushMeshBlobs;
-        [NoAlias, ReadOnly] public int                                          brushCount;
-        [NoAlias, ReadOnly] public NativeList<CompactNodeID>                    brushes;
+        [NoAlias, ReadOnly] public int                       brushCount;
+        [NoAlias, ReadOnly] public NativeList<CompactNodeID> brushes;
 
         // Read/Write
-        [NoAlias] public NativeParallelHashSet<int>                                     allKnownBrushMeshIndices;
-        [NoAlias] public NativeArray<ChiselLayerParameters>                     parameters;
-        [NoAlias] public NativeArray<int>                                       parameterCounts;
+        [NoAlias] public NativeParallelHashSet<int>          allKnownBrushMeshIndices;
+        [NoAlias] public NativeArray<ChiselLayerParameters>  parameters;
+        [NoAlias] public NativeArray<int>                    parameterCounts;
 
         // Write
-        [NoAlias, WriteOnly] public NativeArray<int>                            allBrushMeshIDs;
+        [NoAlias, WriteOnly] public NativeArray<int>         allBrushMeshIDs;
 
         public void Execute()
         {
             ref var compactHierarchy = ref UnsafeUtility.AsRef<CompactHierarchy>(compactHierarchyPtr);
-            Debug.Assert(parameters.Length == SurfaceLayers.ParameterCount);
-            Debug.Assert(parameterCounts.Length == SurfaceLayers.ParameterCount);
-            Debug.Assert(SurfaceLayers.kLayerUsageFlags.Length == SurfaceLayers.ParameterCount);
+            Debug.Assert(parameters.Length == SurfaceDestinationParameters.ParameterCount);
+            Debug.Assert(parameterCounts.Length == SurfaceDestinationParameters.ParameterCount);
+            Debug.Assert(SurfaceDestinationParameters.kSurfaceDestinationParameterFlagMask.Length == SurfaceDestinationParameters.ParameterCount);
 
             var capacity = math.max(1, math.max(allKnownBrushMeshIndices.Count(), brushCount));
             var removeBrushMeshIndices = new NativeParallelHashSet<int>(capacity, Allocator.Temp);
@@ -46,13 +46,13 @@ namespace Chisel.Core
                 for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
                 {
                     var brushCompactNodeID = brushes[nodeOrder];
-                    int brushMeshHash = 0;
+                    int brushMeshHash = -1;
                     if (!compactHierarchy.IsValidCompactNodeID(brushCompactNodeID) ||
                         // NOTE: Assignment is intended, this is not supposed to be a comparison
                         (brushMeshHash = compactHierarchy.GetBrushMeshID(brushCompactNodeID)) == 0)
                     {
                         // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly, or the input values didn't produce a valid mesh (for example; 0 height cube)
-                        //Debug.LogError($"Brush with ID ({brushCompactNodeID}) has its brushMeshID set to ({brushMeshHash}), which is invalid.");
+                        Debug.LogError($"Brush with ID ({brushCompactNodeID}) has its brushMeshID set to ({brushMeshHash}), which is invalid.");
                         allBrushMeshIDs[nodeOrder] = 0;
                     } else
                     {
@@ -82,11 +82,11 @@ namespace Chisel.Core
                     for (int p = 0; p < polygons.Length; p++)
                     {
                         ref var polygon = ref polygons[p];
-                        var layerUsage = polygon.surface.layerDefinition.layerUsage;
-                        for (int l = 0; l < SurfaceLayers.ParameterCount; l++)
+                        var destinationFlags = polygon.surface.destinationFlags;
+                        for (int l = 0; l < SurfaceDestinationParameters.ParameterCount; l++)
                         {
-                            var layerUsageFlags = SurfaceLayers.kLayerUsageFlags[l];
-                            if ((layerUsage & layerUsageFlags) != 0) parameterPtr[l].RegisterParameter(polygon.surface.layerDefinition.layerParameters[l]);
+                            var surfaceDestinationMask = SurfaceDestinationParameters.kSurfaceDestinationParameterFlagMask[l];
+                            if ((destinationFlags & surfaceDestinationMask) != 0) parameterPtr[l].RegisterParameter(polygon.surface.parameters.parameters[l]);
                         }
                     }
                 }
@@ -95,7 +95,7 @@ namespace Chisel.Core
                 //foreach (int brushMeshHash in removeBrushMeshIndices)
                 //    allKnownBrushMeshIndices.Remove(brushMeshHash);
 
-                for (int l = 0; l < SurfaceLayers.ParameterCount; l++)
+                for (int l = 0; l < SurfaceDestinationParameters.ParameterCount; l++)
                     parameterCounts[l] = parameterPtr[l].uniqueParameterCount;
             }
             removeBrushMeshIndices.Dispose();
