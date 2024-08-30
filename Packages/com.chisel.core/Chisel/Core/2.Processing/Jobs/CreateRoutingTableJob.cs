@@ -1,6 +1,6 @@
+#define HAVE_SELF_CATEGORIES
 #define USE_OPTIMIZATIONS
 //#define SHOW_DEBUG_MESSAGES 
-#define HAVE_SELF_CATEGORIES
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -263,7 +263,7 @@ namespace Chisel.Core
                                 output[outputLength] = new CategoryStackNode { NodeIDValue = currentNodeID.value, routingRow = CategoryRoutingRow.AllSelfAligned };
                                 outputLength++;
                                 break;
-                            }
+                            }  
 
                             if (haveGoneBeyondSelf > 0)
                                 haveGoneBeyondSelf = 2; // We're now definitely beyond our brush
@@ -504,8 +504,9 @@ namespace Chisel.Core
 #if HAVE_SELF_CATEGORIES
                 var operationTableOffset = (int)operation;
 #else
-                var operationTableOffset = (leftHaveGoneBeyondSelf >= 1 && rightStackLength == 1 ?
-                                            CategoryRoutingRow.RemoveOverlappingOffset : 0) +
+                var operationTableOffset = //(leftHaveGoneBeyondSelf >= 1 ?//&& rightStackLength == 1 ?
+                                            //CategoryRoutingRow.RemoveOverlappingOffset : 0) +
+                                            (leftHaveGoneBeyondSelf * CategoryRoutingRow.OperationCount) +
                                             (int)operation;
 #endif
 
@@ -574,7 +575,7 @@ namespace Chisel.Core
                         {
                             // Fix up output of last node to include operation between last left and last right.
                             // We don't add a routingOffset here since this is last node & we don't have a destination beyond this point
-                            var routingRow = new CategoryRoutingRow(operationTableOffset, leftCategoryIndex, rightStack[rightStackRowIndex].routingRow); // applies operation
+							var routingRow = new CategoryRoutingRow(operationTableOffset, leftCategoryIndex, rightStack[rightStackRowIndex].routingRow); // applies operation
                             var skip = !combineUsedIndices.IsSet(vIndex);
 #if USE_OPTIMIZATIONS
                             combineIndexRemap[vIndex] = skip ? (byte)0 : 
@@ -626,7 +627,7 @@ namespace Chisel.Core
         }
 
 
-        [BurstDiscard]
+		[BurstDiscard]
         static void FailureMessage()
         {
             Debug.LogError("Unity Burst Compiler is broken");
@@ -676,6 +677,7 @@ namespace Chisel.Core
                     if (key >= remap.Length || remap[key] == 0) { FailureMessage(); return; }
 				}
 
+#if HAVE_SELF_CATEGORIES
 				{
 					var key = (int)routingRow.selfAligned;
 					if (key >= remap.Length || remap[key] == 0) { FailureMessage(); return; }
@@ -685,6 +687,7 @@ namespace Chisel.Core
 					var key = (int)routingRow.selfReverseAligned;
 					if (key >= remap.Length || remap[key] == 0) { FailureMessage(); return; }
 				}
+#endif
 
 				{
                     var key = (int)routingRow.reverseAligned;
@@ -738,4 +741,4 @@ namespace Chisel.Core
         }
 #endif
             }
-}
+		}

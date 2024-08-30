@@ -93,169 +93,239 @@ namespace Chisel.Core
 
 		#region Operation tables           
 #if HAVE_SELF_CATEGORIES
-            public static readonly byte[] kOperationTables = // NOTE: burst supports static readonly tables like this
-            {
-                // Additive set operation on polygons: output = (left-node || right-node)
-                // Defines final output from combination of categorization of left and right node
-                //new CategoryRoutingRow[] // Additive Operation
-                //{
-	            //  right node                                                                                                                 |
-	            //                                            self                 self                                                        |
-	            //  inside               aligned              aligned              reverse-aligned      reverse-aligned      outside           |    left-node       
-	            //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-                    Inside,              Inside,              Inside,              Inside,              Inside,              Inside            , // inside
-                    Inside,              Aligned,             SelfAligned,         Inside,              Inside,              Aligned           , // aligned
-                    Inside,              Aligned,             SelfAligned,         Inside,              Inside,              SelfAligned       , // self-aligned
-	                Inside,              Inside,              Inside,              SelfReverseAligned,  ReverseAligned,      SelfReverseAligned, // self-reverse-aligned
-                    Inside,              Inside,              Inside,              SelfReverseAligned,  ReverseAligned,      ReverseAligned    , // reverse-aligned
-                    Inside,              Aligned,             SelfAligned,         SelfReverseAligned,  ReverseAligned,      Outside           , // outside
-                //},
+        public static readonly byte[] kOperationTables = // NOTE: burst supports static readonly tables like this
+        {
+            // Additive set operation on polygons: output = (left-node || right-node)
+            // Defines final output from combination of categorization of left and right node
+            //new CategoryRoutingRow[] // Additive Operation
+            //{
+	        //  right node                                                                                                                 |
+	        //                                            self                 self                                                        |
+	        //  inside               aligned              aligned              reverse-aligned      reverse-aligned      outside           |    left-node       
+	        //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                Inside,              Inside,              Inside,              Inside,              Inside,              Inside            , // inside
+                Inside,              Aligned,             SelfAligned,         Inside,              Inside,              Aligned           , // aligned
+                Inside,              Aligned,             SelfAligned,         Inside,              Inside,              SelfAligned       , // self-aligned
+	            Inside,              Inside,              Inside,              SelfReverseAligned,  ReverseAligned,      SelfReverseAligned, // self-reverse-aligned
+                Inside,              Inside,              Inside,              SelfReverseAligned,  ReverseAligned,      ReverseAligned    , // reverse-aligned
+                Inside,              Aligned,             SelfAligned,         SelfReverseAligned,  ReverseAligned,      Outside           , // outside
+            //},
                 
-                // Subtractive set operation on polygons: output = !(!left-node || right-node)
-                // Defines final output from combination of categorization of left and right node
-                //new CategoryRoutingRow[] // Subtractive Operation
-                //{
-	            //  right node                                                                                                                 |
-	            //                                            self                 self                                                        |
-	            //  inside               aligned              aligned              reverse-aligned      reverse-aligned      outside           |    left-node       
-	            //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-                    Outside,             ReverseAligned,      SelfReverseAligned,  SelfAligned,         Aligned,             Inside            , // inside
-                    Outside,             Outside,             Outside,             Aligned,             Aligned,             Aligned           , // aligned
-                    Outside,             Outside,             Outside,             Aligned,             Aligned,             SelfAligned       , // self-aligned
-                    Outside,             ReverseAligned,      SelfReverseAligned,  Outside,             Outside,             SelfReverseAligned, // self-reverse-aligned
-                    Outside,             ReverseAligned,      SelfReverseAligned,  Outside,             Outside,             ReverseAligned    , // reverse-aligned
-                    Outside,             Outside,             Outside,             Outside,             Outside,             Outside           , // outside
-                //},
+            // Subtractive set operation on polygons: output = !(!left-node || right-node)
+            // Defines final output from combination of categorization of left and right node
+            //new CategoryRoutingRow[] // Subtractive Operation
+            //{
+	        //  right node                                                                                                                 |
+	        //                                            self                 self                                                        |
+	        //  inside               aligned              aligned              reverse-aligned      reverse-aligned      outside           |    left-node       
+	        //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                Outside,             ReverseAligned,      SelfReverseAligned,  SelfAligned,         Aligned,             Inside            , // inside
+                Outside,             Outside,             Outside,             Aligned,             Aligned,             Aligned           , // aligned
+                Outside,             Outside,             Outside,             Aligned,             Aligned,             SelfAligned       , // self-aligned
+                Outside,             ReverseAligned,      SelfReverseAligned,  Outside,             Outside,             SelfReverseAligned, // self-reverse-aligned
+                Outside,             ReverseAligned,      SelfReverseAligned,  Outside,             Outside,             ReverseAligned    , // reverse-aligned
+                Outside,             Outside,             Outside,             Outside,             Outside,             Outside           , // outside
+            //},
                 
-                // Common set operation on polygons: output = !(!left-node || !right-node)
-                // Defines final output from combination of categorization of left and right node
-                //new CategoryRoutingRow[] // Intersection Operation
-                //{
-	            //  right node                                                                                                                 |
-	            //                                            self                 self                                                        |
-	            //  inside               aligned              aligned              reverse-aligned      reverse-aligned      outside           |    left-node       
-	            //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-                    Inside,              Aligned,             SelfAligned,         SelfReverseAligned,  ReverseAligned,      Outside           , // inside
-
-                    Aligned,             Aligned,             SelfAligned,         Outside,             Outside,             Outside           , // aligned
-                    SelfAligned,         Aligned,             SelfAligned,         Outside,             Outside,             Outside           , // self-aligned
-                    SelfReverseAligned,  Outside,             Outside,             SelfReverseAligned,  ReverseAligned,      Outside           , // self-reverse-aligned
-	                ReverseAligned,      Outside,             Outside,             SelfReverseAligned,  ReverseAligned,      Outside           , // reverse-aligned
-
-                    Outside,             Outside,             Outside,             Outside,             Outside,             Outside           , // outside
-                //},
-
-                // Additive set operation on polygons: output = (left-node || right-node)
-                // Defines final output from combination of categorization of left and right node
-                //new CategoryRoutingRow[] // AdditiveKeepInside Operation
-                //{
-	            //  right node                                                                                                                 |
-	            //                                            self                 self                                                        |
-	            //  inside               aligned              aligned              reverse-aligned      reverse-aligned      outside           |    left-node       
-	            //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-                    Inside,              Inside,              Inside,              Inside,              Inside,              Inside            , // inside
-                    Inside,              Aligned,             SelfAligned,         Inside,              Inside,              Aligned           , // aligned
-                    Inside,              Aligned,             SelfAligned,         Inside,              Inside,              SelfAligned       , // self-aligned
-	                Inside,              Inside,              Inside,              SelfReverseAligned,  ReverseAligned,      SelfReverseAligned, // self-reverse-aligned
-                    Inside,              Inside,              Inside,              SelfReverseAligned,  ReverseAligned,      ReverseAligned    , // reverse-aligned
-                    Inside,              Aligned,             SelfAligned,         SelfReverseAligned,  ReverseAligned,      Outside           , // outside
-                //}
-            };
-
-            public const int OperationStride         = 6 * 6;
-            public const int RowStride               = 6;
+            // Common set operation on polygons: output = !(!left-node || !right-node)
+            // Defines final output from combination of categorization of left and right node
+            //new CategoryRoutingRow[] // Intersection Operation
+            //{
+	        //  right node                                                                                                                 |
+	        //                                            self                 self                                                        |
+	        //  inside               aligned              aligned              reverse-aligned      reverse-aligned      outside           |    left-node       
+	        //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                Inside,              Aligned,             SelfAligned,         SelfReverseAligned,  ReverseAligned,      Outside           , // inside
+                Aligned,             Aligned,             SelfAligned,         Outside,             Outside,             Outside           , // aligned
+                SelfAligned,         Aligned,             SelfAligned,         Outside,             Outside,             Outside           , // self-aligned
+                SelfReverseAligned,  Outside,             Outside,             SelfReverseAligned,  ReverseAligned,      Outside           , // self-reverse-aligned
+	            ReverseAligned,      Outside,             Outside,             SelfReverseAligned,  ReverseAligned,      Outside           , // reverse-aligned
+                Outside,             Outside,             Outside,             Outside,             Outside,             Outside           , // outside
+            //},
+            
+            // Additive set operation on polygons: output = (left-node || right-node)
+            // Defines final output from combination of categorization of left and right node
+            //new CategoryRoutingRow[] // AdditiveKeepInside Operation
+            //{
+	        //  right node                                                                                                                 |
+	        //                                            self                 self                                                        |
+	        //  inside               aligned              aligned              reverse-aligned      reverse-aligned      outside           |    left-node       
+	        //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                Invalid,             Invalid,             Invalid,             Invalid,              Invalid,            Invalid           , // inside
+                Invalid,             Invalid,             Invalid,             Invalid,              Invalid,            Invalid           , // aligned
+                Invalid,             Invalid,             Invalid,             Invalid,              Invalid,            Invalid           , // self-aligned
+	            Invalid,             Invalid,             Invalid,             Invalid,              Invalid,            Invalid           , // self-reverse-aligned
+                Invalid,             Invalid,             Invalid,             Invalid,              Invalid,            Invalid           , // reverse-aligned
+                Invalid,             Invalid,             Invalid,             Invalid,              Invalid,            Invalid           , // outside
+            //}
+        };
+            
+		public const int OperationCount  = 6;
+        public const int RowStride       = OperationCount;
+        public const int OperationStride = OperationCount * RowStride;
 #else
 		public readonly static byte[] kOperationTables = // NOTE: burst supports static readonly tables like this
         {
             // Regular Operation Tables
             // Additive set operation on polygons: output = (left-node || right-node)
             // 
-            //  right node                                                              | Additive Operation
-            //  inside            aligned           reverse-aligned   outside           |     left-node       
-            //-----------------------------------------------------------------------------------------------
-                Inside,           Inside,           Inside,           Inside            , // inside
-                Inside,           Aligned,          Inside,           Aligned           , // aligned
-                Inside,           Inside,           ReverseAligned,   ReverseAligned    , // reverse-aligned
-                Inside,           Aligned,          ReverseAligned,   Outside           , // outside
+            //  right node                                                                          | Additive Operation
+            //  inside               aligned              reverse-aligned      outside              |    left-node       
+            //----------------------------------------------------------------------------------------------------------
+                //*
+                Inside,              Inside,              Inside,              Inside               , // inside
+                Inside,              Aligned,             Inside,              Aligned              , // aligned
+                Inside,              Inside,              ReverseAligned,      ReverseAligned       , // reverse-aligned
+                Inside,              Aligned,             ReverseAligned,      Outside              , // outside
+                /*/
+                Inside,              Inside,              Inside,              Inside               , // inside
+                Inside,              Aligned,             Inside,              Aligned              , // aligned
+                Inside,              Inside,              ReverseAligned,      ReverseAligned       , // reverse-aligned
+                Inside,              Aligned,             ReverseAligned,      Outside              , // outside
+                //*/
             //},
 
             // Subtractive set operation on polygons: output = !(!left-node || right-node)
             //
-            //  right node                                                              | Subtractive Operation
-            //  inside            aligned           reverse-aligned   outside           |     left-node       
-            //-----------------------------------------------------------------------------------------------
-                Outside,          ReverseAligned,   Aligned,          Inside            , // inside
-                Outside,          Outside,          Aligned,          Aligned           , // aligned
-                Outside,          ReverseAligned,   Outside,          ReverseAligned    , // reverse-aligned
-                Outside,          Outside,          Outside,          Outside           , // outside
+            //  right node                                                                          | Additive Operation
+            //  inside               aligned              reverse-aligned      outside              |    left-node       
+            //----------------------------------------------------------------------------------------------------------
+                Outside,             ReverseAligned,      Aligned,             Inside               , // inside
+                Outside,             Outside,             Aligned,             Aligned              , // aligned
+                Outside,             ReverseAligned,      Outside,             ReverseAligned       , // reverse-aligned
+                Outside,             Outside,             Outside,             Outside              , // outside
             //},
 
             // Common set operation on polygons: output = !(!left-node || !right-node)
             //
-            //  right node                                                              | Intersection Operation
-            //  inside            aligned           reverse-aligned   outside           |     left-node       
-            //-----------------------------------------------------------------------------------------------
-                Inside,           Aligned,          ReverseAligned,   Outside           , // inside
-                Aligned,          Aligned,          Outside,          Outside           , // aligned
-	            ReverseAligned,   Outside,          ReverseAligned,   Outside           , // reverse-aligned
-                Outside,          Outside,          Outside,          Outside           , // outside
+            //  right node                                                                          | Additive Operation
+            //  inside               aligned              reverse-aligned      outside              |    left-node       
+            //----------------------------------------------------------------------------------------------------------
+                Inside,              Aligned,             ReverseAligned,      Outside              , // inside
+                Aligned,             Aligned,             Outside,             Outside              , // aligned
+	            ReverseAligned,      Outside,             ReverseAligned,      Outside              , // reverse-aligned
+                Outside,             Outside,             Outside,             Outside              , // outside
             //},
-
-	        //  right node                                                              |
-            //  inside            aligned           reverse-aligned   outside           |     left-node       
-            //-----------------------------------------------------------------------------------------------
-	            Invalid,          Invalid,          Invalid,          Invalid           , // inside
-                Invalid,          Invalid,          Invalid,          Invalid           , // aligned
-                Invalid,          Invalid,          Invalid,          Invalid           , // reverse-aligned
-                Invalid,          Invalid,          Invalid,          Invalid           , // outside
+            
+            //  right node                                                                          | Additive Operation
+            //  inside               aligned              reverse-aligned      outside              |    left-node       
+            //----------------------------------------------------------------------------------------------------------
+	            Invalid,             Invalid,             Invalid,             Invalid              , // inside
+                Invalid,             Invalid,             Invalid,             Invalid              , // aligned
+                Invalid,             Invalid,             Invalid,             Invalid              , // reverse-aligned
+                Invalid,             Invalid,             Invalid,             Invalid              , // outside
             //}
             
+
+
+
             // Remove Overlapping Tables
             // Additive set operation on polygons: output = (left-node || right-node)
             //
-	        //  right node                                                              | Additive Operation
-            //  inside            aligned           reverse-aligned   outside           |     left-node       
-            //-----------------------------------------------------------------------------------------------
-	            Inside,           Inside,           Inside,           Inside            , // inside
-                Inside,           Inside,           Inside,           Aligned           , // aligned
-                Inside,           Inside,           Inside,           ReverseAligned    , // reverse-aligned
-                Inside,           Inside,           Inside,           Outside           , // outside
+            //  right node                                                                          | Additive Operation
+            //  inside               aligned              reverse-aligned      outside              |    left-node       
+            //----------------------------------------------------------------------------------------------------------
+                /*
+	            Outside,             Outside,             Outside,             Outside              , // inside
+                Outside,             Outside,             Outside,             Outside              , // aligned
+                Outside,             Outside,             Outside,             Outside              , // reverse-aligned
+                Outside,             Outside,             Outside,             Outside              , // outside
+                /*/
+                Inside,              Inside,              Inside,              Inside               , // inside
+                Inside,              Aligned,             Inside,              Aligned              , // aligned
+                Inside,              Inside,              ReverseAligned,      ReverseAligned       , // reverse-aligned
+                Inside,              Aligned,             ReverseAligned,      Outside              , // outside
+                //*/
             //},
 
             // Subtractive set operation on polygons: output = !(!left-node || right-node)
             //
-	        //  right node                                                              | Subtractive Operation
-            //  inside            aligned           reverse-aligned   outside           |     left-node       
-            //-----------------------------------------------------------------------------------------------
-                Outside,          Outside,          Outside,          Inside            , // inside
-                Outside,          Outside,          Outside,          Aligned           , // aligned
-                Outside,          Outside,          Outside,          ReverseAligned    , // reverse-aligned
-                Outside,          Outside,          Outside,          Outside           , // outside
+            //  right node                                                                          | Additive Operation
+            //  inside               aligned              reverse-aligned      outside              |    left-node       
+            //----------------------------------------------------------------------------------------------------------
+                Outside,             ReverseAligned,      Aligned,             Inside               , // inside
+                Outside,             Outside,             Aligned,             Aligned              , // aligned
+                Outside,             ReverseAligned,      Outside,             ReverseAligned       , // reverse-aligned
+                Outside,             Outside,             Outside,             Outside              , // outside
             //}, 
 
             // Common set operation on polygons: output = !(!left-node || !right-node)
             //
-	        //  right node                                                              | Subtractive Operation
-            //  inside            aligned           reverse-aligned   outside           |     left-node       
-            //-----------------------------------------------------------------------------------------------
-	            Inside,           Outside,          Outside,          Outside           , // inside
-                Aligned,          Outside,          Outside,          Outside           , // aligned
-                ReverseAligned,   Outside,          Outside,          Outside           , // reverse-aligned
-                Outside,          Outside,          Outside,          Outside           , // outside
+            //  right node                                                                          | Additive Operation
+            //  inside               aligned              reverse-aligned      outside              |    left-node       
+            //----------------------------------------------------------------------------------------------------------
+                Inside,              Aligned,             ReverseAligned,      Outside              , // inside
+                Aligned,             Aligned,             Outside,             Outside              , // aligned
+                ReverseAligned,      Outside,             ReverseAligned,      Outside              , // reverse-aligned
+                Outside,             Outside,             Outside,             Outside              , // outside
+            //},
+            
+            //  right node                                                                          | Additive Operation
+            //  inside               aligned              reverse-aligned      outside              |    left-node       
+            //----------------------------------------------------------------------------------------------------------
+	            Invalid,             Invalid,             Invalid,             Invalid              , // inside
+                Invalid,             Invalid,             Invalid,             Invalid              , // aligned
+                Invalid,             Invalid,             Invalid,             Invalid              , // reverse-aligned
+                Invalid,             Invalid,             Invalid,             Invalid              , // outside
+            //}
+            
+
+
+
+            // Remove Overlapping Tables
+            // Additive set operation on polygons: output = (left-node || right-node)
+            //
+            //  right node                                                                          | Additive Operation
+            //  inside               aligned              reverse-aligned      outside              |    left-node       
+            //----------------------------------------------------------------------------------------------------------
+                /*
+	            Outside,             Outside,             Outside,             Outside              , // inside
+                Outside,             Outside,             Outside,             Outside              , // aligned
+                Outside,             Outside,             Outside,             Outside              , // reverse-aligned
+                Outside,             Outside,             Outside,             Outside              , // outside
+                /*/
+                Inside,              Inside,              Inside,              Inside               , // inside
+                Inside,              Inside,              Inside,              Aligned              , // aligned
+                Inside,              Inside,              Inside,              ReverseAligned       , // reverse-aligned
+                Inside,              Aligned,             ReverseAligned,      Outside              , // outside
+                //*/
             //},
 
-	        //  right node                                                              |
-            //  inside            aligned           reverse-aligned   outside           |     left-node       
-            //-----------------------------------------------------------------------------------------------
-	            Invalid,          Invalid,          Invalid,          Invalid           , // inside
-                Invalid,          Invalid,          Invalid,          Invalid           , // aligned
-                Invalid,          Invalid,          Invalid,          Invalid           , // reverse-aligned
-                Invalid,          Invalid,          Invalid,          Invalid           , // outside
+            // Subtractive set operation on polygons: output = !(!left-node || right-node)
+            //
+            //  right node                                                                          | Additive Operation
+            //  inside               aligned              reverse-aligned      outside              |    left-node       
+            //----------------------------------------------------------------------------------------------------------
+                Outside,             ReverseAligned,      Aligned,             Inside               , // inside
+                Outside,             Outside,             Aligned,             Aligned              , // aligned
+                Outside,             ReverseAligned,      Outside,             ReverseAligned       , // reverse-aligned
+                Outside,             Outside,             Outside,             Outside              , // outside
+            //}, 
+
+            // Common set operation on polygons: output = !(!left-node || !right-node)
+            //
+            //  right node                                                                          | Additive Operation
+            //  inside               aligned              reverse-aligned      outside              |    left-node       
+            //----------------------------------------------------------------------------------------------------------
+                Inside,              Aligned,             ReverseAligned,      Outside              , // inside
+                Aligned,             Aligned,             Outside,             Outside              , // aligned
+                ReverseAligned,      Outside,             ReverseAligned,      Outside              , // reverse-aligned
+                Outside,             Outside,             Outside,             Outside              , // outside
+            //},
+            
+            //  right node                                                                          | Additive Operation
+            //  inside               aligned              reverse-aligned      outside              |    left-node       
+            //----------------------------------------------------------------------------------------------------------
+	            Invalid,             Invalid,             Invalid,             Invalid              , // inside
+                Invalid,             Invalid,             Invalid,             Invalid              , // aligned
+                Invalid,             Invalid,             Invalid,             Invalid              , // reverse-aligned
+                Invalid,             Invalid,             Invalid,             Invalid              , // outside
             //}
         };
-		public const int RemoveOverlappingOffset = 4;
-        public const int OperationStride         = 4 * 4;
-        public const int RowStride               = 4;
+		public const int OperationCount          = 4;
+        public const int RowStride               = OperationCount;
+		//public const int RemoveOverlappingOffset = OperationCount;
+        public const int OperationStride         = OperationCount * RowStride;
 #endif
 #endregion
 
@@ -269,18 +339,20 @@ namespace Chisel.Core
 #endif
 			var operationOffset = operationIndex * OperationStride;
 
-            // left = row, right = column
-            var row = (byte)left;
+			// left = row, right = column
+			var row = (byte)left * RowStride;
 			//this.destination        = 0;
-			this.inside             = kOperationTables[operationOffset + (row * RowStride) + right.inside];
-			this.aligned            = kOperationTables[operationOffset + (row * RowStride) + right.aligned];
-			this.selfAligned        = kOperationTables[operationOffset + (row * RowStride) + right.selfAligned];
-			this.selfReverseAligned = kOperationTables[operationOffset + (row * RowStride) + right.reverseAligned];
-			this.reverseAligned     = kOperationTables[operationOffset + (row * RowStride) + right.selfReverseAligned];
-			this.outside            = kOperationTables[operationOffset + (row * RowStride) + right.outside];
+			this.inside             = kOperationTables[operationOffset + row + right.inside];
+			this.aligned            = kOperationTables[operationOffset + row + right.aligned];
+			this.selfAligned        = kOperationTables[operationOffset + row + right.selfAligned];
+			this.selfReverseAligned = kOperationTables[operationOffset + row + right.selfReverseAligned];
+			this.reverseAligned     = kOperationTables[operationOffset + row + right.reverseAligned];
+			this.outside            = kOperationTables[operationOffset + row + right.outside];
 
 #else
-			var operationOffset = operationIndex * OperationStride + ((int)left * RowStride);
+			// left = row, right = column
+			var row = (byte)left;
+			var operationOffset = operationIndex * OperationStride + (row * RowStride);
             this.destination    = 0;
             this.inside         = kOperationTables[(int)(operationOffset + (int)right.inside)];
             this.aligned        = kOperationTables[(int)(operationOffset + (int)right.aligned)];
@@ -295,12 +367,12 @@ namespace Chisel.Core
 #if HAVE_SELF_CATEGORIES
             return new CategoryRoutingRow
             (
-                inside              : (byte)(oldRow.inside + offset),
-                aligned             : (byte)(oldRow.aligned + offset),
-                selfAligned         : (byte)(oldRow.selfAligned + offset),
-                selfReverseAligned  : (byte)(oldRow.selfReverseAligned + offset),
-                reverseAligned      : (byte)(oldRow.reverseAligned + offset),
-                outside             : (byte)(oldRow.outside + offset)
+                inside             : (byte)(oldRow.inside + offset),
+                aligned            : (byte)(oldRow.aligned + offset),
+                selfAligned        : (byte)(oldRow.selfAligned + offset),
+                selfReverseAligned : (byte)(oldRow.selfReverseAligned + offset),
+                reverseAligned     : (byte)(oldRow.reverseAligned + offset),
+                outside            : (byte)(oldRow.outside + offset)
             );
 #else
             return new CategoryRoutingRow
