@@ -5,6 +5,7 @@ using Chisel.Core;
 using Chisel.Components;
 using UnityEditor;
 using UnityEngine;
+using System.Buffers;
 
 namespace Chisel.Editors
 {
@@ -85,7 +86,6 @@ namespace Chisel.Editors
                 serializedObject.Dispose();
                 serializedObject = null;
             }
-            renderMaterialProp = null;
 			surfaceFlagsProp = null;
 			UV0Prop = null;
 			initialized = false;
@@ -123,8 +123,7 @@ namespace Chisel.Editors
                 surfaceFlagsProp     = surfaceDetailsProp.FindPropertyRelative(SurfaceDetails.kDetailFlagsName);
                 UV0Prop              = surfaceDetailsProp.FindPropertyRelative(SurfaceDetails.kUV0Name);
 			}
-			var chiselMaterialProp = surfaceProp.FindPropertyRelative(ChiselSurface.kChiselMaterialName);
-			renderMaterialProp = chiselMaterialProp.FindPropertyRelative(ChiselMaterial.kMaterialFieldName);
+			chiselMaterialProp = surfaceProp.FindPropertyRelative(ChiselSurface.kChiselMaterialName);
             initialized = true;
         }
 
@@ -138,9 +137,9 @@ namespace Chisel.Editors
 
         bool initialized = false;
         SerializedObject serializedObject;
-        SerializedProperty renderMaterialProp;
-        
-        SerializedProperty surfaceFlagsProp;
+		SerializedProperty chiselMaterialProp;
+
+		SerializedProperty surfaceFlagsProp;
         SerializedProperty UV0Prop;
         [SerializeField] UnityEngine.Object[]    undoableObjects = Array.Empty<UnityEngine.Object>();
         [SerializeField] ChiselSelectedSurface[] surfaces        = Array.Empty<ChiselSelectedSurface>();
@@ -156,61 +155,218 @@ namespace Chisel.Editors
 		{
 			get
 			{
-				float physicsMaterialHeight, surfaceDestinationFlagsHeight;
-				physicsMaterialHeight = EditorGUIUtility.singleLineHeight;
-				surfaceDestinationFlagsHeight = SurfaceDestinationFlagsPropertyDrawer.DefaultHeight;
-				return physicsMaterialHeight + kSpacing + surfaceDestinationFlagsHeight;
+				var physicsMaterialHeight = EditorGUIUtility.singleLineHeight;
+				var renderMaterialHeight = EditorGUIUtility.singleLineHeight;
+				var surfaceDestinationFlagsHeight = SurfaceDestinationFlagsPropertyDrawer.DefaultHeight;
+				return physicsMaterialHeight + renderMaterialHeight + kSpacing + surfaceDestinationFlagsHeight;
 			}
 		}
 
-		public static void ShowMaterialProp(Rect position, SerializedProperty renderMaterialProp, SerializedProperty surfaceDestinationFlagsProp = null, SerializedProperty physicsMaterialProp = null)
+		static void GetAllUnityObjects(SerializedProperty prop, List<UnityEngine.Object> output)
 		{
-			var previewSize = position.height;
+			Debug.Assert(prop.propertyType == SerializedPropertyType.ObjectReference);
+			var propertyPath = prop.propertyPath;
+			foreach (var target in prop.serializedObject.targetObjects)
+			{
+				if (target == null)
+					continue;
+				var targetSerializedObject = new SerializedObject(target);
+				if (targetSerializedObject == null)
+					continue;
+				var targetProp = targetSerializedObject.FindProperty(propertyPath);
+				if (targetProp == null)
+					continue;
+				var obj = targetProp.objectReferenceValue;
+                if (obj == null)
+                    continue;
+				output.Add(obj);
+			}
+		}
+
+		static IEnumerable<T> IterateOverPropertyUnityObjects<T>(SerializedProperty prop)
+            where T : UnityEngine.Object
+		{
+            Debug.Assert(prop.propertyType == SerializedPropertyType.ObjectReference);
+            var propertyPath = prop.propertyPath;
+			foreach (var target in prop.serializedObject.targetObjects)
+			{
+				if (target == null)
+					continue;
+				var targetSerializedObject = new SerializedObject(target);
+				if (targetSerializedObject == null)
+					continue;
+				var targetRenderMaterialProp = targetSerializedObject.FindProperty(propertyPath);
+				if (targetRenderMaterialProp == null)
+                    continue;
+				yield return targetRenderMaterialProp.objectReferenceValue as T;
+			}
+		}
+
+		static IEnumerable<T> IterateOverPropertyClasses<T>(SerializedProperty prop)
+			where T : class
+		{
+			Debug.Assert(prop.propertyType == SerializedPropertyType.ManagedReference);
+			var propertyPath = prop.propertyPath;
+			foreach (var target in prop.serializedObject.targetObjects)
+			{
+				if (target == null)
+					continue;
+				var targetSerializedObject = new SerializedObject(target);
+				if (targetSerializedObject == null)
+					continue;
+				var targetRenderMaterialProp = targetSerializedObject.FindProperty(propertyPath);
+				if (targetRenderMaterialProp == null)
+					continue;
+				yield return targetRenderMaterialProp.managedReferenceValue as T;
+			}
+		}
+
+		public static void UpdateChiselMaterials(SerializedProperty prop)
+		{
+			bool modified = false;
+			Debug.Assert(prop.propertyType == SerializedPropertyType.Generic);
+            if (prop.serializedObject.targetObjects.Length == 1)
+            {
+                if (prop.boxedValue is ChiselMaterial)
+                {
+                    var chiselMaterial = (ChiselMaterial)prop.boxedValue;
+                    if (chiselMaterial.Update())
+                    {
+                        prop.boxedValue = chiselMaterial;
+                        prop.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                        modified = true;
+                    }
+                }
+            } else
+            {
+                var propertyPath = prop.propertyPath;
+                foreach (var target in prop.serializedObject.targetObjects)
+                {
+                    if (target == null)
+                        continue;
+                    var targetSerializedObject = new SerializedObject(target);
+                    if (targetSerializedObject == null)
+                        continue;
+                    var targetProp = targetSerializedObject.FindProperty(propertyPath);
+                    if (targetProp == null)
+                        continue;
+                    if (targetProp.boxedValue is not ChiselMaterial)
+                        continue;
+                    var chiselMaterial = (ChiselMaterial)targetProp.boxedValue;
+                    if (chiselMaterial.Update())
+                    {
+                        targetProp.boxedValue = chiselMaterial;
+                        targetProp.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                        modified = true;
+                    }
+                }
+            }
+            if (modified)
+            {
+				prop.serializedObject.UpdateIfRequiredOrScript();
+			}
+		}
+
+        static readonly GUIContent kAddMaterialMetadataContent = new ("Add Chisel metadata to Material");
+
+
+        static readonly List<UnityEngine.Object> allChiselSurfaces = new();
+
+		// TODO: move methods like this in a separate file
+		public static void ShowMaterialProp(Rect position, SerializedProperty chiselMaterialProp)
+		{
+            var previewSize = position.height;
 			var lineHeight = EditorGUIUtility.singleLineHeight;
-			var materialPropRect = new Rect(position.x, position.y, position.width, lineHeight);
+			var renderMaterialPropRect = new Rect(position.x, position.y, position.width, lineHeight);
 			var surfaceDestinationFlagsPropRect = new Rect(position.x, position.y + lineHeight + kSpacing, position.width, previewSize - lineHeight + kSpacing);
 
 			var surfacePropRect = position;
 			var physicsRect = position;
 
+			var renderMaterialProp = chiselMaterialProp.FindPropertyRelative(ChiselMaterial.kMaterialFieldName);
 			var showMaterial = (position.width > 260 && renderMaterialProp != null);
 			if (showMaterial)
 			{
-				materialPropRect.xMin += previewSize + kSpacing;
+				renderMaterialPropRect.xMin += previewSize + kSpacing;
 				surfaceDestinationFlagsPropRect.xMin += previewSize + kSpacing;
 
 				surfacePropRect.xMin += previewSize + kSpacing;
-				surfacePropRect.yMin = materialPropRect.yMax;
+				surfacePropRect.yMin = renderMaterialPropRect.yMax;
 
 				physicsRect.xMin += previewSize + kSpacing;
 				physicsRect.yMin = surfacePropRect.yMax - lineHeight;
 			} else
             if (renderMaterialProp != null)
 			{
-				surfacePropRect.yMin = materialPropRect.yMax;
+				surfacePropRect.yMin = renderMaterialPropRect.yMax;
 				physicsRect.yMin = surfacePropRect.yMax - lineHeight;
+			}
+
+			SerializedProperty metadataProp = chiselMaterialProp.FindPropertyRelative(ChiselMaterial.kSurfaceMetadataFieldName);
+			SerializedProperty surfaceDestinationFlagsProp = null, physicsMaterialProp = null;
+			if (metadataProp != null)
+			{
+				if (metadataProp.serializedObject.targetObjects.Length == 1)
+				{
+                    if (metadataProp.objectReferenceValue != null)
+                    {
+                        var serializedObject = new SerializedObject(metadataProp.objectReferenceValue);
+                        surfaceDestinationFlagsProp = serializedObject.FindProperty(ChiselSurfaceMetadata.kDestinationFlagsFieldName);
+                        physicsMaterialProp = serializedObject.FindProperty(ChiselSurfaceMetadata.kPhysicsMaterialFieldName);
+                    }
+				} else
+                { 
+				    allChiselSurfaces.Clear();
+                    GetAllUnityObjects(metadataProp, allChiselSurfaces);
+                    if (allChiselSurfaces.Count > 0)
+				    {
+					    var serializedObject = new SerializedObject(allChiselSurfaces.ToArray());
+                        serializedObject.UpdateIfRequiredOrScript();
+                        surfaceDestinationFlagsProp = serializedObject.FindProperty(ChiselSurfaceMetadata.kDestinationFlagsFieldName);
+                        physicsMaterialProp = serializedObject.FindProperty(ChiselSurfaceMetadata.kPhysicsMaterialFieldName);
+                    }
+                }
 			}
 
 			var prevIndent = EditorGUI.indentLevel;
 			EditorGUI.indentLevel = 0;
 			{
-				if (renderMaterialProp != null) EditorGUI.PropertyField(materialPropRect, renderMaterialProp, GUIContent.none, false);
-                if (surfaceDestinationFlagsProp != null)
-				{
-                    using (new EditorGUI.DisabledScope(true))
+				if (renderMaterialProp != null) EditorGUI.PropertyField(renderMaterialPropRect, renderMaterialProp, GUIContent.none, false);
+                if (renderMaterialProp != null)
+                { 
+				    if (surfaceDestinationFlagsProp != null)
+				    {
+                        using (new EditorGUI.DisabledScope(true))
+                        {
+                            EditorGUI.PropertyField(surfacePropRect, surfaceDestinationFlagsProp, GUIContent.none, true);
+						    using (new EditorGUI.DisabledScope(true))
+						    {
+							    if (physicsMaterialProp != null)
+							    {
+								    EditorGUI.PropertyField(physicsRect, physicsMaterialProp, GUIContent.none, true);
+							    } else
+							    {
+								    EditorGUI.ObjectField(physicsRect, GUIContent.none, ChiselDefaultMaterials.DefaultPhysicsMaterial, typeof(PhysicMaterial), false);
+							    }
+						    }
+					    }
+                    } else
                     {
-                        EditorGUI.PropertyField(surfacePropRect, surfaceDestinationFlagsProp, GUIContent.none, true);
-						using (new EditorGUI.DisabledScope(true))
-						{
-							if (physicsMaterialProp != null)
-							{
-								EditorGUI.PropertyField(physicsRect, physicsMaterialProp, GUIContent.none, true);
-							} else
-							{
-								EditorGUI.ObjectField(physicsRect, GUIContent.none, ChiselDefaultMaterials.DefaultPhysicsMaterial, typeof(PhysicMaterial), false);
-							}
-						}
-					}
+                        if (renderMaterialProp.objectReferenceValue != null)
+                        {
+                            if (GUI.Button(surfacePropRect, kAddMaterialMetadataContent))
+                            {
+                                foreach (var material in IterateOverPropertyUnityObjects<Material>(renderMaterialProp))
+                                {
+                                    if (material != null &&
+                                        material.HasMetadataOfType<ChiselSurfaceMetadata>())
+                                        continue;
+
+                                    material.AddMetadataOfType<ChiselSurfaceMetadata>();
+                                }
+                            }
+                        }
+                    }
                 }
 			}
 			EditorGUI.indentLevel = prevIndent;
@@ -302,14 +458,16 @@ namespace Chisel.Editors
             if (!initialized)
                 return;
 
-            serializedObject.UpdateIfRequiredOrScript();
+			serializedObject.UpdateIfRequiredOrScript();
             EditorGUI.BeginChangeCheck();
-            {
-                var desiredHeight   = DefaultMaterialSurfaceDestinationFlagsHeight;
-                var position        = EditorGUILayout.GetControlRect(false, desiredHeight);
-				ShowMaterialProp(position, renderMaterialProp);
+			{
+				UpdateChiselMaterials(chiselMaterialProp);
 
-                var prevLabelWidth = EditorGUIUtility.labelWidth;
+				var desiredHeight   = DefaultMaterialSurfaceDestinationFlagsHeight;
+                var position        = EditorGUILayout.GetControlRect(false, desiredHeight);
+				ShowMaterialProp(position, chiselMaterialProp);
+
+				var prevLabelWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = 85;
                 position = EditorGUILayout.GetControlRect(true, SurfaceFlagsPropertyDrawer.DefaultHeight);
                 if (surfaceFlagsProp != null)

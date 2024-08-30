@@ -42,5 +42,10 @@ namespace Chisel.Core
 				return (int)hash;
 			}
 		}
+
+		public override void OnReset()
+		{
+			physicsMaterial = ChiselDefaultMaterials.DefaultPhysicsMaterial;
+		}
 	}
 }

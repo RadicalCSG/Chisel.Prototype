@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEditor;
 using Chisel.Core;
+using Unity.Mathematics;
 
 namespace Chisel.Editors
 {
@@ -17,7 +18,7 @@ namespace Chisel.Editors
         {
             get
             {
-                return (EditorGUI.GetPropertyHeight(SerializedPropertyType.Boolean, GUIContent.none) * 3);
+                return (EditorGUI.GetPropertyHeight(SerializedPropertyType.Boolean, GUIContent.none) * 2);
             }
         }
 
@@ -54,8 +55,8 @@ namespace Chisel.Editors
                     var toggleStyle     = EditorStyles.label;
 
                     var halfWidth       = position.width / 2.0f;
-                    var textWidthRight  = toggleStyle.CalcSize(kReceiveShadowsContent).x;
-                    var textWidthLeft   = toggleStyle.CalcSize(kCollidableContent).x;
+                    var textWidthLeft   = math.max(toggleStyle.CalcSize(kCastShadowsContent).x, toggleStyle.CalcSize(kVisibleContent).x);
+                    var textWidthRight  = math.max(toggleStyle.CalcSize(kReceiveShadowsContent).x, toggleStyle.CalcSize(kCollidableContent).x);
                     var offset          = (position.width - (textWidthRight + textWidthLeft)) / 2;
                     if (offset < 0)
                     {

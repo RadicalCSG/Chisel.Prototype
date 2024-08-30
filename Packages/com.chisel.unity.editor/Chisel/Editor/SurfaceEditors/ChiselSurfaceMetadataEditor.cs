@@ -60,7 +60,10 @@ namespace Chisel.Editors
 					}
 				}
 				if (EditorGUI.EndChangeCheck())
+				{
+					// TODO: rebuild models if material is used within a model
 					serializedObject.ApplyModifiedProperties();
+				}
 			}
 			catch (ExitGUIException) { }
 			catch (Exception ex) { Debug.LogException(ex); }

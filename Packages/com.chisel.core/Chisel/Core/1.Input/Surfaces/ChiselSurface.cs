@@ -11,11 +11,38 @@ namespace Chisel.Core
 	[Serializable]
 	public struct ChiselMaterial
 	{
-        public const string kMaterialFieldName		 = nameof(material);
+        public const string kMaterialFieldName		  = nameof(material);
 		public const string kSurfaceMetadataFieldName = nameof(surfaceMetadata);
 
 		public Material				 material;
 		public ChiselSurfaceMetadata surfaceMetadata;
+
+		public static ChiselMaterial Create(Material material)
+		{
+			ChiselMaterial chiselMaterial = new() { material = material };
+			chiselMaterial.Update();
+			return chiselMaterial;
+		}
+
+		public bool Update()
+		{
+			if (material == null)
+			{
+				if (surfaceMetadata != null)
+				{
+					surfaceMetadata = null;
+					return true;
+				}
+				return false;
+			}
+			var newSurfaceMetadata = material.GetMetadataOfType<ChiselSurfaceMetadata>();
+			if (surfaceMetadata != newSurfaceMetadata)
+			{
+				surfaceMetadata = newSurfaceMetadata;
+				return true;
+			}
+			return false;
+		}
 	}
 
 	/// <summary>Defines a surface on a <see cref="Chisel.Core.BrushMesh"/>. 
@@ -44,19 +71,15 @@ namespace Chisel.Core
 		public void SetMaterial(Material material)
 		{
 			chiselMaterial.material = material;
-			chiselMaterial.surfaceMetadata = (material == null) ? null : chiselMaterial.material.GetMetadataOfType<ChiselSurfaceMetadata>();
+			chiselMaterial.Update();
 		}
 
 		public static ChiselSurface Create(Material material, SurfaceDetails details) 
 		{ 
 			return new ChiselSurface
 			{
-				chiselMaterial = new ChiselMaterial
-				{
-					material        = material,
-					surfaceMetadata = (material == null) ? null : material.GetMetadataOfType<ChiselSurfaceMetadata>(),
-				},
-				surfaceDetails	= details
+				chiselMaterial = ChiselMaterial.Create(material),
+				surfaceDetails = details
 			};
 		}
 
