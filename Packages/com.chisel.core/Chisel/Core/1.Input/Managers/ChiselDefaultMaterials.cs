@@ -48,6 +48,7 @@ namespace Chisel.Core
         public static Material DefaultMaterial              { get { return Instance.defaultWallMaterial; } }
 		public static Material CollisionOnlyMaterial        { get { return Instance.defaultColliderMaterial; } }
 		public static Material DiscardedMaterial            { get { return Instance.defaultHiddenMaterial; } }
+		public static Material ShadowOnlyMaterial           { get { return Instance.defaultShadowOnlyMaterial; } }
 		public static PhysicMaterial DefaultPhysicsMaterial { get { return Instance.defaultPhysicMaterial; } }
         public static Material[] HelperMaterials            { get { return Instance.helperMaterials; } }
         
