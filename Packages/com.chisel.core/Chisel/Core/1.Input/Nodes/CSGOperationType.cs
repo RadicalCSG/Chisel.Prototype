@@ -6,7 +6,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTreeBrush"/>
     /// <seealso cref="Chisel.Core.CSGTreeBranch"/>
     [Serializable]
-    public enum CSGOperationType : byte
+    public enum CSGOperationType : byte // Note: DO NOT CHANGE THE ORDER OF THESE VALUES
     {
         /// <summary>The given <see cref="Chisel.Core.CSGTreeBrush"/> or <see cref="Chisel.Core.CSGTreeBranch"/> is added to the <see cref="Chisel.Core.CSGTree"/> and removes all the geometry inside it.</summary>
         Additive = 0,

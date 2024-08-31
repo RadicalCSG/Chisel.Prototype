@@ -31,21 +31,12 @@ namespace Chisel.Editors
 				return;
 			}
 
+			var chiselMaterialProp = property;
+			ChiselUVToolCommon.UpdateChiselMaterials(chiselMaterialProp);
+
 			EditorGUI.BeginProperty(position, label, property);
 			try
 			{
-				var materialProperty = property;
-				SerializedProperty renderMaterialProp = materialProperty.FindPropertyRelative(ChiselMaterial.kMaterialFieldName);
-				SerializedProperty surfaceDestinationFlagsProp = null, physicsMaterialProp = null;
-
-				var metadataProp = materialProperty.FindPropertyRelative(ChiselMaterial.kSurfaceMetadataFieldName);
-				if (metadataProp != null && metadataProp.objectReferenceValue != null)
-				{
-					var serializedObject = new SerializedObject(metadataProp.objectReferenceValue);
-					surfaceDestinationFlagsProp = serializedObject.FindProperty(ChiselSurfaceMetadata.kDestinationFlagsFieldName);
-					physicsMaterialProp = serializedObject.FindProperty(ChiselSurfaceMetadata.kPhysicsMaterialFieldName);
-				}
-
 				var originalPosition = position;				
 				var previewSize = originalPosition.height;
 				var materialPrefixRect = originalPosition;
@@ -59,14 +50,14 @@ namespace Chisel.Editors
 					Rect propRect = EditorGUI.PrefixLabel(materialPrefixRect, materialLabelID, !hasLabel ? GUIContent.none : kRenderMaterialContents);
 					
 					propRect.height = previewSize;
-					ChiselUVToolCommon.ShowMaterialProp(propRect, renderMaterialProp, surfaceDestinationFlagsProp, physicsMaterialProp);
+					ChiselUVToolCommon.ShowMaterialProp(propRect, chiselMaterialProp);
 				}
 				if (EditorGUI.EndChangeCheck())
 				{
 #if MATERIAL_IS_SCRIPTABLEOBJECT
                     materialObject.ApplyModifiedProperties();
 #else
-					materialProperty.serializedObject.ApplyModifiedProperties();
+					chiselMaterialProp.serializedObject.ApplyModifiedProperties();
 #endif
 				}
 			}
