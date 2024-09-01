@@ -14,7 +14,7 @@ namespace Chisel.Components
         public ChiselRenderObjects  instance;
         public Material             materialOverride;
         public bool                 meshIsModified;
-        public ChiselModelComponent          model;
+        public ChiselModelComponent model;
     }
 
     [Serializable]
@@ -78,9 +78,12 @@ namespace Chisel.Components
 #if UNITY_EDITOR
             if (partialMesh == null)
             {
-                partialMesh = new Mesh { name = meshFilter.gameObject.name };
-                partialMesh.hideFlags = HideFlags.DontSave;
-            }
+				partialMesh = new Mesh
+				{
+					name = meshFilter.gameObject.name,
+					hideFlags = HideFlags.DontSave
+				};
+			}
 #endif
         }
 
@@ -150,7 +153,7 @@ namespace Chisel.Components
 
         void Initialize()
         {
-            meshFilter.sharedMesh       = sharedMesh;
+            meshFilter.sharedMesh = sharedMesh;
             if (!debugHelperRenderer)
             { 
                 meshRenderer.receiveShadows	= ((query & SurfaceDestinationFlags.ReceiveShadows) == SurfaceDestinationFlags.ReceiveShadows);

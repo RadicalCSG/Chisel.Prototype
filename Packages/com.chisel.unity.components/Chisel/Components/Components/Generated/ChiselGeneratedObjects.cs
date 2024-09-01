@@ -6,6 +6,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Profiling;
 using Unity.Jobs;
 using Unity.Collections;
+using UnityEditor;
 
 namespace Chisel.Components
 {        
@@ -106,13 +107,13 @@ namespace Chisel.Components
 
             var renderables = new ChiselRenderObjects[]
             {
-                new ChiselRenderObjects() { invalid = true },
+                new() { invalid = true },
                 ChiselRenderObjects.Create(kGeneratedMeshRendererNames[1], containerTransform, gameObjectState, SurfaceDestinationFlags.Renderable                               ),
                 ChiselRenderObjects.Create(kGeneratedMeshRendererNames[2], containerTransform, gameObjectState, SurfaceDestinationFlags.CastShadows                              ),
                 ChiselRenderObjects.Create(kGeneratedMeshRendererNames[3], containerTransform, gameObjectState, SurfaceDestinationFlags.Renderable | SurfaceDestinationFlags.CastShadows ),
-                new ChiselRenderObjects() { invalid = true },
+                new() { invalid = true },
                 ChiselRenderObjects.Create(kGeneratedMeshRendererNames[5], containerTransform, gameObjectState, SurfaceDestinationFlags.Renderable |                               SurfaceDestinationFlags.ReceiveShadows),
-                new ChiselRenderObjects() { invalid = true },
+                new() { invalid = true },
                 ChiselRenderObjects.Create(kGeneratedMeshRendererNames[7], containerTransform, gameObjectState, SurfaceDestinationFlags.Renderable | SurfaceDestinationFlags.CastShadows | SurfaceDestinationFlags.ReceiveShadows),
             };
 
@@ -165,8 +166,7 @@ namespace Chisel.Components
             {
                 foreach (var collider in colliders)
                 {
-                    if (collider != null)
-                        collider.Destroy();
+					collider?.Destroy();
                 }
                 colliders = null;
             }
@@ -174,8 +174,7 @@ namespace Chisel.Components
             {
                 foreach (var renderable in renderables)
                 {
-                    if (renderable != null)
-                        renderable.Destroy();
+                    renderable?.Destroy();
                 }
                 renderables = null;
             }
@@ -183,8 +182,7 @@ namespace Chisel.Components
             {
                 foreach (var debugHelper in debugHelpers)
                 {
-                    if (debugHelper != null)
-                        debugHelper.Destroy();
+                    debugHelper?.Destroy();
                 }
                 debugHelpers = null;
             }
@@ -366,8 +364,8 @@ namespace Chisel.Components
         static readonly List<ChiselColliderObjects>                colliderObjects         = new List<ChiselColliderObjects>();
         static readonly List<Mesh>                                 foundMeshes             = new List<Mesh>();
 
-        static readonly HashSet<int> usedDebugHelpers = new HashSet<int>();
-        static readonly HashSet<int> usedRenderMeshes = new HashSet<int>();
+        static readonly HashSet<int> usedDebugHelpers = new();
+        static readonly HashSet<int> usedRenderMeshes = new();
 
         // in between UpdateMeshes and FinishMeshUpdates our jobs should be force completed, so we can now upload our meshes to unity Meshes
 
@@ -456,16 +454,16 @@ namespace Chisel.Components
             usedDebugHelpers.Clear();
             for (int i = 0; i < debugHelperMeshes.Length; i++)
             {
-                var debugHelperMeshUpdate   = debugHelperMeshes[i];
+                var debugHelperMeshUpdate = debugHelperMeshes[i];
                 usedDebugHelpers.Add(debugHelperMeshUpdate.objectIndex);
-                var instance                = debugHelpers[debugHelperMeshUpdate.objectIndex];
+                var instance = debugHelpers[debugHelperMeshUpdate.objectIndex];
                 foundMeshes.Add(instance.sharedMesh);
                 renderObjectUpdates.Add(new ChiselRenderObjectUpdate
                 {
-                    meshIndex           = debugHelperMeshUpdate.meshIndex,
-                    materialOverride    = ChiselDefaultMaterials.HelperMaterials[debugHelperMeshUpdate.objectIndex],
-                    instance            = instance,
-                    model               = model
+                    meshIndex        = debugHelperMeshUpdate.meshIndex,
+                    materialOverride = ChiselDefaultMaterials.HelperMaterials[debugHelperMeshUpdate.objectIndex],
+                    instance         = instance,
+                    model            = model
                 });
             }
             Profiler.EndSample();
@@ -474,16 +472,16 @@ namespace Chisel.Components
             usedRenderMeshes.Clear();
             for (int i = 0; i < renderMeshes.Length; i++)
             {
-                var renderMeshUpdate    = renderMeshes[i];
+                var renderMeshUpdate = renderMeshes[i];
                 usedRenderMeshes.Add(renderMeshUpdate.objectIndex);
-                var instance            = renderables[renderMeshUpdate.objectIndex];
+                var instance = renderables[renderMeshUpdate.objectIndex];
                 foundMeshes.Add(instance.sharedMesh);
                 renderObjectUpdates.Add(new ChiselRenderObjectUpdate
                 {
-                    meshIndex           = renderMeshUpdate.meshIndex,
-                    materialOverride    = null,
-                    instance            = instance,
-                    model               = model
+                    meshIndex        = renderMeshUpdate.meshIndex,
+                    materialOverride = null,
+                    instance         = instance,
+                    model            = model
                 });
             }
             Profiler.EndSample();
@@ -518,7 +516,7 @@ namespace Chisel.Components
                 foundMeshes.Add(instance.sharedMesh);
                 colliderObjectUpdates.Add(new ChiselColliderObjectUpdate
                 {
-                    meshIndex   = colliderMeshUpdate.meshIndex
+                    meshIndex = colliderMeshUpdate.meshIndex
                 });
             }
             Profiler.EndSample();
@@ -643,9 +641,42 @@ namespace Chisel.Components
             renderMeshUpdates.Clear();
             renderObjectUpdates.Clear();
             colliderObjects.Clear();
-            
-            var foundMeshCount = foundMeshes.Count;
-            foundMeshes.Clear();
+
+            // TODO: do this properly, instead of this temporary hack
+            // {{
+            var shadowOnlyDebugHelper = model.generated.debugHelpers[2];
+			var colliderDebugHelper = model.generated.debugHelpers[4];
+
+            var shadowOnlyRenderable = model.generated.renderables[2];
+            if (shadowOnlyDebugHelper.sharedMesh.vertexCount > 0)
+            {
+                shadowOnlyRenderable.sharedMesh.CombineMeshes(new CombineInstance[]
+                    {
+                        new()
+                        {
+                            mesh = shadowOnlyDebugHelper.sharedMesh,
+                            transform = Matrix4x4.identity
+                        }
+                    });
+                // Needs a material, otherwise it won't work
+                shadowOnlyRenderable.meshRenderer.material = ChiselDefaultMaterials.DefaultWallMaterial;
+				shadowOnlyRenderable.meshRenderer.enabled = true;
+            }
+
+			var colliderMeshes = new CombineInstance[model.generated.colliders.Length];
+            for (int i = 0; i < model.generated.colliders.Length; i++)
+            {
+                colliderMeshes[i] = new CombineInstance
+                {
+                    mesh = model.generated.colliders[i].sharedMesh,
+                    transform = Matrix4x4.identity
+                };
+			}
+            colliderDebugHelper.sharedMesh.CombineMeshes(colliderMeshes);
+            // }}
+		
+		    var foundMeshCount = foundMeshes.Count;
+                foundMeshes.Clear();
             return foundMeshCount;
         }
 

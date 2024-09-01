@@ -26,32 +26,37 @@ namespace Chisel.Core
         public MeshQuery(SurfaceDestinationFlags query, SurfaceDestinationFlags mask = SurfaceDestinationFlags.None, SurfaceParameterIndex parameterIndex = SurfaceParameterIndex.None, VertexChannelFlags vertexChannels = VertexChannelFlags.Position)
         {
             if (mask == SurfaceDestinationFlags.None) mask = query;
-            this.layers				= ((uint)query & ~BitMask) | ((uint)parameterIndex << BitShift);
-            this.maskAndChannels	= ((uint)mask  & ~BitMask) | ((uint)vertexChannels << BitShift);
-        }
+            this.layers			 = ((uint)query & ~BitMask) | ((uint)parameterIndex << BitShift);
+            this.maskAndChannels = ((uint)mask  & ~BitMask) | ((uint)vertexChannels << BitShift);
 
-        private uint	layers;				// 24 bit layer-usage / 8 bit parameter-index
-        private uint	maskAndChannels;    // 24 bit layer-mask  / 8 bit vertex-channels
+            UnityEngine.Debug.Assert(LayerParameterIndex == parameterIndex);
+			UnityEngine.Debug.Assert(UsedVertexChannels == vertexChannels);
+			UnityEngine.Debug.Assert(LayerQuery == query);
+			UnityEngine.Debug.Assert(LayerQueryMask == mask);
+		}
+
+		private uint layers;          // 24 bit layer-usage / 8 bit parameter-index
+		private uint maskAndChannels; // 24 bit layer-mask  / 8 bit vertex-channels
 
         /// <value>Which layer combination would we like to look for and generate a mesh with</value>
         /// <seealso cref="Chisel.Core.SurfaceDestinationParameters" />
         /// <seealso cref="Chisel.Core.BrushMesh.Polygon" />
-        public SurfaceDestinationFlags		LayerQuery			{ readonly get { return (SurfaceDestinationFlags)((uint)layers          & ~BitMask); } set { layers          = ((uint)value & ~BitMask) | ((uint)layers          & BitMask); } }
+        public readonly SurfaceDestinationFlags LayerQuery          { get { return (SurfaceDestinationFlags)((uint)layers & ~BitMask); } }
         
         /// <value>What layers do we ignore, and what layers do we include in our comparison</value>
         /// <seealso cref="Chisel.Core.SurfaceDestinationParameters" />
         /// <seealso cref="Chisel.Core.BrushMesh.Polygon" />
-        public SurfaceDestinationFlags		LayerQueryMask		{ readonly get { return (SurfaceDestinationFlags)((uint)maskAndChannels & ~BitMask); } set { maskAndChannels = ((uint)value & ~BitMask) | ((uint)maskAndChannels & BitMask); } }
+        public readonly SurfaceDestinationFlags LayerQueryMask      { get { return (SurfaceDestinationFlags)((uint)maskAndChannels & ~BitMask); } }
         
         /// <value>Which parameter index we use to, for example, differentiate between different [UnityEngine.Material](https://docs.unity3d.com/ScriptReference/Material.html)s.</value>
         /// <seealso cref="Chisel.Core.SurfaceParameterIndex" />
         /// <seealso cref="Chisel.Core.SurfaceDestinationParameters" />
         /// <seealso cref="Chisel.Core.BrushMesh.Polygon" />
-        public SurfaceParameterIndex	    LayerParameterIndex  { readonly get { return (SurfaceParameterIndex)(((uint)layers          & BitMask) >> BitShift); } set { layers          = ((uint)layers          & ~BitMask) | ((uint)value << BitShift); } }
+        public readonly SurfaceParameterIndex LayerParameterIndex { get { return (SurfaceParameterIndex)(((uint)layers & BitMask) >> BitShift); } }
         
         /// <value>Which vertex channels need to be used for the meshes we'd like to generate</value>
         /// <seealso cref="Chisel.Core.CSGTree.GetMeshDescriptions" />
-        public VertexChannelFlags	        UsedVertexChannels	 { readonly get { return (VertexChannelFlags )(((uint)maskAndChannels & BitMask) >> BitShift); } set { maskAndChannels = ((uint)maskAndChannels & ~BitMask) | ((uint)value << BitShift); } }
+        public readonly VertexChannelFlags      UsedVertexChannels  { get { return (VertexChannelFlags)(((uint)maskAndChannels & BitMask) >> BitShift); } }
 
         #region Comparison
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -67,7 +72,7 @@ namespace Chisel.Core
 
 
         #region ToString
-        public override string ToString()
+        public override readonly string ToString()
         {
             return $"(LayerQuery: {LayerQuery}, LayerQueryMask: {LayerQueryMask}, LayerParameterIndex: {LayerParameterIndex}, UsedVertexChannels: {UsedVertexChannels})";
         }
@@ -76,31 +81,31 @@ namespace Chisel.Core
         public static readonly MeshQuery[] RenderOnly =
         {
             // Renderables
-            new MeshQuery(
+            new(
                 parameterIndex: SurfaceParameterIndex.RenderMaterial,
                 query:          SurfaceDestinationFlags.RenderReceiveCastShadows,
                 mask:           SurfaceDestinationFlags.RenderReceiveCastShadows,
                 vertexChannels: VertexChannelFlags.All
             ),
-            new MeshQuery(
+            new( 
                 parameterIndex: SurfaceParameterIndex.RenderMaterial,
                 query:          SurfaceDestinationFlags.RenderCastShadows,
                 mask:           SurfaceDestinationFlags.RenderReceiveCastShadows,
                 vertexChannels: VertexChannelFlags.All
             ),
-            new MeshQuery(
+            new(
                 parameterIndex: SurfaceParameterIndex.RenderMaterial,
                 query:          SurfaceDestinationFlags.RenderReceiveShadows,
                 mask:           SurfaceDestinationFlags.RenderReceiveCastShadows,
                 vertexChannels: VertexChannelFlags.All
             ),
-            new MeshQuery(
+            new(
                 parameterIndex: SurfaceParameterIndex.RenderMaterial,
                 query:          SurfaceDestinationFlags.Renderable,
                 mask:           SurfaceDestinationFlags.RenderReceiveCastShadows,
                 vertexChannels: VertexChannelFlags.All
             ),
-            new MeshQuery(
+            new(
                 parameterIndex: SurfaceParameterIndex.RenderMaterial,
                 query:          SurfaceDestinationFlags.CastShadows,
                 mask:           SurfaceDestinationFlags.RenderReceiveCastShadows,
@@ -108,16 +113,16 @@ namespace Chisel.Core
             ),
                 
 			// Helper surfaces
-			new MeshQuery(query: SurfaceDestinationFlags.None,          mask: SurfaceDestinationFlags.Renderable),	// hidden surfaces
-			new MeshQuery(query: SurfaceDestinationFlags.CastShadows	),
-			new MeshQuery(query: SurfaceDestinationFlags.ReceiveShadows	),
-			new MeshQuery(query: SurfaceDestinationFlags.Culled			)
+			new(query: SurfaceDestinationFlags.None,         mask: SurfaceDestinationFlags.Renderable),	// hidden surfaces
+			new(query: SurfaceDestinationFlags.CastShadows	 ),
+			new(query: SurfaceDestinationFlags.ReceiveShadows),
+			new(query: SurfaceDestinationFlags.Culled		 )
         };
 
         public static readonly MeshQuery[] CollisionOnly =
         {
             // Colliders
-            new MeshQuery(
+            new(
                 parameterIndex: SurfaceParameterIndex.PhysicsMaterial,
                 query:          SurfaceDestinationFlags.Collidable,
                 mask:           SurfaceDestinationFlags.Collidable,
@@ -125,47 +130,47 @@ namespace Chisel.Core
             ),
                 
 			// Helper surfaces
-			new MeshQuery(query: SurfaceDestinationFlags.None,          mask: SurfaceDestinationFlags.Renderable),	// hidden surfaces
-            new MeshQuery(query: SurfaceDestinationFlags.Culled         ) // removed by CSG algorithm
+			new(query: SurfaceDestinationFlags.None,          mask: SurfaceDestinationFlags.Renderable),	// hidden surfaces
+            new(query: SurfaceDestinationFlags.Culled         ) // removed by CSG algorithm
         };
 
         // TODO: do not make this hardcoded
         public static readonly MeshQuery[] DefaultQueries =
         {
             // Renderables
-            new MeshQuery(
+            new(
                 parameterIndex: SurfaceParameterIndex.RenderMaterial,
                 query:          SurfaceDestinationFlags.RenderReceiveCastShadows,
                 mask:           SurfaceDestinationFlags.RenderReceiveCastShadows,
                 vertexChannels: VertexChannelFlags.All
             ),
-            new MeshQuery(
+            new(
                 parameterIndex: SurfaceParameterIndex.RenderMaterial,
                 query:          SurfaceDestinationFlags.RenderCastShadows,
                 mask:           SurfaceDestinationFlags.RenderReceiveCastShadows,
                 vertexChannels: VertexChannelFlags.All
             ),
-            new MeshQuery(
+            new(
                 parameterIndex: SurfaceParameterIndex.RenderMaterial,
                 query:          SurfaceDestinationFlags.RenderReceiveShadows,
                 mask:           SurfaceDestinationFlags.RenderReceiveCastShadows,
                 vertexChannels: VertexChannelFlags.All
             ),
-            new MeshQuery(
+            new(
                 parameterIndex: SurfaceParameterIndex.RenderMaterial,
                 query:          SurfaceDestinationFlags.Renderable,
                 mask:           SurfaceDestinationFlags.RenderReceiveCastShadows,
                 vertexChannels: VertexChannelFlags.All
             ),
-            new MeshQuery(
-                parameterIndex: SurfaceParameterIndex.RenderMaterial,
+            new(
+                parameterIndex: SurfaceParameterIndex.None,
                 query:          SurfaceDestinationFlags.CastShadows,
                 mask:           SurfaceDestinationFlags.RenderReceiveCastShadows,
                 vertexChannels: VertexChannelFlags.All
             ),
 
             // Colliders
-            new MeshQuery(
+            new(
                 parameterIndex: SurfaceParameterIndex.PhysicsMaterial,
                 query:          SurfaceDestinationFlags.Collidable,
                 mask:           SurfaceDestinationFlags.Collidable,
@@ -173,11 +178,11 @@ namespace Chisel.Core
             ),
                 
 			// Helper surfaces
-			new MeshQuery(query: SurfaceDestinationFlags.None,                  mask: SurfaceDestinationFlags.Renderable),	        // hidden surfaces
-			new MeshQuery(query: SurfaceDestinationFlags.RenderCastShadows,     mask: SurfaceDestinationFlags.RenderCastShadows),
-            new MeshQuery(query: SurfaceDestinationFlags.CastShadows,           mask: SurfaceDestinationFlags.RenderCastShadows),
-			new MeshQuery(query: SurfaceDestinationFlags.RenderReceiveShadows,  mask: SurfaceDestinationFlags.RenderReceiveShadows),
-			new MeshQuery(query: SurfaceDestinationFlags.Culled,                mask: SurfaceDestinationFlags.Culled)               // removed by CSG algorithm
+			new(query: SurfaceDestinationFlags.None,                  mask: SurfaceDestinationFlags.Renderable),	        // hidden surfaces
+			new(query: SurfaceDestinationFlags.RenderCastShadows,     mask: SurfaceDestinationFlags.RenderCastShadows),
+			new(query: SurfaceDestinationFlags.CastShadows,           mask: SurfaceDestinationFlags.RenderCastShadows),
+			new(query: SurfaceDestinationFlags.RenderReceiveShadows,  mask: SurfaceDestinationFlags.RenderReceiveShadows),
+			new(query: SurfaceDestinationFlags.Culled,                mask: SurfaceDestinationFlags.Culled)               // removed by CSG algorithm
         };
     }
 }

@@ -69,7 +69,12 @@ namespace Chisel.Core
         internal static int GetID(PhysicMaterial physicMaterial)
         {
             if (!physicMaterial)
-                return 0;
+            {
+                physicMaterial = ChiselDefaultMaterials.DefaultPhysicsMaterial;
+				if (physicMaterial != null)
+                    return GetID(physicMaterial);
+				return 0;
+            }
             if (!physicMaterialToID.TryGetValue(physicMaterial, out var id))
             {
                 id = ToID(physicMaterial);
