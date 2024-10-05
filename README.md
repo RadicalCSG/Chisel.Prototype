@@ -1,3 +1,5 @@
+This repository has been replaced by [com.chisel](https://github.com/RadicalCSG/com.chisel) which can be installed through the Unity package manager
+
 # [Chisel.Prototype](https://github.com/RadicalCSG/Chisel.Prototype)
 
 Chisel is an extension for **Unity** that allows for _rapid_, iterative, **non destructive** level editing!
